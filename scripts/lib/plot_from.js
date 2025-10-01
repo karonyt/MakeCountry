@@ -5,11 +5,9 @@ const ModalFormData = ModalForm;
 import { CheckPermissionFromLocation, GetAndParsePropertyData, GetPlayerChunkPropertyId, isDecimalNumberZeroOK, StringifyAndSavePropertyData } from "./util";
 import { Player, system, world } from "@minecraft/server";
 import { addPlotToGroup, createPlot, createPlotToGroup } from "./land";
-import * as DyProp from "./DyProp";
 import config from "../config";
 import { plotGroupEditMainFormPlotOwner } from "./form";
 import { DynamicProperties } from "../api/dyp";
-import { syncChunkData } from "../plugins/karoearth/map/sync";
 
 const landPermissions = [
     `place`,
@@ -602,7 +600,6 @@ export function plotBuyForm(player, chunkId) {
                 player.sendMessage({ translate: `finish.bought` });
                 const [c, x, z, d] = chunkId.split('_');
                 const countryId = GetAndParsePropertyData(chunkId)?.countryId;
-                syncChunkData(Number(x), Number(z), countryId, d);
             };
         };
     });
