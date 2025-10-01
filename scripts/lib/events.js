@@ -7,7 +7,7 @@ import { getShopData, getSignTexts, isShopOwner } from "./chest_shop";
 import { nameSet } from "./nameset";
 import { JobLevel } from "./jobslevel";
 import { DynamicProperties } from "../api/dyp";
-import { chestLockDefaultForm } from "../forms/default/chest_lock/chest_lock";
+import { chestLockDefaultForm } from "../forms/default/chest_lock/main";
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
@@ -565,12 +565,12 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
             if (block.typeId === 'minecraft:sweet_berry_bush' && player.hasTag('mcjobs_farmer') && growth > 1 && !player.isSneaking) {
                 const container = player.getComponent("inventory").container;
                 const item = container.getItem(player.selectedSlotIndex);
-                if(growth != 3) {
-                    if(item && item?.typeId == "minecraft:bone_meal") {
+                if (growth != 3) {
+                    if (item && item?.typeId == "minecraft:bone_meal") {
                         return;
                     }
                 }
-                if(item && item?.typeId.includes("minecraft:bucket")) {
+                if (item && item?.typeId.includes("minecraft:bucket")) {
                     return;
                 }
                 if (CheckPermissionFromLocation(player, x, z, dimensionId, `place`)) return;

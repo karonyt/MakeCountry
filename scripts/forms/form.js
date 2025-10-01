@@ -1,6 +1,6 @@
 import { Player } from "@minecraft/server";
-import { settingCountryDefaultForm } from "./default/setting_country/setting_country";
-import { countryListDefaultForm } from "./default/country_list/country_list";
+import { settingCountryDefaultForm } from "./default/sc/setting_country";
+import { countryListDefaultForm } from "./default/country_list/list";
 import { MakeCountryDefaultForm } from "./default/make_country/make_country";
 import { playerMainMenuDefaultForm } from "./default/menu/player_main_menu";
 import { joinTypeSelectDefaultForm } from "./default/menu/join/join_type_select";

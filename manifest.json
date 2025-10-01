@@ -3,14 +3,14 @@
     "header": {
         "name": "MakeCountryBehavior v.1.21.110 β.2.0.0",
         "description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
-        "version": [ 1, 9, 2 ],
+        "version": [ 2, 0, 0 ],
         "uuid": "95c0d251-d1a0-47a0-a98c-3ae9cde9fc90",
-        "min_engine_version": [ 1, 21, 90 ]
+        "min_engine_version": [ 1, 21, 110 ]
     },
     "modules": [
         {
             "type": "script",
-            "version": [ 1, 9, 2 ],
+            "version": [ 2, 0, 0 ],
             "uuid": "87f4e847-5604-4edb-b852-d48f14f4ac3c",
             "language": "javascript",
             "entry": "scripts/index.js"
