@@ -43,6 +43,39 @@ export function fixCountryData() {
         };
         countryData.hostility = aliveHostilityCountryIds;
 
+        const friendlyIds = countryData.friendly ?? [];
+        let aliveFriendlyCountryIds = [];
+        for (const a of friendlyIds) {
+            const friendlyCountryData = GetAndParsePropertyData(`country_${a}`, countryDataBase);
+            if (!friendlyCountryData) continue;
+            if (aliveCountryIds.includes(a)) {
+                aliveFriendlyCountryIds.push(a);
+            };
+        };
+        countryData.friendly = aliveFriendlyCountryIds;
+
+        const friendlyRequestReceiveIds = countryData.friendlyRequestReceive ?? [];
+        let aliveFriendlyRequestReceiveCountryIds = [];
+        for (const a of friendlyRequestReceiveIds) {
+            const friendlyCountryData = GetAndParsePropertyData(`country_${a}`, countryDataBase);
+            if (!friendlyCountryData) continue;
+            if (aliveCountryIds.includes(a)) {
+                aliveFriendlyRequestReceiveCountryIds.push(a);
+            };
+        };
+        countryData.friendlyRequestReceive = aliveFriendlyRequestReceiveCountryIds;
+
+        const FriendlyRequestSendIds = countryData.allianceRequestSend ?? [];
+        let aliveFriendlyRequestSendCountryIds = [];
+        for (const a of FriendlyRequestSendIds) {
+            const friendlyCountryData = GetAndParsePropertyData(`country_${a}`, countryDataBase);
+            if (!friendlyCountryData) continue;
+            if (aliveCountryIds.includes(a)) {
+                aliveFriendlyRequestSendCountryIds.push(a);
+            };
+        };
+        countryData.friendlyRequestSend = aliveFriendlyRequestSendCountryIds;
+
         const allianceRequestReceiveIds = countryData.allianceRequestReceive ?? [];
         let aliveAllianceRequestReceiveCountryIds = [];
         for (const a of allianceRequestReceiveIds) {
@@ -52,7 +85,7 @@ export function fixCountryData() {
                 aliveAllianceRequestReceiveCountryIds.push(a);
             };
         };
-        countryData.hostility = aliveAllianceRequestReceiveCountryIds;
+        countryData.allianceRequestReceive = aliveAllianceRequestReceiveCountryIds;
 
         const AllianceRequestSendIds = countryData.allianceRequestSend ?? [];
         let aliveAllianceRequestSendCountryIds = [];
@@ -64,6 +97,7 @@ export function fixCountryData() {
             };
         };
         countryData.allianceRequestSend = aliveAllianceRequestSendCountryIds;
+
 
         const ApplicationPeaceRequestReceiveIds = countryData.applicationPeaceRequestReceive ?? [];
         let aliveApplicationPeaceRequestReceiveIds = [];

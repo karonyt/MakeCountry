@@ -1,14 +1,13 @@
 import { EntityDamageCause, GameMode, Player, system, world } from "@minecraft/server";
 import { CheckPermissionFromLocation, GetAndParsePropertyData, getRandomInteger, StringifyAndSavePropertyData } from "./util";
-import * as DyProp from "./DyProp";
 import config from "../config";
-import { chestLockForm } from "./form";
 import jobs_config from "../jobs_config";
 import { chestShopConfig } from "../chest_shop_config";
 import { getShopData, getSignTexts, isShopOwner } from "./chest_shop";
 import { nameSet } from "./nameset";
 import { JobLevel } from "./jobslevel";
 import { DynamicProperties } from "../api/dyp";
+import { chestLockDefaultForm } from "../forms/default/chest_lock/chest_lock";
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
@@ -149,12 +148,12 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
                         player.breaktp = true;
                         system.run(() => {
                             player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                            player.setGameMode(GameMode.adventure);
+                            player.setGameMode(GameMode.Adventure);
                         });
                         system.runTimeout(() => {
                             player.breaktp = false;
                             player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                            player.setGameMode(GameMode.survival);
+                            player.setGameMode(GameMode.Survival);
                         }, 5);
                     };
                     return;
@@ -177,12 +176,12 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
                 player.breaktp = true;
                 system.run(() => {
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.adventure);
+                    player.setGameMode(GameMode.Adventure);
                 });
                 system.runTimeout(() => {
                     player.breaktp = false;
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.survival);
+                    player.setGameMode(GameMode.Survival);
                 }, 5);
             };
             return;
@@ -215,12 +214,12 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
                 player.breaktp = true;
                 system.run(() => {
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.adventure);
+                    player.setGameMode(GameMode.Adventure);
                 });
                 system.runTimeout(() => {
                     player.breaktp = false;
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.survival);
+                    player.setGameMode(GameMode.Survival);
                 }, 5);
             };
             const ownerName = GetAndParsePropertyData(`player_${chestLockData.player}`).name;
@@ -273,12 +272,12 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
             player.breaktp = true;
             system.run(() => {
                 player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                player.setGameMode(GameMode.adventure);
+                player.setGameMode(GameMode.Adventure);
             });
             system.runTimeout(() => {
                 player.breaktp = false;
                 player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                player.setGameMode(GameMode.survival);
+                player.setGameMode(GameMode.Survival);
             }, 5);
         };
         return;
@@ -500,7 +499,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                             cancel: true
                         };
                         ev.cancel = true;
-                        system.runTimeout(() => chestLockForm(player, chestId));
+                        system.runTimeout(() => chestLockDefaultForm(player, chestId));
                         return;
                     }
                     if (player.hasTag(`adminmode`)) return;
@@ -525,7 +524,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                     location: block.location,
                     cancel: true
                 };
-                system.runTimeout(() => chestLockForm(player, chestId));
+                system.runTimeout(() => chestLockDefaultForm(player, chestId));
                 return;
             }
         }
@@ -584,7 +583,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                 const reward = Math.ceil((random / 10 * growth) * 100) / 100;
                 playerData.money += reward;
                 StringifyAndSavePropertyData(`player_${playerId}`, playerData);
-                if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${random} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+                if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${reward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
                 return;
             }
         });

@@ -72,7 +72,7 @@ export function KarcariApp(player) {
  * 売却履歴
  * @param {Player} player 
  */
-function PlayerMarketCheckSold(player) {
+export function PlayerMarketCheckSold(player) {
     const playerData = GetAndParsePropertyData(`player_${player.id}`);
     /**
      * @type {Array<{ price: number, user: string, item: {name: undefined|string, typeId: string,amount: number,lore: [string] } }>}
@@ -111,7 +111,7 @@ function PlayerMarketCheckSold(player) {
  * 出品したアイテム一覧
  * @param {Player} player 
  */
-function PlayerMarketWithdrawalGoodsMainMenu(player) {
+export function PlayerMarketWithdrawalGoodsMainMenu(player) {
     const form = new ActionFormData();
     form.title(`Karcari`)
     form.button({ translate: `mc.button.close` });
@@ -206,7 +206,7 @@ export function PlayerMarketWithdrawalGoodsSelectMenu(player, common) {
  * 出品アイテムの選択
  * @param {Player} player 
  */
-function PlayerMarketExhibitMainMenu(player) {
+export function PlayerMarketExhibitMainMenu(player) {
     const data = GetAndParsePropertyData(`player_market_commons`) ?? [];
     /**
  * @type {Array<{id: number,playerName: string,playerId: string,price: number, item: {name: undefined|string,typeId: string,amount: number}}>}
@@ -269,7 +269,7 @@ function PlayerMarketExhibitMainMenu(player) {
  * @param {ItemStack} itemStack 
  * @param {Player} player 
  */
-function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
+export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
     const form = new ModalFormData();
     form.title(`Karcari`);
     form.slider(``, 1, itemData.itemStack.amount, 1);

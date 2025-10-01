@@ -1,6 +1,6 @@
 import { CommandPermissionLevel, Player, system } from "@minecraft/server";
-import { countryList } from "../../lib/form";
 import { DynamicProperties } from "../dyp";
+import { callCountryListForm } from "../../forms/form";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -18,11 +18,11 @@ system.beforeEvents.startup.subscribe((event) => {
                 const rawData = playerDataBase.get(`player_${sender.id}`);
                 const playerData = JSON.parse(rawData);
 
-                if (playerData?.country) {
+                if (!playerData?.country) {
                     sender.sendMessage({ translate: 'cannnot.use.nojoin.country' });
                     return;
                 };
-                countryList(sender, true);
+                callCountryListForm(sender, 'al');
             })
         })
     )
@@ -44,11 +44,11 @@ system.beforeEvents.startup.subscribe((event) => {
                 const rawData = playerDataBase.get(`player_${sender.id}`);
                 const playerData = JSON.parse(rawData);
 
-                if (playerData?.country) {
+                if (!playerData?.country) {
                     sender.sendMessage({ translate: 'cannnot.use.nojoin.country' });
                     return;
                 };
-                countryList(sender, true);
+                callCountryListForm(sender, 'al');
             })
         })
     )

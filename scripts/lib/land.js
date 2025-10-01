@@ -7,6 +7,15 @@ import { country } from "../api/api";
 import { DynamicProperties } from "../api/dyp";
 
 /**
+ * @type {DynamicProperties}
+ */
+let countryDataBase;
+
+world.afterEvents.worldLoad.subscribe(() => {
+    countryDataBase = new DynamicProperties('country');
+});
+
+/**
  * 国を作る
  * @param {Player} owner 
  * @param {string} name 
@@ -85,12 +94,16 @@ export function MakeCountry(owner, reason, name = `country`, invite = true, peac
         alliance: [],
         //敵対国
         hostility: [],
+        //友好国
+        friendly: [],
         //中立国の権限
         neutralityPermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`],
         //同盟国の権限
         alliancePermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`],
         //敵対国の権限
         hostilityPermission: [],
+        //友好国の権限
+        friendlyPermission: [`noTarget`, `setHome`, `publicHomeUse`],
         //加盟している国際組織
         internationalOrganizations: [],
         //戦争中
@@ -105,6 +118,10 @@ export function MakeCountry(owner, reason, name = `country`, invite = true, peac
         allianceRequestReceive: [],
         //送った同盟申請
         allianceRequestSend: [],
+        //受け取った友好申請
+        friendlyRequestReceive: [],
+        //送った友好申請
+        friendlyRequestSend: [],
         //受け取った講和申請
         applicationPeaceRequestReceive: [],
         //送った講和申請
@@ -177,8 +194,10 @@ export function calculationCountryPower(countryId) {
  * @param {string} countryId 
  */
 export function DeleteCountry(countryId) {
-    const countryDataBase = new DynamicProperties('country');
     const rawCountryData = countryDataBase.get(`country_${countryId}`);
+    /**
+     * @type {import("../jsdoc/country.js").CountryData}
+     */
     const countryData = JSON.parse(rawCountryData);
     const playerDataBase = new DynamicProperties('player');
     const rawOwnerData = playerDataBase.get(`player_${countryData?.owner}`);
@@ -187,6 +206,18 @@ export function DeleteCountry(countryId) {
         ownerData.money = ownerData?.money + countryData?.money + countryData?.resourcePoint;
         playerDataBase.set(`player_${ownerData.id}`, JSON.stringify(ownerData));
     };
+
+    const countryName = countryData.name;
+
+    const isCancel = country.beforeEvents.delete.emit({
+        countryId: countryId,
+        countryName: countryName,
+        type: 'delete',
+        cancel: false
+    });
+
+    if (isCancel) return;
+
     system.runTimeout(() => {
         if (countryData?.members) {
             try {
@@ -434,10 +465,55 @@ export function DeleteCountry(countryId) {
         };
     }, 15);
     system.runTimeout(() => {
+        if (countryData?.friendly) {
+            try {
+                for (const h of countryData?.friendly ?? []) {
+                    try {
+                        RemoveFriendly(fromCountryId, h);
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            }
+        };
+    }, 16);
+    system.runTimeout(() => {
+        if (countryData?.friendlyRequestSend) {
+            try {
+                for (const a of countryData?.friendlyRequestSend ?? []) {
+                    try {
+                        const aCountry = GetAndParsePropertyData(`country_${a}`);
+                        aCountry.friendlyRequestReceive = aCountry.friendlyRequestReceive.filter(r => r != countryData.id);
+                        StringifyAndSavePropertyData(`country_${a}`, aCountry);
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            };
+        };
+    }, 17);
+    system.runTimeout(() => {
+        if (countryData?.friendlyRequestReceive) {
+            try {
+                for (const a of countryData?.friendlyRequestReceive ?? []) {
+                    try {
+                        const aCountry = GetAndParsePropertyData(`country_${a}`);
+                        if (aCountry) {
+                            aCountry.friendlyRequestSend = aCountry.friendlyRequestSend.filter(r => r != countryData.id);
+                            StringifyAndSavePropertyData(`country_${a}`, aCountry);
+                        };
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            };
+        };
+    }, 18);
+    system.runTimeout(() => {
         world.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `deleted.country`, with: [`${countryData?.name}`] }] });
         //ここら辺に国際組織から抜ける処理を追加しておく
         countryDataBase.delete(`country_${countryId}`);
-    }, 16);
+    }, 19);
     system.runTimeout(() => {
         const players = world.getPlayers();
         for (const p of players) {
@@ -446,6 +522,14 @@ export function DeleteCountry(countryId) {
             };
         };
     }, 20);
+
+    system.runTimeout(() => {
+        country.afterEvents.delete.emit({
+            countryId: countryId,
+            countryName: countryName,
+            type: 'delete'
+        });
+    }, 21);
 }
 
 /**
@@ -560,6 +644,24 @@ export function RemoveHostility(mainCountryId, countryId) {
     try {
         CountryData.hostility = CountryData.hostility.filter(id => id != Number(mainCountryId));
         MainCountryData.hostility = MainCountryData.hostility.filter(id => id != Number(countryId));
+        StringifyAndSavePropertyData(`country_${countryId}`, CountryData);
+        StringifyAndSavePropertyData(`country_${mainCountryId}`, MainCountryData);
+    } catch (error) {
+        console.warn(error);
+    };
+};
+
+/**完成
+ * 友好を解除
+ * @param {string} mainCountryId 
+ * @param {string} countryId 
+ */
+export function RemoveFriendly(mainCountryId, countryId) {
+    const CountryData = GetAndParsePropertyData(`country_${countryId}`);
+    const MainCountryData = GetAndParsePropertyData(`country_${mainCountryId}`);
+    try {
+        CountryData.friendly = CountryData.friendly.filter(id => id != Number(mainCountryId));
+        MainCountryData.friendly = MainCountryData.friendly.filter(id => id != Number(countryId));
         StringifyAndSavePropertyData(`country_${countryId}`, CountryData);
         StringifyAndSavePropertyData(`country_${mainCountryId}`, MainCountryData);
     } catch (error) {
@@ -927,6 +1029,15 @@ export function AddHostilityByPlayer(player, countryId) {
     playerCountryData.allianceRequestReceive = playerCountryData.allianceRequestReceive.filter(r => r != Number(countryId));
     countryData.alliance = countryData.alliance.filter(r => r != playerData.country);
     playerCountryData.alliance = playerCountryData.alliance.filter(r => r != Number(countryId));
+
+    countryData.friendlyRequestReceive = countryData.friendlyRequestReceive.filter(r => r != playerData.country);
+    countryData.friendlyRequestSend = countryData.friendlyRequestSend.filter(r => r != playerData.country);
+    playerCountryData.friendlyRequestSend = playerCountryData.friendlyRequestSend.filter(r => r != Number(countryId));
+    playerCountryData.friendlyRequestReceive = playerCountryData.friendlyRequestReceive.filter(r => r != Number(countryId));
+    countryData.friendly = countryData.friendly.filter(r => r != playerData.country);
+    playerCountryData.friendly = playerCountryData.friendly.filter(r => r != Number(countryId));
+
+
     countryData.applicationPeaceRequestReceive = countryData.applicationPeaceRequestReceive.filter(r => r != playerData.country);
     playerCountryData.applicationPeaceRequestSend = playerCountryData.applicationPeaceRequestSend.filter(r => r != Number(countryId));
     countryData.hostility.push(playerData.country);
@@ -935,6 +1046,74 @@ export function AddHostilityByPlayer(player, countryId) {
     StringifyAndSavePropertyData(`country_${countryId}`, countryData);
     player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `add.hostility.request`, with: [`${countryData.name}`] }] })
 };
+
+/**
+ * 友好申請送信
+ * @param {Player} player 
+ * @param {number} countryId 
+ */
+export function sendFriendlyRequest(player, countryId) {
+    const playerData = GetAndParsePropertyData(`player_${player.id}`);
+    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`);
+    const countryData = GetAndParsePropertyData(`country_${countryId}`);
+    countryData.friendlyRequestReceive = countryData.friendlyRequestReceive.filter(r => r != playerData.country).concat(playerData.country);
+    playerCountryData.friendlyRequestSend = playerCountryData.friendlyRequestSend.filter(r => r != Number(countryId)).concat(Number(countryId));
+    StringifyAndSavePropertyData(`country_${playerData.country}`, playerCountryData);
+    StringifyAndSavePropertyData(`country_${countryId}`, countryData);
+    player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `sent.friendly.request`, with: [`${countryData.name}`] }] })
+};
+
+/**
+ * 友好申請キャンセル
+ * @param {Player} player 
+ * @param {number} countryId 
+ */
+export function cancelFriendlyRequest(player, countryId) {
+    const playerData = GetAndParsePropertyData(`player_${player.id}`);
+    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`);
+    const countryData = GetAndParsePropertyData(`country_${countryId}`);
+    countryData.friendlyRequestReceive = countryData.friendlyRequestReceive.filter(r => r != playerData.country).concat(playerData.country);
+    playerCountryData.friendlyRequestSend = playerCountryData.friendlyRequestSend.filter(r => r != Number(countryId)).concat(Number(countryId));
+    StringifyAndSavePropertyData(`country_${playerData.country}`, playerCountryData);
+    StringifyAndSavePropertyData(`country_${countryId}`, countryData);
+    player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `cancel.friendly.request`, with: [`${countryData.name}`] }] })
+};
+
+/**
+ * 友好追加
+ * @param {Player} player 
+ * @param {number} countryId 
+ */
+export function acceptFriendly(player, countryId) {
+    const playerData = GetAndParsePropertyData(`player_${player.id}`);
+    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`);
+    const countryData = GetAndParsePropertyData(`country_${countryId}`);
+    countryData.friendlyRequestReceive = countryData.friendlyRequestReceive.filter(r => r != playerData.country);
+    playerCountryData.friendlyRequestSend = playerCountryData.friendlyRequestSend.filter(r => r != Number(countryId));
+    playerCountryData.friendlyRequestReceive = playerCountryData.friendlyRequestReceive.filter(r => r != Number(countryId));
+    countryData.friendly.push(playerData.country);
+    playerCountryData.friendly.push(Number(countryId));
+    StringifyAndSavePropertyData(`country_${playerData.country}`, playerCountryData);
+    StringifyAndSavePropertyData(`country_${countryId}`, countryData);
+    player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.friendly.request`, with: [`${countryData.name}`] }] })
+};
+
+/**
+ * 同盟申請を拒否
+ * @param {Player} player 
+ * @param {number} countryId 
+ */
+export function denyFriendlyRequest(player, countryId) {
+    const playerData = GetAndParsePropertyData(`player_${player.id}`);
+    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`);
+    const countryData = GetAndParsePropertyData(`country_${countryId}`);
+    countryData.friendlyRequestSend = countryData.friendlyRequestSend.filter(r => r != playerData.country);
+    playerCountryData.friendlyRequestReceive = playerCountryData.friendlyRequestReceive.filter(r => r != Number(countryId));
+    StringifyAndSavePropertyData(`country_${playerData.country}`, playerCountryData);
+    StringifyAndSavePropertyData(`country_${countryId}`, countryData);
+    player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `deny.friendly.request`, with: [`${countryData.name}`] }] })
+};
+
 
 /**
  * プロットグループの作成
@@ -1052,12 +1231,18 @@ export function createPlotToGroup(player, group, chunkId) {
  * 国をマージ
  * @param {string} fromCountryId 
  * @param {string} toCountryId 
+ * @param {Player} player
  */
-export function MergeCountry(fromCountryId, toCountryId) {
+export function MergeCountry(fromCountryId, toCountryId, player) {
     const countryData = GetAndParsePropertyData(`country_${fromCountryId}`);
     const toCountryData = GetAndParsePropertyData(`country_${toCountryId}`);
     if (!countryData) return;
     if (!toCountryData) return;
+    const limit = config.chunkLimit || 3200;
+    if ((countryData?.territories.length + toCountryData?.territories.length) >= limit) {
+        player.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+        return;
+    };
     toCountryData.money += (countryData?.money ?? 0) + (countryData?.resourcePoint ?? 0);
     toCountryData.members = toCountryData.members.concat(countryData.members);
     toCountryData.territories = toCountryData.territories.concat(countryData.territories);
@@ -1290,10 +1475,55 @@ export function MergeCountry(fromCountryId, toCountryId) {
         };
     }, 15);
     system.runTimeout(() => {
+        if (countryData?.friendly) {
+            try {
+                for (const h of countryData?.friendly ?? []) {
+                    try {
+                        RemoveFriendly(fromCountryId, h);
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            }
+        };
+    }, 16);
+    system.runTimeout(() => {
+        if (countryData?.friendlyRequestSend) {
+            try {
+                for (const a of countryData?.friendlyRequestSend ?? []) {
+                    try {
+                        const aCountry = GetAndParsePropertyData(`country_${a}`);
+                        aCountry.friendlyRequestReceive = aCountry.friendlyRequestReceive.filter(r => r != countryData.id);
+                        StringifyAndSavePropertyData(`country_${a}`, aCountry);
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            };
+        };
+    }, 17);
+    system.runTimeout(() => {
+        if (countryData?.friendlyRequestReceive) {
+            try {
+                for (const a of countryData?.friendlyRequestReceive ?? []) {
+                    try {
+                        const aCountry = GetAndParsePropertyData(`country_${a}`);
+                        if (aCountry) {
+                            aCountry.friendlyRequestSend = aCountry.friendlyRequestSend.filter(r => r != countryData.id);
+                            StringifyAndSavePropertyData(`country_${a}`, aCountry);
+                        };
+                    } catch (error) {
+                    };
+                };
+            } catch (error) {
+            };
+        };
+    }, 18);
+    system.runTimeout(() => {
         world.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `merged.country`, with: [`${countryData?.name}`, `${toCountryData?.name}`] }] });
         //ここら辺に国際組織から抜ける処理を追加しておく
-        DyProp.setDynamicProperty(`country_${fromCountryId}`);
-    }, 16);
+        countryDataBase.delete(`country_${fromCountryId}`);
+    }, 19);
     system.runTimeout(() => {
         const players = world.getPlayers();
         for (const p of players) {
@@ -1369,7 +1599,7 @@ export function denyMergeRequest(player, countryId) {
  */
 export function acceptMergeRequest(player, countryId) {
     const playerData = GetAndParsePropertyData(`player_${player.id}`);
-    MergeCountry(countryId, playerData.country);
+    MergeCountry(countryId, playerData.country, player);
     return;
 };
 

@@ -1,6 +1,6 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "../dyp";
-import { settingCountry } from "../../lib/form";
+import { callSettingCountryForm } from "../../forms/form";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -21,7 +21,7 @@ system.beforeEvents.startup.subscribe((event) => {
                     sender.sendMessage({ translate: `command.settingcountry.error.nobelong.country` });
                     return;
                 };
-                settingCountry(sender);
+                callSettingCountryForm(sender);
             })
         })
     )
@@ -46,7 +46,7 @@ system.beforeEvents.startup.subscribe((event) => {
                     sender.sendMessage({ translate: `command.settingcountry.error.nobelong.country` });
                     return;
                 };
-                settingCountry(sender);
+                callSettingCountryForm(sender);
             })
         })
     )

@@ -1,49 +1,37 @@
 {
-	"format_version": 2,
-	"header": {
-		"description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
-		"name": "Make Country v.1.21.90.β.1.8.1",
-		"uuid": "95738e96-76ca-47f1-8c50-8929b4bf447d",
-		"version": [
-			1,
-			8,
-			1
-		],
-		"min_engine_version": [
-			1,
-			21,
-			90
-		]
-	},
-	"modules": [
-		{
-			"description": "",
-			"type": "script",
-			"entry": "scripts/index.js",
-			"uuid": "10c44dcf-7f48-4040-9c50-8923464d74bc",
-			"version": [
-				1,
-				8,
-				1
-			]
-		}
-	],
-	"dependencies": [
-		{
-			"module_name": "@minecraft/server",
-			"version": "2.2.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-ui",
-			"version": "2.1.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-gametest",
-			"version": "1.0.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-admin",
-			"version": "1.0.0-beta"
-		}
-	]
+    "format_version": 2,
+    "header": {
+        "name": "MakeCountryBehavior v.1.21.110 β.2.0.0",
+        "description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
+        "version": [ 1, 9, 2 ],
+        "uuid": "95c0d251-d1a0-47a0-a98c-3ae9cde9fc90",
+        "min_engine_version": [ 1, 21, 90 ]
+    },
+    "modules": [
+        {
+            "type": "script",
+            "version": [ 1, 9, 2 ],
+            "uuid": "87f4e847-5604-4edb-b852-d48f14f4ac3c",
+            "language": "javascript",
+            "entry": "scripts/index.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "2.3.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-ui",
+            "version": "2.1.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-gametest",
+            "version": "1.0.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-admin",
+            "version": "1.0.0-beta"
+        }
+    ]
 }

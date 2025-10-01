@@ -34,7 +34,7 @@ import "./api/command";
 
 import "./lib/smartphone";
 
-const version = "ver.1.21.90.β.1.8.1"
+const version = "ver.1.21.110.β.2.0.0"
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: `world.message.addon`, with: [version] });
@@ -53,7 +53,3 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 });
 
 import "./plugin_config";
-
-system.beforeEvents.watchdogTerminate.subscribe((ev) => {
-    ev.cancel = true;
-})

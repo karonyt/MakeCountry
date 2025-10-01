@@ -1,0 +1,19 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:steamed_bread"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "melon_bread"
+            },
+            "minecraft:use_duration": 2,
+            "minecraft:food": {
+                "nutrition": 3,
+                "can_always_eat": true
+            },
+            "minecraft:use_animation": "eat"
+        }
+    }
+}

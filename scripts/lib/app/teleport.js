@@ -36,7 +36,25 @@ function findPlayerByName(name) {
  * @param {Player} player
  */
 export function TeleportApp(player) {
-
+    if (!config.tpaValidity) {
+        player.sendMessage({ translate: `command.error.tpa.novalidity` });
+        return;
+    };
+    if (player.hasTag(`mc_notp`)) {
+        return;
+    };
+    if (config.combatTagNoTeleportValidity) {
+        if (player.hasTag(`mc_combat`)) {
+            player.sendMessage({ translate: `teleport.error.combattag` });
+            return;
+        };
+    };
+    if (config.invaderNoTeleportValidity) {
+        if (player.getTags().find(tag => tag.startsWith(`war`))) {
+            player.sendMessage({ translate: `teleport.error.invader` });
+            return;
+        };
+    };
     const form = new ActionFormData()
         .title({ translate: `form.title.teleport` })
         .button({ translate: `form.teleport.button.send` })
@@ -135,7 +153,26 @@ function showRequestAcceptMenu(sender) {
             default: {
                 const playerName = requests[rs.selection - 1];
                 if (teleportRequests.get(sender.name).includes(playerName)) {
-                    findPlayerByName(playerName)?.teleport(sender.location, { dimension: sender.dimension });
+                    const player = findPlayerByName(playerName);
+                    if (!player) return;
+                    if (config.combatTagNoTeleportValidity && player.hasTag("mc_combat")) {
+                        player.sendMessage({ translate: "teleport.error.combattag" });
+                        return;
+                    }
+                    if (config.invaderNoTeleportValidity && player.getTags().find(tag => tag.startsWith("war"))) {
+                        player.sendMessage({ translate: "teleport.error.invader" });
+                        return;
+                    }
+                    if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
+                        sender.sendMessage({ translate: "teleport.error.combattag" });
+                        return;
+                    }
+                    if (config.invaderNoTeleportValidity && sender.getTags().find(tag => tag.startsWith("war"))) {
+                        sender.sendMessage({ translate: "teleport.error.invader" });
+                        return;
+                    }
+
+                    player.teleport(sender.location, { dimension: sender.dimension });
 
                     sender.sendMessage({ translate: `accept.request.message` });
 

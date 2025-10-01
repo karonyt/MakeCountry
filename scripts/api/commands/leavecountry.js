@@ -6,7 +6,7 @@ import { GetAndParsePropertyData } from "../../lib/util";
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
-            name: 'makecountry:leavecoutry',
+            name: 'makecountry:leavecountry',
             description: '国から抜けます',
             permissionLevel: CommandPermissionLevel.Any
         },

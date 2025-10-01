@@ -112,7 +112,7 @@ const checkOnlyRole = [
 
 /**
  * 権限確認
- * @param {Player} player 
+ * @param {Player|string} player 
  * @param {string} permission 
  * @returns {boolean}
  */
@@ -125,15 +125,28 @@ const checkOnlyRole = [
 //自分の国 → ロールに権限があれば許可 → なければキャンセル but ownerやadminの権限あれば許可
 //他国 → それぞれの国の権限があれば許可 → なければキャンセル
 export function CheckPermission(player, permission) {
+    let playerId = '';
+    if (player instanceof Player) {
+        playerId = player.id;
+    } else if (typeof player == 'string') {
+        playerId = player;
+    } else {
+        return true;
+    };
     //AdminMode 許可
-    if (player.hasTag(`adminmode`)) return false;
-    const playerData = GetAndParsePropertyData(`player_${player.id}`);
-    let chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(player));
+    if (player instanceof Player) {
+        if (player.hasTag(`adminmode`)) return false;
+    };
+    const playerData = GetAndParsePropertyData(`player_${playerId}`);
+    let chunkData
+    if (player instanceof Player) {
+        chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(player))
+    };
 
     //ロールのみチェックすれば良い権限の場合 → チェックしてキャンセル or 許可
     if (checkOnlyRole.includes(permission)) {
         const countryData = GetAndParsePropertyData(`country_${playerData?.country}`);
-        if (countryData.owner === player.id) return false;
+        if (countryData.owner === playerId) return false;
         const roleIds = playerData.roles;
         for (let i = 0; i < roleIds.length; i++) {
             const role = GetAndParsePropertyData(`role_${roleIds[i]}`);
@@ -293,6 +306,10 @@ export function CheckPermission(player, permission) {
             if (countryData.hostilityPermission.includes(permission)) return false;
             return true;
         };
+        if (countryData.friendly.includes(playerData.country)) {
+            if (countryData.friendlyPermission.includes(permission)) return false;
+            return true;
+        };
         if (countryData.neutralityPermission.includes(permission)) return false;
         return true;
     };
@@ -356,7 +373,7 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
                 if (playerCountryData?.owner === playerData?.id) return false;
                 for (const role of playerData.roles) {
                     const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                    if (perms.includes(`admin`) || perms.includes(`owner`)) {
+                    if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
                         return false;
                     };
                 };
@@ -380,7 +397,7 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
                     const perms = GetAndParsePropertyData(`role_${role}`).permissions;
                     if (perms.includes(permission)) {
                         return false;
-                    } else if (perms.includes(`admin`) || perms.includes(`owner`)) {
+                    } else if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
                         return false;
                     };
                 };
@@ -390,7 +407,7 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
                     if (playerCountryData?.owner === playerData?.id) return false;
                     for (const role of playerData.roles) {
                         const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                        if (perms.includes(`admin`) || perms.includes(`owner`)) {
+                        if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
                             return false;
                         };
                     };
@@ -419,7 +436,7 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
             if (playerCountryData?.owner === playerData?.id) return false;
             for (const role of playerData.roles) {
                 const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                if (perms.includes(`admin`) || perms.includes(`owner`)) {
+                if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
                     return false;
                 };
             };
@@ -439,7 +456,7 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
                 const perms = GetAndParsePropertyData(`role_${role}`)?.permissions ?? [];
                 if (perms.includes(permission)) {
                     return false;
-                } else if (perms.includes(`admin`) || perms.includes(`owner`)) {
+                } else if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
                     return false;
                 };
             };
@@ -449,13 +466,19 @@ export function CheckPermissionFromLocation(player, x, z, dimensionId, permissio
             if (countryData?.alliance.includes(playerData.country)) {
                 if (countryData.alliancePermission.includes(permission)) return false;
                 return true;
-            };    
+            };
         }
-        if(countryData?.hostility) {
+        if (countryData?.hostility) {
             if (countryData?.hostility.includes(playerData.country)) {
                 if (countryData.hostilityPermission.includes(permission)) return false;
                 return true;
-            };    
+            };
+        }
+        if (countryData?.friendly) {
+            if (countryData?.friendly.includes(playerData.country)) {
+                if (countryData.friendlyPermission.includes(permission)) return false;
+                return true;
+            };
         }
         if (countryData?.neutralityPermission?.includes(permission)) return false;
         return true;
@@ -494,6 +517,11 @@ export function isDecimalNumber(value) {
     return integerRegex.test(value);
 };
 
+/**
+ * 
+ * @param {number} value 
+ * @returns {boolean}
+ */
 export function isDecimalNumberZeroOK(value) {
     if (value == 0) {
         return true;
@@ -502,6 +530,11 @@ export function isDecimalNumberZeroOK(value) {
     return integerRegex.test(value);
 };
 
+/**
+ * 
+ * @param {number} value 
+ * @returns {boolean}
+ */
 export function isNumber(value) {
     if (value == 0) {
         return true;

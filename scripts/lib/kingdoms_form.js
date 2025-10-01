@@ -1,6 +1,5 @@
 import { Player } from "@minecraft/server";
 import { ChestFormData } from "./chest-ui";
-import { settingCountry } from "./form";
 import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId, isDecimalNumber, isDecimalNumberZeroOK, StringifyAndSavePropertyData } from "./util";
 import config from "../config";
 import { ModalFormData } from "@minecraft/server-ui";
@@ -43,7 +42,6 @@ export function kingdomsSettingForm(player) {
         switch (rs.selection) {
             //戻る
             case 0: {
-                settingCountry(player);
                 break;
             };
             //パブリックホームの有効化
@@ -397,7 +395,7 @@ export function resourcePointConverter(player) {
         switch (rs.selection) {
             //国の設定
             case 18: {
-                settingCountry(player);
+                //settingCountry(player);
                 break;
             };
             //出金

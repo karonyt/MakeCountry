@@ -1,2 +1,2 @@
-import "./plugins/sample";
 import "./plugins/blacklist";
+import "./plugins/sample";

@@ -32,8 +32,11 @@ import "./commands/countrychat";
 import "./commands/plot";
 import "./commands/cr";
 import "./commands/al";
+import "./commands/fl";
+import "./commands/friendlychat";
 
-//import "./commands/spawn";
+import "./commands/itemid";
+import "./commands/spawn";
 
 import "./commands/taxtime";
 import "./commands/deletecountry";

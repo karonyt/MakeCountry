@@ -14,7 +14,7 @@ system.beforeEvents.startup.subscribe((event) => {
             system.runTimeout(() => {
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
-                transferPlayer(sender, { hostname: "karoearth.xyz", port: 19132 })
+                transferPlayer(sender, { hostname: "play.karon.jp", port: 19132 })
             })
         })
     )
@@ -31,7 +31,7 @@ system.beforeEvents.startup.subscribe((event) => {
             system.runTimeout(() => {
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
-                transferPlayer(sender, { hostname: "karoearth.xyz", port: 19132 })
+                transferPlayer(sender, { hostname: "play.karon.jp", port: 19132 })
             })
         })
     )

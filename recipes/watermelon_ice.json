@@ -1,0 +1,33 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:watermelon_ice_recipe"
+        },
+        "tags": [
+            "shaved_ice_machine"
+        ],
+        "pattern": [
+            "&#-",
+            " + "
+        ],
+        "key": {
+            "+": {
+                "item": "minecraft:stick"
+            },
+            "#": {
+                "item": "minecraft:melon_slice"
+            },
+            "&": {
+                "item": "minecraft:sugar"
+            },
+            "-": {
+                "item": "minecraft:snowball"
+            }
+        },
+        "result": {
+            "item": "mc:watermelon_ice",
+            "count": 2
+        }
+    }
+}
