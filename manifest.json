@@ -1,50 +1,59 @@
 {
-	"format_version": 2,
-	"header": {
-		"name": "MakeCountryBehavior v.1.21.110.β.2.0.0",
-		"description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
-		"version": [
-			2,
-			0,
-			0
-		],
-		"uuid": "95c0d251-d1a0-47a0-a98c-3ae9cde9fc90",
-		"min_engine_version": [
-			1,
-			21,
-			110
-		]
-	},
-	"modules": [
-		{
-			"type": "script",
-			"description": "",
-			"version": [
-				2,
-				0,
-				0
-			],
-			"uuid": "87f4e847-5604-4edb-b852-d48f14f4ac3c",
-			"language": "javascript",
-			"entry": "scripts/index.js"
-		}
-	],
-	"dependencies": [
-		{
-			"module_name": "@minecraft/server",
-			"version": "2.3.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-ui",
-			"version": "2.1.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-gametest",
-			"version": "1.0.0-beta"
-		},
-		{
-			"module_name": "@minecraft/server-admin",
-			"version": "1.0.0-beta"
-		}
-	]
+    "format_version": 2,
+    "header": {
+        "name": "MakeCountryBehavior v.1.21.110 β.2.0.0",
+        "description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
+        "version": [
+            1,
+            9,
+            2
+        ],
+        "uuid": "95c0d251-d1a0-47a0-a98c-3ae9cde9fc90",
+        "min_engine_version": [
+            1,
+            21,
+            90
+        ]
+    },
+    "modules": [
+        {
+            "version": [
+                1,
+                9,
+                2
+            ],
+            "type": "data",
+            "uuid": "91a60c53-392b-4007-859a-a1e087a62d1a",
+            "description": "data module"
+        },
+        {
+            "type": "script",
+            "version": [
+                1,
+                9,
+                2
+            ],
+            "uuid": "87f4e847-5604-4edb-b852-d48f14f4ac3c",
+            "language": "javascript",
+            "entry": "scripts/index.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "2.3.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-ui",
+            "version": "2.1.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-gametest",
+            "version": "1.0.0-beta"
+        },
+        {
+            "module_name": "@minecraft/server-admin",
+            "version": "1.0.0-beta"
+        }
+    ]
 }
