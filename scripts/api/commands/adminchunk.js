@@ -1,7 +1,7 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
-import { DynamicProperties } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/api/dyp";
-import { GetAndParsePropertyData, isNumber, StringifyAndSavePropertyData } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/lib/util";
-import { GenerateChunkData } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/lib/land";
+import { DynamicProperties } from "../../api/dyp";
+import { GetAndParsePropertyData, isNumber, StringifyAndSavePropertyData } from "../../lib/util";
+import { GenerateChunkData } from "../../lib/land";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
