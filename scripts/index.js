@@ -34,7 +34,7 @@ import "./api/command";
 
 import "./lib/smartphone";
 
-const version = "ver.1.21.110.β.2.0.0"
+const version = "ver.1.21.110.β.2.0.1"
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: `world.message.addon`, with: [version] });
