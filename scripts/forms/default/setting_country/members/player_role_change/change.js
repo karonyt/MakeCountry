@@ -2,7 +2,7 @@ import { Player } from "@minecraft/server";
 import { CountryManager } from "../../../../../api/country/country";
 import { DynamicProperties } from "../../../../../api/dyp";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-import { memberSelectedShowDefaultForm } from "../member_selected_show";
+import { memberSelectedShowDefaultForm } from "../member_show";
 /**@typedef {import("../../../../../jsdoc/country").CountryData} CountryData*/
 /**@typedef {import("../../../../../jsdoc/player").PlayerData} PlayerData*/
 

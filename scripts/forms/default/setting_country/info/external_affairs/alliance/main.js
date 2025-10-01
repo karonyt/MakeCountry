@@ -1,19 +1,20 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
-import { externalAffairsMainDefaultForm } from "../main";
 import { CheckPermission } from "../../../../../../lib/util";
-import { setHostilityPermissionDefaultForm } from "./set_hostility_permission";
-import { HostilityListDefaultForm } from "./list/hostility_list";
+import { externalAffairsMainDefaultForm } from "../main";
+import { setAlliancePermissionDefaultForm } from "./set_permission";
+import { AllianceListDefaultForm } from "./list/alliance_list";
+/** */
 
 /**
- * 敵対国メインフォーム
+ * 同盟国メインフォーム
  * @param {Player} player 
  */
-export function HostilityMainDefaultForm(player) {
+export function AllianceMainDefaultForm(player) {
     const form = new ActionFormData();
-    form.title({ translate: `form.hostility.main.title` });
-    form.button({ translate: `hostility.permission.edit` });
-    form.button({ translate: `form.hostility.list.title` });
+    form.title({ translate: `form.alliance.main.title` });
+    form.button({ translate: `alliance.permission.edit` });
+    form.button({ translate: `form.alliance.list.title` });
     form.show(player).then((rs) => {
         if (rs.canceled) {
             externalAffairsMainDefaultForm(player);
@@ -21,17 +22,19 @@ export function HostilityMainDefaultForm(player) {
         };
         switch (rs.selection) {
             case 0: {
-                if (!CheckPermission(player, `hostilityAdmin`)) {
-                    setHostilityPermissionDefaultForm(player);
+                if (!CheckPermission(player, `allyAdmin`)) {
+                    setAlliancePermissionDefaultForm(player);
                     return;
                 } else {
                     player.sendMessage({ translate: `no.permission` });
                 };
                 break;
             };
+            //1 一覧フォーム
             case 1: {
-                if (!CheckPermission(player, `hostilityAdmin`)) {
-                    HostilityListDefaultForm(player);
+                if (!CheckPermission(player, `allyAdmin`)) {
+                    //form
+                    AllianceListDefaultForm(player);
                     return;
                 } else {
                     player.sendMessage({ translate: `no.permission` });

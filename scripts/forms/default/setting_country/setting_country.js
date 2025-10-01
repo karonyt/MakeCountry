@@ -3,7 +3,7 @@ import { CheckPermission } from "../../../lib/util";
 import { Player, system } from "@minecraft/server";
 import { treasuryMainDefaultForm } from "./treasury/treasury_main";
 import { inviteMainDefaultForm } from "./invite/main";
-import { settingCountryMembersDefaultForm } from "./members/setting_country_members";
+import { settingCountryMembersDefaultForm } from "./members/setting_members";
 import { settingCountryRoleDefaultForm } from "./role/setting_country_role";
 import { settingCountryPlotGroupDefaultForm } from "./plot_group/setting_country_plot_group";
 import { settingCountryInfoDefaultForm } from "./info/info";

@@ -3,7 +3,7 @@ import { landPermissions } from "../../../../../data/permission";
 import { DynamicProperties } from "../../../../../api/dyp";
 import { CountryManager } from "../../../../../api/country/country";
 import { ModalFormData } from "@minecraft/server-ui";
-import { externalAffairsMainDefaultForm } from "./external_affairs_main";
+import { externalAffairsMainDefaultForm } from "./main";
 /**@typedef {import("../info").PlayerData} PlayerData */
 
 /**

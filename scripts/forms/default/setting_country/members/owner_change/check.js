@@ -1,7 +1,7 @@
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "../../../../../api/dyp";
 import { ActionFormData } from "@minecraft/server-ui";
-import { memberSelectedShowDefaultForm } from "../member_selected_show";
+import { memberSelectedShowDefaultForm } from "../member_show";
 import { CountryManager } from "../../../../../api/country/country";
 /**@typedef {import("../../../../../jsdoc/player").PlayerData} PlayerData*/
 /**@typedef {import("../../../../../jsdoc/country").CountryData} CountryData*/

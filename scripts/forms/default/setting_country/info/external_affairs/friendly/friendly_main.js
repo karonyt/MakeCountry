@@ -1,9 +1,9 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "../../../../../../lib/util";
-import { externalAffairsMainDefaultForm } from "../external_affairs_main";
+import { externalAffairsMainDefaultForm } from "../main";
 import { setFriendlyPermissionDefaultForm } from "./set_friendly_permission";
-import { FriendlyListDefaultForm } from "./friendly_list/friendly_list";
+import { FriendlyListDefaultForm } from "./list/friendly_list";
 /** */
 
 /**

@@ -1,8 +1,8 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
-import { memberSelectedShowDefaultForm } from "../member_selected_show";
+import { memberSelectedShowDefaultForm } from "../member_show";
 import { CountryManager } from "../../../../../api/country/country";
-import { settingCountryMembersDefaultForm } from "../setting_country_members";
+import { settingCountryMembersDefaultForm } from "../setting_members";
 /**@typedef {import("../../../../../jsdoc/country").CountryData} CountryData*/
 /**@typedef {import("../../../../../jsdoc/player").PlayerData} PlayerData*/
 
