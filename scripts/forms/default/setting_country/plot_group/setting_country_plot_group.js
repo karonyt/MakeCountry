@@ -5,8 +5,8 @@ import { DynamicProperties } from "../../../../api/dyp";
 import { CountryManager } from "../../../../api/country/country";
 import { settingCountryDefaultForm } from "../setting_country";
 import { PlotGroupManager } from "../../../../api/country/plotgroup";
-import { CreatePlotGroupDefaultForm } from "./create_plot_group/create_plot_group";
-import { plotGroupEditMainPlotAdminDefaultForm } from "./plot_group_edit/plot_group_edit_main_plot_admin";
+import { CreatePlotGroupDefaultForm } from "./create/create_plot_group";
+import { plotGroupEditMainPlotAdminDefaultForm } from "./edit/edit_main__admin";
 /**@typedef {import("../../../../jsdoc/player").PlayerData} PlayerData*/
 /**@typedef {import("../../../../jsdoc/plot").PlotGroupData} PlotGroupData*/
 

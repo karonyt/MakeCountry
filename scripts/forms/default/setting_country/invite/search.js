@@ -1,6 +1,6 @@
 import { Player } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
-import { inviteMainDefaultForm } from "./invite_main";
+import { inviteMainDefaultForm } from "./main";
 /**@typedef {import("../../../../jsdoc/player").PlayerData} PlayerData */
 
 /**

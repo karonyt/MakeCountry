@@ -4,9 +4,9 @@ import { settingCountryPlotGroupDefaultForm } from "../setting_country_plot_grou
 import { PlotGroupManager } from "../../../../../api/country/plotgroup";
 import { DynamicProperties } from "../../../../../api/dyp";
 import { plotGroupEditPermissionsDefaultForm } from "./permissions/permissions";
-import { plotGroupEditSettingPlotAdminDefaultForm } from "./setting/plot_group_edit_setting_plot_admin";
-import { plotGroupEditPlayersListDefaultForm } from "./players_list/players_list";
-import { plotGroupEditCountriesListDefaultForm } from "./countries_list/countries_list";
+import { plotGroupEditSettingPlotAdminDefaultForm } from "./setting/edit_setting";
+import { plotGroupEditPlayersListDefaultForm } from "./pl/players_list";
+import { plotGroupEditCountriesListDefaultForm } from "./cl/countries_list";
 import { plotGroupEditRolesListDefaultForm } from "./roles_list/roles_list";
 import { plotGroupOwnerShowDefaultForm } from "./owner/owner";
 /**@typedef {import("../../../../../jsdoc/plot").PlotGroupData} PlotGroupData*/

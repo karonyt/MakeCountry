@@ -1,11 +1,11 @@
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "../../../../../../api/dyp";
-import { plotGroupEditMainPlotAdminDefaultForm } from "../plot_group_edit_main_plot_admin";
+import { plotGroupEditMainPlotAdminDefaultForm } from "../edit_main__admin";
 import { ActionFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "../../../../../../api/country/plotgroup";
-import { playerAddPlotGroupDefaultForm } from "./add/player_add_plot_group";
+import { playerAddPlotGroupDefaultForm } from "./add/player_add";
 import { plotGroupPlayerSelectedShowDefaultForm } from "./show/plot_group_player_selected_show";
-import { plotGroupEditMainPlotOwnerDefaultForm } from "../plot_group_edit_main_form_plot_owner";
+import { plotGroupEditMainPlotOwnerDefaultForm } from "../edit_main_owner";
 /**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData*/
 
 /**

@@ -3,7 +3,7 @@ import { DynamicProperties } from "../../../../../../../../api/dyp";
 import { ModalFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "../../../../../../../../api/country/plotgroup";
 import { landPermissions } from "../../../../../../../../data/permission";
-import { plotGroupRoleSelectedShowDefaultForm } from "../plot_group_role_selected_show";
+import { plotGroupRoleSelectedShowDefaultForm } from "../selected_show";
 /**@typedef {import("../../../../../../../../jsdoc/player").PlayerData} PlayerData*/
 /**@typedef {import("../../../../../../../../jsdoc/country").CountryData} CountryData*/
 /**@typedef {import("../../../../../../../../jsdoc/role").RoleData} RoleData*/

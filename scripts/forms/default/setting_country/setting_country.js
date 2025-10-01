@@ -2,7 +2,7 @@ import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
 import { CheckPermission } from "../../../lib/util";
 import { Player, system } from "@minecraft/server";
 import { treasuryMainDefaultForm } from "./treasury/treasury_main";
-import { inviteMainDefaultForm } from "./invite/invite_main";
+import { inviteMainDefaultForm } from "./invite/main";
 import { settingCountryMembersDefaultForm } from "./members/setting_country_members";
 import { settingCountryRoleDefaultForm } from "./role/setting_country_role";
 import { settingCountryPlotGroupDefaultForm } from "./plot_group/setting_country_plot_group";

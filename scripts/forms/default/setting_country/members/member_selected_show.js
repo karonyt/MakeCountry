@@ -4,9 +4,9 @@ import { CheckPermission } from "../../../../lib/util";
 import { settingCountryMembersDefaultForm } from "./setting_country_members";
 import { DynamicProperties } from "../../../../api/dyp";
 import { CountryManager } from "../../../../api/country/country";
-import { playerKickCheckDefaultForm } from "./player_kick/player_kick_check";
-import { playerRoleChangeDefaultForm } from "./player_role_change/player_role_change";
-import { playerOwnerChangeCheckDefaultForm } from "./player_owner_change_check/player_owner_change_check";
+import { playerKickCheckDefaultForm } from "./player_kick/check";
+import { playerRoleChangeDefaultForm } from "./player_role_change/change";
+import { playerOwnerChangeCheckDefaultForm } from "./owner_change/check";
 /**@typedef {import("../../../../jsdoc/player").PlayerData} PlayerData*/
 /**@typedef {import("../../../../jsdoc/country").CountryData} CountryData*/
 

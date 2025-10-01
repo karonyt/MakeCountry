@@ -3,7 +3,7 @@ import { ModalFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "../../../../../../api/dyp";
 import { PlotGroupManager } from "../../../../../../api/country/plotgroup";
 import config from "../../../../../../config";
-import { plotGroupEditMainPlotAdminDefaultForm } from "../plot_group_edit_main_plot_admin";
+import { plotGroupEditMainPlotAdminDefaultForm } from "../edit_main__admin";
 import { isDecimalNumberZeroOK } from "../../../../../../lib/util";
 /**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData*/
 

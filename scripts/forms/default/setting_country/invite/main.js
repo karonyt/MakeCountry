@@ -3,8 +3,8 @@ import { CheckPermission } from "../../../../lib/util";
 import { ActionFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "../../../../api/dyp";
 import { settingCountryDefaultForm } from "../setting_country";
-import { serchInviteDefaultForm } from "./serch_invite";
-import { sendInviteCheckDefaultForm } from "./send_invite_check";
+import { serchInviteDefaultForm } from "./search";
+import { sendInviteCheckDefaultForm } from "./check";
 /**@typedef {import("../../../../jsdoc/player").PlayerData} PlayerData*/
 
 /**

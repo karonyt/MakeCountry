@@ -1,5 +1,5 @@
 import { ActionFormData } from "@minecraft/server-ui";
-import { inviteMainDefaultForm } from "./invite_main";
+import { inviteMainDefaultForm } from "./main";
 import { CountryManager } from "../../../../api/country/country";
 import { DynamicProperties } from "../../../../api/dyp";
 import { Player } from "@minecraft/server";

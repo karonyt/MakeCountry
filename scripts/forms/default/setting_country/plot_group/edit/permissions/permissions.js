@@ -1,7 +1,7 @@
 import { PlotGroupManager } from "../../../../../../api/country/plotgroup";
 import { DynamicProperties } from "../../../../../../api/dyp";
 import { landPermissions } from "../../../../../../data/permission";
-import { plotGroupEditMainPlotAdminDefaultForm } from "../plot_group_edit_main_plot_admin";
+import { plotGroupEditMainPlotAdminDefaultForm } from "../edit_main__admin";
 
 /**
  * プロットデフォルト権限編集フォーム

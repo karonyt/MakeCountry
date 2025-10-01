@@ -1,7 +1,7 @@
 import { Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "../../../../../../api/country/plotgroup";
-import { plotGroupEditMainPlotAdminDefaultForm } from "../plot_group_edit_main_plot_admin";
+import { plotGroupEditMainPlotAdminDefaultForm } from "../edit_main__admin";
 import { DynamicProperties } from "../../../../../../api/dyp";
 /**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData*/
 
