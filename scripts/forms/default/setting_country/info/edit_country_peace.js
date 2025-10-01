@@ -3,6 +3,7 @@ import { ModalFormData } from "@minecraft/server-ui";
 import { settingCountryInfoDefaultForm } from "./info";
 import { DynamicProperties } from "../../../../api/dyp";
 import { CountryManager } from "../../../../api/country/country";
+import config from "../../../../config";
 /**@typedef {import("../../../../jsdoc/country").CountryData} CountryData */
 
 /**
