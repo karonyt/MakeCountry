@@ -1231,17 +1231,19 @@ export function createPlotToGroup(player, group, chunkId) {
  * 国をマージ
  * @param {string} fromCountryId 
  * @param {string} toCountryId 
- * @param {Player} player
+ * @param {Player|undefined} player
  */
-export function MergeCountry(fromCountryId, toCountryId, player) {
+export function MergeCountry(fromCountryId, toCountryId, player = undefined) {
     const countryData = GetAndParsePropertyData(`country_${fromCountryId}`);
     const toCountryData = GetAndParsePropertyData(`country_${toCountryId}`);
     if (!countryData) return;
     if (!toCountryData) return;
     const limit = config.chunkLimit || 3200;
-    if ((countryData?.territories.length + toCountryData?.territories.length) >= limit) {
-        player.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
-        return;
+    if (player) {
+        if ((countryData?.territories.length + toCountryData?.territories.length) >= limit) {
+            player.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+            return;
+        };
     };
     toCountryData.money += (countryData?.money ?? 0) + (countryData?.resourcePoint ?? 0);
     toCountryData.members = toCountryData.members.concat(countryData.members);

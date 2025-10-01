@@ -12,7 +12,7 @@ import { denyMergeRequestFunction, sendMergeRequestFunction } from "./lib/merge"
 import { inviteFunction } from "./lib/invite";
 import { setNewOwnerFunction } from "./lib/owner";
 import { RoleManager } from "./role";
-import { DeleteCountry } from "../../lib/land";
+import { DeleteCountry, MergeCountry } from "../../lib/land";
 /**
  * @typedef {import("../../jsdoc/player").PlayerData} PlayerData
  * @typedef {import("../../jsdoc/country").CountryData} CountryData 
@@ -658,6 +658,16 @@ export class CountryManager {
      */
     sendMergeRequest(countryId, player = undefined) {
         return sendMergeRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
+    };
+
+    /**
+     * 併合申請の受諾
+     * @param {number|string} countryId 
+     * @param {Player} player 
+     */
+    acceptMergeRequest(countryId, player = undefined) {
+        MergeCountry(this.id, countryId, player)
+        //return acceptMergeRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     };
 
     /**

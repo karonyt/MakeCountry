@@ -57,6 +57,19 @@ export function sendMergeRequestFunction(countryId, countryData, id, isVaildProp
 };
 
 /**
+ * 併合申請を受諾
+ * @param {number} countryId 
+ * @param {CountryData} countryData 
+ * @param {number} id 
+ * @param {boolean} isVaildProperty 
+ * @param {DynamicProperties} countryDataBase 
+ * @param {Player|undefined} player 
+ * @returns {boolean}
+ */
+/*export function sendMergeRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
+};*/
+
+/**
  * 併合申請を拒否
  * @param {number} countryId 
  * @param {CountryData} countryData 
@@ -95,4 +108,3 @@ export function denyMergeRequestFunction(countryId, countryData, id, isVaildProp
 
     return true;
 };
-

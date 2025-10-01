@@ -3,6 +3,7 @@ import { CountryManager } from "../../../../../../api/country/country";
 import { sendMergeRequestListDefaultForm } from "./send_req_list";
 import { DynamicProperties } from "../../../../../../api/dyp";
 import { checkSendMergeDefaultForm } from "./check";
+import { ActionFormData } from "@minecraft/server-ui";
 /**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData */
 
 /**
