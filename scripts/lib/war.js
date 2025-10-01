@@ -82,6 +82,11 @@ export async function Invade(player) {
         player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.cooltime`, with: [`${Math.ceil((cooltime - date) / 100) / 10}`] }] });
         return;
     };
+    const limit = config.chunkLimit || 3200;
+    if (playerCountryData?.territories.length >= limit) {
+        player.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+        return;
+    };
 
     // なんかきもい
     const cores = player.dimension.getEntities({ type: `mc:core` });
@@ -366,41 +371,41 @@ world.afterEvents.worldLoad.subscribe(() => {
                 const selectItem = container.getItem(player.selectedSlotIndex);
                 const equippable = player.getComponent(`equippable`);
                 const chestItem = equippable.getEquipment(EquipmentSlot.Chest);
-                if (selectItem) {
-                    const selectItemStackTypeId = selectItem.typeId;
-                    let cleared = false;
-                    if (selectItemStackTypeId != `minecraft:mace` && selectItemStackTypeId != `minecraft:trident` && selectItemStackTypeId != `minecraft:ender_pearl`) continue;
-                    for (let i = 9; i < container.size; i++) {
-                        if (!container.getItem(i)) {
-                            container.setItem(player.selectedSlotIndex);
-                            container.setItem(i, selectItem);
-                            cleared = true;
-                            break;
-                        };
-                    };
-                    if (!cleared) {
-                        container.setItem(player.selectedSlotIndex);
-                        const { x, y, z } = player.location;
-                        player.dimension.spawnItem(selectItem, { x, y: y + 5, z });
-                    };
-                };
                 if (chestItem) {
                     const equippableItemStackTypeId = chestItem.typeId;
                     let cleared = false;
-                    if (equippableItemStackTypeId != `minecraft:elytra`) continue;
-                    for (let i = 9; i < container.size; i++) {
-                        if (!container.getItem(i)) {
+                    if (equippableItemStackTypeId == `minecraft:elytra`) {
+                        for (let i = 9; i < container.size; i++) {
+                            if (!container.getItem(i) && !cleared) {
+                                equippable.setEquipment(EquipmentSlot.Chest);
+                                container.setItem(i, chestItem);
+                                cleared = true;
+                            };
+                        };
+                        if (!cleared) {
                             equippable.setEquipment(EquipmentSlot.Chest);
-                            container.setItem(i, chestItem);
-                            cleared = true;
-                            break;
+                            const { x, y, z } = player.location;
+                            player.dimension.spawnItem(chestItem, { x, y: y + 5, z });
                         };
                     };
-                    if (!cleared) {
-                        equippable.setEquipment(EquipmentSlot.Chest);
-                        const { x, y, z } = player.location;
-                        player.dimension.spawnItem(chestItem, { x, y: y + 5, z });
-                    };
+                };
+                if (selectItem) {
+                    const selectItemStackTypeId = selectItem.typeId;
+                    let cleared = false;
+                    if (selectItemStackTypeId == `minecraft:mace` || selectItemStackTypeId == `minecraft:trident` || selectItemStackTypeId == `minecraft:ender_pearl`) {
+                        for (let i = 9; i < container.size; i++) {
+                            if (!container.getItem(i) && !cleared) {
+                                container.setItem(player.selectedSlotIndex);
+                                container.setItem(i, selectItem);
+                                cleared = true;
+                            };
+                        };
+                        if (!cleared) {
+                            container.setItem(player.selectedSlotIndex);
+                            const { x, y, z } = player.location;
+                            player.dimension.spawnItem(selectItem, { x, y: y + 5, z });
+                        };
+                    }
                 };
             };
         };

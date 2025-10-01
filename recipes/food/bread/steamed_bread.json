@@ -1,0 +1,35 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:steamed_bread"
+        },
+        "tags": [
+            "steamer"
+        ],
+        "pattern": [
+            "&+#",
+            "-"
+        ],
+        "key": {
+            "+": {
+                "item": "mc:bread_material"
+            },
+            "&": {
+                "item": "minecraft:egg"
+            },
+            "#": {
+                "item": "minecraft:sugar"
+            },
+            "-": {
+                "item": "minecraft:potion"
+            }
+        },
+        "result": [
+            {
+                "item": "mc:steamed_bread",
+                "count": 1
+            }
+        ]
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:watermelon_ice"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "watermelon_ice"
+            },
+            "minecraft:use_duration": 2,
+            "minecraft:food": {
+                "nutrition": 1,
+                "can_always_eat": true
+            },
+            "minecraft:use_animation": "eat"
+        }
+    }
+}

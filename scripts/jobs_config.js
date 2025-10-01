@@ -2,7 +2,7 @@ export default {
     //jobsを有効化するか
     validity: true,
 
-    maxEmploymentNum: 3, //同時に就ける職業の最大数
+    maxEmploymentNum: 4, //同時に就ける職業の最大数
 
     showRewardMessage: true, //メッセージをアクションバーに表示するか
 
@@ -10,19 +10,14 @@ export default {
     jobsXp: 0.98,
 
     //職業レベルの最大値
-    jobsLevelMax: 200,
+    jobsLevelMax: 300,
 
     //職業一覧
     jobsList: [
-        //狩人
-        {
-            id: `hunter`, //職業ID(就いてるときに mcjobs_ID のtagが付く)
-            name: `hunter`, //formに表示する職業名(翻訳キー(lang)も可能)
-        },
         //農家
         {
-            id: `farmer`,
-            name: `farmer`,
+            id: `farmer`, //職業ID(就いてるときに mcjobs_ID のtagが付く)
+            name: `farmer`, //formに表示する職業名(翻訳キー(lang)も可能)
         },
         //鉱夫
         {
@@ -87,7 +82,7 @@ export default {
     cropHarvestReward: { min: 3.7, max: 15, xp: 0.1 }, //作物収穫時にもらえる報酬の変域
     cocoaHarvestReward: { min: 3.7, max: 10, xp: 0.11 }, //ココア収穫時にもらえる報酬の変域
 
-    oreMiningReward: { min: 5, max: 20, xp: 1.2 }, //鉱石系ブロックを掘ったときにもらえる報酬の変域
+    oreMiningReward: { min: 2, max: 8, xp: 1.2 }, //鉱石系ブロックを掘ったときにもらえる報酬の変域
     stoneMiningReward: { min: 1, max: 2, xp: 0.5 }, //石系ブロックを掘ったときにもらえる報酬の変域
     normalStoneMiningReward: { min: 1, max: 2, xp: 0.45 }, //minecraft:stoneを掘ったときにもらえる報酬の変域 
 
@@ -125,7 +120,7 @@ export default {
     piglinKillReward: { min: 1, max: 2, xp: 0.98 }, //ピグリンを倒したときにもらえる報酬の変域
     piglin_bruteKillReward: { min: 1.5, max: 3.5, xp: 0.98 }, //ピグリンブルートを倒したときにもらえる報酬の変域
     striderKillReward: { min: 2, max: 3, xp: 0.98 }, //ストライダーを倒したときにもらえる報酬の変域
-    striderKillReward: { min: 2, max: 4, xp: 0.98 }, //ウィザースケルトンを倒したときにもらえる報酬の変域
+    wither_skeletonKillReward: { min: 2, max: 4, xp: 0.98 }, //ウィザースケルトンを倒したときにもらえる報酬の変域
 
     allayKillReward: { min: 0.1, max: 4, xp: 0.98 }, //アレイを倒したときにもらえる報酬の変域
     beeKillReward: { min: 0.1, max: 2, xp: 0.98 }, //ハチを倒したときにもらえる報酬の変域

@@ -1,6 +1,7 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "../dyp";
 import { CheckPermissionFromLocation, GetAndParsePropertyData } from "../../lib/util";
+import config from "../../config";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -20,6 +21,14 @@ system.beforeEvents.startup.subscribe((event) => {
                 const rawData = playerDataBase.get(`player_${sender.id}`);
                 const playerData = JSON.parse(rawData);
 
+                if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
+                    sender.sendMessage({ translate: "teleport.error.combattag" });
+                    return;
+                }
+                if (config.invaderNoTeleportValidity && sender.getTags().find(tag => tag.startsWith("war"))) {
+                    sender.sendMessage({ translate: "teleport.error.invader" });
+                    return;
+                }
                 if (sender.hasTag(`mc_notp`)) {
                     return;
                 };
@@ -64,6 +73,14 @@ system.beforeEvents.startup.subscribe((event) => {
                 const rawData = playerDataBase.get(`player_${sender.id}`);
                 const playerData = JSON.parse(rawData);
 
+                if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
+                    sender.sendMessage({ translate: "teleport.error.combattag" });
+                    return;
+                }
+                if (config.invaderNoTeleportValidity && sender.getTags().find(tag => tag.startsWith("war"))) {
+                    sender.sendMessage({ translate: "teleport.error.invader" });
+                    return;
+                }
                 if (sender.hasTag(`mc_notp`)) {
                     return;
                 };

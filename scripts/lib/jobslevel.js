@@ -51,6 +51,16 @@ export class JobLevel {
             this.player.onScreenDisplay.setTitle({ rawtext: [{ text: "§2" }, { translate: this.key }] });
             this.player.onScreenDisplay.updateSubtitle(`§e${level - 1}Lv --> ${level}Lv`);
             this.player.playSound(`random.levelup`);
+
+            /* if (level >= 300 && this.key === "woodcutter") {
+                if (!this.player.hasTag("mcPenNameAfter木こりスト")) {
+                    this.player.addTag("mcPenNameAfter木こりスト");
+                }
+                if (!this.player.hasTag("mcPenNameBeforeもはや木そのものな")) {
+                    this.player.addTag("mcPenNameBeforeもはや木そのものな");
+                }
+                break;
+            }*/
         }
         this.setXp(xp);
         this.setLevel(level);

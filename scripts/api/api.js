@@ -46,28 +46,38 @@ class EventManager {
  */
 export const country = {
     afterEvents: {
-        /** @type {EventManager<{countryName: string, type: 'player'|'system' player?: Player, peace?: boolean, invite?: boolean, id: number}>} */
+        /** @type {EventManager<{countryId: number, countryName: string, type: 'player'|'system' player?: Player, peace?: boolean, invite?: boolean }>} */
         create: new EventManager(),
-        /** @type {EventManager<{countryName: string, type: 'player'|'system' player?: Player, territoryCount: number }>} */
+        /** @type {EventManager<{countryId: number, countryName: string, type: 'player'|'system' player?: Player, territoryCount: number }>} */
         chunkbuy: new EventManager(),
-        /** @type {EventManager<{countryName: string,type: 'player'|'delete'|'system' ,player?: Player}>} */
+        /** @type {EventManager<{countryId: number, countryName: string,type: 'player'|'delete'|'system' ,player?: Player}>} */
         delete: new EventManager(),
-        /** @type {EventManager<{ oldName: string, type: 'player'|'system', newName: string ,player?: Player }>} */
+        /** @type {EventManager<{ countryId: number, oldName: string, type: 'player'|'system', newName: string ,player?: Player }>} */
         rename: new EventManager(),
-        /** @type {EventManager<{invaderCountryName: string,invadedCountryName: string ,invader: Player, locationString: string}>} */
+        /** @type {EventManager<{countryId: number, targetCountryId: number,invaderCountryName: string,invadedCountryName: string ,invader: Player, locationString: string}>} */
         startInvade: new EventManager(),
+        /** @type {EventManager<{countryId: number, targetCountryId: number, type: 'player'|'system', sender?: Player}>} */
+        sendMergeRequest: new EventManager(),
+        /** @type {EventManager<{countryId: number, targetPlayerId: string, type: 'player'|'system', player?: Player, isForced: boolean}>} */
+        addMember: new EventManager(),
+
+
     },
     beforeEvents: {
-        /** @type {EventManager<{countryName: string, type: 'player'|'system' player?: Player,cancel: boolean, peace?: boolean, invite?: boolean }>} */
+        /** @type {EventManager<{countryId: number, countryName: string, type: 'player'|'system' player?: Player,cancel: boolean, peace?: boolean, invite?: boolean }>} */
         create: new EventManager(),
-        /** @type {EventManager<{countryName: string, type: 'player'|'system' player?: Player,cancel: boolean, territoryCount: number }>} */
+        /** @type {EventManager<{countryId: number, countryName: string, type: 'player'|'system' player?: Player,cancel: boolean, territoryCount: number }>} */
         chunkbuy: new EventManager(),
-        /** @type {EventManager<{countryName: string,type: 'player'|'delete'|'system' ,player?: Player,cancel: boolean}>} */
+        /** @type {EventManager<{countryId: number, countryName: string,type: 'player'|'delete'|'system' ,player?: Player,cancel: boolean}>} */
         delete: new EventManager(),
-        /** @type {EventManager<{ oldName: string, type: 'player'|'system', newName: string,cancel: boolean ,player?: Player}>} */
+        /** @type {EventManager<{countryId: number, oldName: string, type: 'player'|'system', newName: string,cancel: boolean ,player?: Player}>} */
         rename: new EventManager(),
-        /** @type {EventManager<{invaderCountryName: string,invadedCountryName: string ,invader: Player, locationString: string ,cancel: boolean}>} */
+        /** @type {EventManager<{countryId: number, targetCountryId: number, invaderCountryName: string,invadedCountryName: string ,invader: Player, locationString: string ,cancel: boolean}>} */
         startInvade: new EventManager(),
+        /** @type {EventManager<{countryId: number, targetCountryId: number, type: 'player'|'system', sender?: Player, cancel: boolean}>} */
+        sendMergeRequest: new EventManager(),
+        /** @type {EventManager<{countryId: number, targetPlayerId: string, type: 'player'|'system', player?: Player, isForced: boolean, cancel: boolean}>} */
+        addMember: new EventManager(),
     }
 };
 

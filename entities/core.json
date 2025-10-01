@@ -9,13 +9,16 @@
     },
     "component_groups": {},
     "components": {
-      "minecraft:physics": {
-      },
+      "minecraft:physics": {},
       "minecraft:type_family": {
         "family": [
           "core",
           "makecountry"
         ]
+      },
+      "minecraft:tick_world": {
+        "never_despawn": true,
+        "radius": 1
       },
       "minecraft:collision_box": {
         "width": 1,

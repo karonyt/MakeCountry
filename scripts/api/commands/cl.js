@@ -1,5 +1,5 @@
 import { CommandPermissionLevel, Player, system } from "@minecraft/server";
-import { countryList } from "../../lib/form";
+import { callCountryListForm } from "../../forms/form";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -13,7 +13,7 @@ system.beforeEvents.startup.subscribe((event) => {
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
 
-                countryList(sender);
+                callCountryListForm(sender);
             })
         })
     )
@@ -28,7 +28,7 @@ system.beforeEvents.startup.subscribe((event) => {
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
 
-                countryList(sender);
+                callCountryListForm(sender);
             })
         })
     )

@@ -1186,4 +1186,7 @@ export const itemIdToPath = {
   'mc:anko': 'textures/items/materials/anko',
   'mc:adzuki_beans': 'textures/items/materials/adzuki_beans',
   'mc:straw_berry_daifuku': 'textures/items/food/wagashi/daifuku',
+  'mc:watermelon_ice': 'textures/items/food/ice/watermelon_ice',
+  'mc:steamed_bread': 'textures/items/food/bread/steamed_bread',
+  'mc:burdock': 'textures/items/burdock'
 }

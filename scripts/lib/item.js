@@ -70,13 +70,15 @@ world.afterEvents.itemCompleteUse.subscribe((ev) => {
             break;
         };
         case `mc:white_wine`: {
-            source.addEffect(`nausea`, 200, { amplifier: 20 });
+            source.addEffect(`nausea`, 400, { amplifier: 20 });
             source.addEffect(`jump_boost`, 100, { amplifier: 3 });
+            source.addEffect(`weakness`, 200, { amplifier: 3 });
             break;
         };
         case `mc:red_wine`: {
-            source.addEffect(`nausea`, 200, { amplifier: 20 });
-            source.addEffect(`speed`, 150, { amplifier: 4 });
+            source.addEffect(`nausea`, 400, { amplifier: 20 });
+            source.addEffect(`slowness`, 100, { amplifier: 1 });
+            source.addEffect(`weakness`, 200, { amplifier: 3 });
             break;
         };
         case `mc:whiskey`: {

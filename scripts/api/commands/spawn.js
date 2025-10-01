@@ -1,45 +1,49 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "../dyp";
 import { CheckPermissionFromLocation, GetAndParsePropertyData } from "../../lib/util";
+import config from "../../config";
 
 system.beforeEvents.startup.subscribe((event) => {
-    system.runTimeout(() => {
-        const countryDataBaseTop = new DynamicProperties("country");
-        const countryStr = [];
-        for (const countryKey of countryDataBaseTop.idList) {
-            const countryRawData = countryDataBaseTop.get(countryKey);
-            const countryData = JSON.parse(countryRawData);
-            countryStr.push(`${countryData.id}_${countryData.name}`);
-        }
+    //const countryDataBaseTop = new DynamicProperties("country");
+    /*const countryStr = [];
+    for (const countryKey of countryDataBaseTop.idList) {
+        const countryRawData = countryDataBaseTop.get(countryKey);
+        const countryData = JSON.parse(countryRawData);
+        countryStr.push(`${countryData.id}_${countryData.name}`);
+    }*/
 
-        event.customCommandRegistry.registerEnum("makecountry:country", countryStr);
+    //event.customCommandRegistry.registerEnum("makecountry:country", countryStr);
 
-        event.customCommandRegistry.registerCommand(
-            {
-                name: 'makecountry:spawn',
-                description: '他国のパブリックホームへスポーン',
-                permissionLevel: CommandPermissionLevel.Any,
-                mandatoryParameters: [{ name: "makecountry:country", type: CustomCommandParamType.Enum }]
-            },
-            ((origin, ...args) => {
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:spawn',
+            description: '他国のパブリックホームへスポーン',
+            permissionLevel: CommandPermissionLevel.Any,
+            mandatoryParameters: [{ name: "countryID", type: CustomCommandParamType.Integer }]
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
 
                 system.runTimeout(() => {
-                    const playerDataBase = new DynamicProperties("player");
                     const countryDataBase = new DynamicProperties("country");
 
-                    const rawData = playerDataBase.get(`player_${sender.id}`);
-                    const playerData = JSON.parse(rawData);
-
-                    const rawCountryData = countryDataBase.get(`country_${args[0].split("_")[0]}`);
+                    const rawCountryData = countryDataBase.get(`country_${args[0]}`);
+                    if (!rawCountryData) return
                     const countryData = JSON.parse(rawCountryData);
 
-                    if (sender.hasTag(`mc_notp`)) return;
-                    if (!playerData?.country) {
-                        sender.sendMessage({ translate: `command.chome.error.notjoin.country` });
+                    if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
+                        sender.sendMessage({ translate: "teleport.error.combattag" });
                         return;
                     }
+                    if (config.invaderNoTeleportValidity && sender.getTags().find(tag => tag.startsWith("war"))) {
+                        sender.sendMessage({ translate: "teleport.error.invader" });
+                        return;
+                    }
+                    if (sender.hasTag(`mc_notp`)) return;
+
                     if (!countryData?.spawn || !countryData?.publicSpawn) return;
 
                     let [x, y, z, rx, ry, dimensionId] = countryData.spawn.split(`_`);
@@ -57,7 +61,7 @@ system.beforeEvents.startup.subscribe((event) => {
                     );
                     sender.sendMessage({ translate: `command.chome.result` });
                 })
-            })
-        );
-    })
-});
+            });
+        })
+    );
+})

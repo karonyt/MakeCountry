@@ -1,5 +1,5 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
-import { playerMainMenu } from "../../lib/form";
+import { callPlayerMainMenuForm } from "../../forms/form";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -13,7 +13,7 @@ system.beforeEvents.startup.subscribe((event) => {
                 if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
                 const sender = origin.sourceEntity;
     
-                playerMainMenu(sender);    
+                callPlayerMainMenuForm(sender);    
             })
         })
     )

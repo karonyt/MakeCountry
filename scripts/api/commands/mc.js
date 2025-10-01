@@ -1,6 +1,6 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "../dyp";
-import { MakeCountryForm } from "../../lib/form";
+import { callMakeCountryForm } from "../../forms/form";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -10,18 +10,20 @@ system.beforeEvents.startup.subscribe((event) => {
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
-            if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-            const sender = origin.sourceEntity;
-            const playerDataBase = new DynamicProperties('player');
-            const rawData = playerDataBase.get(`player_${sender.id}`);
-            const playerData = JSON.parse(rawData);
+            system.runTimeout(() => {
+                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+                const sender = origin.sourceEntity;
+                const playerDataBase = new DynamicProperties('player');
+                const rawData = playerDataBase.get(`player_${sender.id}`);
+                const playerData = JSON.parse(rawData);
 
-            if (playerData?.country) {
-                sender.sendMessage({ translate: `command.makecountry.error.belong.country` });
+                if (playerData?.country) {
+                    sender.sendMessage({ translate: `command.makecountry.error.belong.country` });
+                    return;
+                };
+                callMakeCountryForm(sender);
                 return;
-            };
-            MakeCountryForm(sender);
-            return;
+            })
         })
     )
 });
@@ -45,7 +47,7 @@ system.beforeEvents.startup.subscribe((event) => {
                     sender.sendMessage({ translate: `command.makecountry.error.belong.country` });
                     return;
                 };
-                MakeCountryForm(sender);
+                callMakeCountryForm(sender);
                 return;
             })
         })

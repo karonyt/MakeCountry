@@ -8,7 +8,8 @@
             "fermentation_machine"
         ],
         "pattern": [
-            "#*+"
+            "***",
+            "*#*"
         ],
         "key": {
             "#": {
@@ -16,11 +17,7 @@
                 "data": 0
             },
             "*": {
-                "item": "minecraft:sweet_berries"
-            },
-            "+": {
-                "item": "minecraft:dye",
-                "data": 19
+                "item": "minecraft:glow_berries"
             }
         },
         "result": {

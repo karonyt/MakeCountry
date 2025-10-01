@@ -1,8 +1,9 @@
 export default {
-    //コマンドのプレフィックス
-    prefix: `?`,
+    //チャンク制限
+    chunkLimit: 3200,
+
     //プレイヤーの初期の所持金
-    initialMoney: 2000,
+    initialMoney: 0,
     //所持金をスコアボードに代入できるようにするか(オンラインのプレイヤーのみ)
     getMoneyByScoreboard: false,
     //所持金を代入するスコアボードのオブジェクト名
@@ -34,7 +35,7 @@ export default {
     //国を作るのに必要な金
     MakeCountryCost: 5000,
     //デフォルトのチャンクの値段
-    defaultChunkPrice: 1800,
+    defaultChunkPrice: 3000,
     //国際組織の設立にかかる金
     MakeInternationalOrganizationCost: 20000,
     //共通通貨の単位
@@ -123,9 +124,9 @@ export default {
     //戦争が可能な時間帯
     canInvadeDuration: {
         //期間開始時刻(24時間制)
-        startTime: { hour: 18, min: 0 },
+        startTime: { hour: 15, min: 0 },
         //期間終了時刻(24時間制)
-        endTime: { hour: 23, min: 0 }
+        endTime: { hour: 0, min: 0 }
     },
 
     //侵略者が戦争中にHomeコマンドなどのテレポート機能を使えなくするか

@@ -59,7 +59,7 @@ export class HomeManager {
         this.player.sendMessage({
             translate: "command.sethome.result", with: [
                 `${this.homes[name].x} ${this.homes[name].y} ${this.homes[name].z}(${this.homes[name].dimension.replace("minecraft:", "")})`,
-                config.prefix
+                '/'
             ]
         });
     }

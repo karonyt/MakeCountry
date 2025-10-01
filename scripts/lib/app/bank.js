@@ -1,6 +1,6 @@
 import { Player, world } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
-import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "../util";
+import { GetAndParsePropertyData, isDecimalNumber, StringifyAndSavePropertyData } from "../util";
 import { DynamicProperties } from "../../api/dyp";
 import config from "../../config";
 import { SmartPhoneHomeScreen } from "../smartphone";

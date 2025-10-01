@@ -38,8 +38,8 @@ system.beforeEvents.startup.subscribe((event) => {
                         sender.sendMessage({ translate: '§c座標が間違っています' });
                         return;
                     };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度に買えるチャンクは100チャンクまでです' });
+                    if (chunks.length > 300) {
+                        sender.sendMessage({ translate: '1度に買えるチャンクは300チャンクまでです' });
                         return;
                     };
                     let chunkPrice = config.defaultChunkPrice;
@@ -83,6 +83,11 @@ system.beforeEvents.startup.subscribe((event) => {
                                 return;
                             };
                             const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                            const limit = config.chunkLimit || 3200;
+                            if (playerCountryData?.territories.length >= limit) {
+                                sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+                                return;
+                            };
                             const eventData = {
                                 player: sender,
                                 cancel: false,
@@ -150,6 +155,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     return;
                 };
                 const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                const limit = config.chunkLimit || 3200;
+                if (playerCountryData?.territories.length >= limit) {
+                    sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+                    return;
+                };
                 const eventData = {
                     player: sender,
                     cancel: false,
@@ -211,8 +221,8 @@ system.beforeEvents.startup.subscribe((event) => {
                         sender.sendMessage({ translate: '§c座標が間違っています' });
                         return;
                     };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度に買えるチャンクは100チャンクまでです' });
+                    if (chunks.length > 300) {
+                        sender.sendMessage({ translate: '1度に買えるチャンクは300チャンクまでです' });
                         return;
                     };
                     let chunkPrice = config.defaultChunkPrice;
@@ -256,6 +266,11 @@ system.beforeEvents.startup.subscribe((event) => {
                                 return;
                             };
                             const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                            const limit = config.chunkLimit || 3200;
+                            if (playerCountryData?.territories.length >= limit) {
+                                sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+                                return;
+                            };
                             const eventData = {
                                 player: sender,
                                 cancel: false,
@@ -323,6 +338,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     return;
                 };
                 const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                const limit = config.chunkLimit || 3200;
+                if (playerCountryData?.territories.length >= limit) {
+                    sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
+                    return;
+                };
                 const eventData = {
                     player: sender,
                     cancel: false,
@@ -372,7 +392,7 @@ function getChunksInRange(x1, z1, x2, z2) {
     // 範囲内のすべてのチャンク座標を取得
     for (let cx = startX; cx <= endX; cx++) {
         for (let cz = startZ; cz <= endZ; cz++) {
-            if (chunks.length > 101) return chunks;
+            if (chunks.length > 301) return chunks;
             chunks.push({ chunkX: cx, chunkZ: cz });
         }
     }

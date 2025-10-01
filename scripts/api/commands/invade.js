@@ -2,6 +2,7 @@ import { CommandPermissionLevel, CustomCommandParamType, Player, system, world }
 import { DynamicProperties } from "../dyp";
 import { Invade } from "../../lib/war";
 import { CheckPermission } from "../../lib/util";
+import config from "../../config";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(

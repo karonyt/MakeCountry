@@ -31,7 +31,7 @@ export class DynamicProperties {
      * @param {string} value
      */
     set(key, value) {
-        setDynamicProperty(`${this.name}#${key}`, value);
+        setDynamicProperty(`${this.name}#${key}`, typeof value == 'string' ? value : JSON.stringify(value));
         if (this.idList.includes(key)) return this;
         setDynamicProperty(`${this.name}ids`, JSON.stringify([...this.idList, key]));
         return this;
