@@ -30,7 +30,6 @@ export function editCountryNameDefaultForm(player, countryData) {
         const countryDataBase = new DynamicProperties('country');
         countryDataBase.set(`country_${countryData.id}`, countryData);
         const countryManager = new CountryManager(countryData.id);
-        countryManager.reload();
         settingCountryInfoDefaultForm(player, countryManager.countryData);
         system.runTimeout(() => {
             if (config.countryNameDisplayOnPlayerNameTag) {

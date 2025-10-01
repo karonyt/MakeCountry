@@ -30,7 +30,7 @@ export function editCountryPeaceDefaultForm(player, countryData) {
             settingCountryInfoDefaultForm(player, countryData);
             return;
         };
-        const countryManager = new CountryManager(`country_${countryData.id}`);
+        const countryManager = new CountryManager(countryData.id);
         countryData = countryManager.countryData;
         countryData.peace = value;
         countryData.peaceChangeCooltime = config.peaceChangeCooltime;

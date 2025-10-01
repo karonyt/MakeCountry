@@ -16,8 +16,6 @@ import { RoleManager } from "../../../../../api/country/role";
  */
 export function selectRoleEditTypeDefaultForm(player, roleData) {
     if (!CheckPermission(player, `admin`)) {
-        const playerDataBase = new DynamicProperties('player');
-        const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
         const form = new ActionFormData();
         form.title({ translate: `form.role.edit.select.title`, with: [roleData.name] });
         form.button({ translate: `form.role.edit.select.button.name` });
