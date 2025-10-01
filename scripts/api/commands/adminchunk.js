@@ -1,6 +1,7 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
-import { DynamicProperties } from "../dyp";
-import { GetAndParsePropertyData, isNumber, StringifyAndSavePropertyData } from "../../lib/util";
+import { DynamicProperties } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/api/dyp";
+import { GetAndParsePropertyData, isNumber, StringifyAndSavePropertyData } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/lib/util";
+import { GenerateChunkData } from "../../../../../karoearth/development_behavior_packs/MakeCountry/scripts/lib/land";
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -45,7 +46,7 @@ system.beforeEvents.startup.subscribe((event) => {
                 const { x, z } = sender.location;
                 sender.sendMessage({ translate: `command.setadminchunk.result`, with: { rawtext: [{ translate: `special.name` }] } });
                 const chunk = GenerateChunkData(x, z, sender.dimension.id, undefined, undefined, 10000, true);
-                GetAndParsePropertyData(chunk.id, chunk, chunkDataBase);
+                StringifyAndSavePropertyData(chunk.id, chunk, chunkDataBase);
                 return;
             })
         })
@@ -95,7 +96,7 @@ system.beforeEvents.startup.subscribe((event) => {
                 const { x, z } = sender.location;
                 sender.sendMessage({ translate: `command.setadminchunk.result`, with: { rawtext: [{ translate: `special.name` }] } });
                 const chunk = GenerateChunkData(x, z, sender.dimension.id, undefined, undefined, 10000, true);
-                GetAndParsePropertyData(chunk.id, chunk, chunkDataBase);
+                StringifyAndSavePropertyData(chunk.id, chunk, chunkDataBase);
                 return;
             })
         })
