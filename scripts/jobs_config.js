@@ -29,6 +29,11 @@ export default {
             id: `woodcutter`,
             name: `woodcutter`,
         },
+        //狩人
+        {
+            id: `hunter`,
+            name: `hunter`,
+        },
         //漁師
         {
             id: `fisherman`,
@@ -71,7 +76,7 @@ export default {
 
     fishingReward: { min: 10, max: 20, xp: 1.2 }, //釣りでアイテムを釣ったときにもらえる報酬の変域
 
-    sanddiggerReward: { min: 0.2, max: 0.8, xp: 0.25}, //砂を掘ったときにもらえる報酬の変域
+    sanddiggerReward: { min: 0.2, max: 0.8, xp: 0.25 }, //砂を掘ったときにもらえる報酬の変域
 
     netherdiggerReward: { min: 0.07, max: 0.13, xp: 0.5 }, //ネザー系ブロックを掘ったときにもらえる報酬の変域
 
