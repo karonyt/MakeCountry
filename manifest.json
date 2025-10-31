@@ -1,16 +1,28 @@
 {
     "format_version": 2,
     "header": {
-        "name": "MakeCountryBehavior v.1.21.110 β.2.0.1",
+        "name": "MakeCountryBehavior v.1.21.120 β.2.1.0",
         "description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
-        "version": [ 2, 0, 1 ],
+        "version": [
+            2,
+            1,
+            0
+        ],
         "uuid": "95738e96-76ca-47f1-8c50-8929b4bf447d",
-        "min_engine_version": [ 1, 21, 110 ]
+        "min_engine_version": [
+            1,
+            21,
+            120
+        ]
     },
     "modules": [
         {
             "type": "script",
-            "version": [ 2, 0, 1 ],
+            "version": [
+                2,
+                0,
+                1
+            ],
             "uuid": "10c44dcf-7f48-4040-9c50-8923464d74bc",
             "language": "javascript",
             "entry": "scripts/index.js"
@@ -19,19 +31,22 @@
     "dependencies": [
         {
             "module_name": "@minecraft/server",
-            "version": "2.3.0-beta"
+            "version": "beta"
         },
         {
             "module_name": "@minecraft/server-ui",
-            "version": "2.1.0-beta"
+            "version": "beta"
         },
         {
             "module_name": "@minecraft/server-gametest",
-            "version": "1.0.0-beta"
+            "version": "beta"
         },
         {
             "module_name": "@minecraft/server-admin",
-            "version": "1.0.0-beta"
+            "version": "beta"
         }
+    ],
+    "capabilities": [
+        "script_eval"
     ]
 }
