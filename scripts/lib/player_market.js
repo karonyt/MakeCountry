@@ -295,6 +295,7 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
         const itemAmount = rs.formValues[0];
         const commonsdata = GetAndParsePropertyData(`player_market_commons`) ?? [];
         const allCommons = commonsdata;
+        const potionComponent = itemData.itemStack.getComponent("potion");
         const data = {
             id: Number(id) + 1,
             playerName: player.name,
@@ -304,7 +305,11 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
                 name: itemData.itemStack?.nameTag,
                 typeId: itemData.itemStack.typeId,
                 lore: itemData.itemStack.getLore(),
-                amount: itemAmount
+                amount: itemAmount,
+                potion: potionComponent.isValid ? {
+                    delivery: potionComponent.potionDeliveryType,
+                    effect: potionComponent.potionEffectType
+                } : undefined,
             }
         };
         const editItem = itemData.itemStack;
