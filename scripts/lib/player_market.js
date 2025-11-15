@@ -307,8 +307,9 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
                 lore: itemData.itemStack.getLore(),
                 amount: itemAmount,
                 potion: potionComponent.isValid ? {
-                    delivery: potionComponent.potionDeliveryType,
-                    effect: potionComponent.potionEffectType
+                    delivery: potionComponent.potionDeliveryType.id,
+                    effect: potionComponent.potionEffectType.id,
+                    duration: potionComponent.potionEffectType?.durationTicks
                 } : undefined,
             }
         };
