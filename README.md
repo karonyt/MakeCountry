@@ -34,10 +34,7 @@
 設定項目は100種類以上あるのでオリジナリティあふれるサーバーにできます  
 
 > 紹介動画
-  
-<div>
-<iframe width="600" height="400" src="https://www.youtube.com/embed/BynnE727OiI" ></iframe>
-</div>
+[![Audi R8](http://img.youtube.com/vi/BynnE727OiI/0.jpg)](https://www.youtube.com/watch?v=BynnE727OiI "Audi R8")
 
 > ロードマップ  
   
