@@ -33,6 +33,10 @@
 こちらのファイルで簡単に色々な設定を行えます  
 設定項目は100種類以上あるのでオリジナリティあふれるサーバーにできます  
 
+> 紹介動画
+  
+<video src="https://youtu.be/BynnE727OiI<img width="874" height="88" alt="image" src="https://github.com/user-attachments/assets/e8893cc0-d297-4e42-ab98-db988c2ae0fa" />" controls="true"></video>
+
 > ロードマップ  
   
 | Milestone                                | Complete |
