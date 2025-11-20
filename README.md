@@ -35,7 +35,7 @@
 
 > 紹介動画
   
-<video src="https://youtu.be/BynnE727OiI<img width="874" height="88" alt="image" src="https://github.com/user-attachments/assets/e8893cc0-d297-4e42-ab98-db988c2ae0fa" />" controls="true"></video>
+<video src="https://youtu.be/BynnE727OiI" controls="true"></video>
 
 > ロードマップ  
   
