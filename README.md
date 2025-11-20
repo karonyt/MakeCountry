@@ -36,7 +36,7 @@
 > 紹介動画
   
 <div>
-<iframe width="600" height="400" src="https://www.youtube.com/embed/BynnE727OiI"></iframe>
+<iframe width="600" height="400" src="https://www.youtube.com/embed/BynnE727OiI" ></iframe>
 </div>
 
 > ロードマップ  
