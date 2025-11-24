@@ -1,6 +1,7 @@
 import { Dimension, Player, system, world } from "@minecraft/server";
 import fishing_config from "../../fishing_config";
 import { DynamicProperties } from "../dyp";
+import { TimeManager } from "../time/time";
 
 export class FishManager {
     /**
@@ -13,6 +14,7 @@ export class FishManager {
     constructor(options = {}) {
         this.config = fishing_config;
         this.db = new DynamicProperties('fishEncyclopedia');
+        this.calendar = new TimeManager();
 
         // In-memory primitives (avoid JSON)
         this.playerCounts = new Map(); // key: c_pid_fid -> int
@@ -57,9 +59,10 @@ export class FishManager {
     // ---------- preload ranks ----------
     _getAllFishIdsFromConfig() {
         const ids = new Set();
-        (this.config.fishes ?? []).forEach(f => ids.add(f.typeId));
+        const date = this.calendar.getCalendar();
+        (this.config.fishes[date.season][date.period] ?? []).forEach(f => ids.add(f.typeId));
         const bi = this.config.biomes ?? {};
-        Object.values(bi).forEach(b => (b.fishes ?? []).forEach(f => ids.add(f.typeId)));
+        Object.values(bi).forEach(b => (b.fishes[date.season][date.period] ?? []).forEach(f => ids.add(f.typeId)));
         return Array.from(ids);
     }
 
@@ -112,12 +115,13 @@ export class FishManager {
     _pickFish(location, dimension) {
         const biome = dimension.getBiome(location);
         const biomeId = biome?.id;
+        const date = this.calendar.getCalendar();
         /**
          * @type {Array<{typeId:string,name:string,weight:number,size:{min:number,max:number}}>}
          */
-        const biomeFishes = this.config.biomes?.[biomeId]?.fishes ?? [];
+        const biomeFishes = this.config.biomes?.[biomeId]?.fishes[date.season][date.period] ?? [];
         const fishes = [
-            ...(this.config.fishes ?? []),
+            ...(this.config.fishes[date.season][date.period] ?? []),
             ...biomeFishes
         ];
         if (fishes.length === 0) return null;

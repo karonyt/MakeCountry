@@ -1,4 +1,4 @@
-import { ItemStack } from "@minecraft/server";
+import { ItemStack, world } from "@minecraft/server";
 import { FishManager } from "./fishing";
 import playerFishingAfterEvent from "./fishingEvent";
 
@@ -7,10 +7,14 @@ playerFishingAfterEvent.subscribe((ev) => {
     const { player, itemStack, itemEntity, dimension } = ev;
     if (!player || !itemStack || !itemEntity || !dimension) return;
     if (!player.getDynamicProperty('isSpecialFishing')) return;
-    const fish = fishManager.fishing(player.location, dimension, player);
+    const fish = fishManager.fishing(itemEntity.location, dimension, player);
     if (!fish) return;
 
-    const item = dimension.spawnItem(new ItemStack(fish.typeId).setLore([`§r§fSize: ${fish.size}cm`]), itemEntity.location);
+    world.sendMessage(`${dimension.getBiome(itemEntity.location).id}`)
+
+    const fishItemStack = new ItemStack(fish.typeId);
+    fishItemStack.setLore([`§r§fSize: ${fish.size}cm`]);
+    const item = dimension.spawnItem(fishItemStack, itemEntity.location);
     itemEntity.remove();
     item.clearVelocity();
     let { x, y, z } = player.location;

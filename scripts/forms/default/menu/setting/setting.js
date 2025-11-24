@@ -12,8 +12,10 @@ export function playerSettingDefaultForm(player) {
     const index = uiTypes.indexOf(player.getDynamicProperty('uiType'));
     form.title({ translate: 'form.mainmenu.button.setting' });
     form.dropdown('UI Type', ['default', 'kingdoms', 'towny'], { defaultValueIndex: index });
-    const isSpecialFishing = player.getDynamicProperty('isSpecialFishing');
-    form.toggle({ translate: 'special.fishing' }, isSpecialFishing ? isSpecialFishing == 'true' ? true : false : false);
+    const isSpecialFishing = player.getDynamicProperty('isSpecialFishing') ?? false;
+    form.toggle({ translate: 'special.fishing' }, {
+        defaultValue: isSpecialFishing ? (isSpecialFishing == 'true' ? true : false) : false
+    });
     form.submitButton({ translate: 'mc.button.update' });
     form.show(player).then((rs) => {
         if (rs.canceled) {

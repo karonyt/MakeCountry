@@ -8,6 +8,7 @@ import { penNameMainDefaultForm } from "./pen_name/main";
 import { joinTypeSelectDefaultForm } from "./join/join_type_select";
 import { sendMoneyDefaultForm } from "./send_money/send_money";
 import { showProfileDefaultForm } from "./profile/show_profile";
+import { TimeManager } from "../../../api/time/time";
 /**@typedef {import("../../../jsdoc/player").PlayerData} PlayerData*/
 
 /**
@@ -28,7 +29,15 @@ export function playerMainMenuDefaultForm(player) {
         };
         body += buffLore;
     };
+
+    const timeManager = new TimeManager(2000);
+    const date = timeManager.getCalendar();
     form.body(body);
+    form.divider();
+    form.label({
+        rawtext: [{ text: `` }, { translate: 'day.year', with: [`${date.year}`] }, { text: `` }, { translate: 'day.month', with: [`${date.month}`] }, { text: `` }, { translate: 'day.day', with: [`${date.day}`] }, { text: '(' }, { translate: `day.${date.weekday}` }, { text: `) - ` }, { translate: `day.${date.season}` },
+        { text: `\n${date.hours}:${date.minutes} - ` }, { translate: `day.${date.period}` }]
+    });
     form.button({ translate: `form.mainmenu.button.profile` });
     form.button({ translate: `form.mainmenu.button.sendmoney` });
     form.button({ translate: `form.mainmenu.button.join` });

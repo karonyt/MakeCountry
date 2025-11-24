@@ -1,30 +1,18 @@
-import { BiomeType, BiomeTypes } from "@minecraft/server";
+import common from "./fishing_configs/common";
+import river from "./fishing_configs/river";
+import savanna from "./fishing_configs/savanna";
 
 export default {
-    fishes: [
-        {
-            typeId: 'minecraft:bread',
-            name: 'item.minecraft:bread.name',
-            weight: 10,
-            size: {
-                min: 10,
-                max: 100
-            }
-        }
-    ],
+    //全バイオーム共通
+    fishes: common,
     biomes: {
+        //川
         'minecraft:river': {
-            fishes: [
-                {
-                    typeId: 'minecraft:apple',
-                    name: 'item.minecraft:apple.name',
-                    weight: 1,
-                    size: {
-                        min: 10,
-                        max: 100
-                    }
-                }
-            ]
+            fishes: river
+        },
+        //サバンナ
+        'minecraft:savanna': {
+            fishes: savanna
         }
     }
 };

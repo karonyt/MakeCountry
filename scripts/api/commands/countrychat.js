@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:countrychat',
-            description: 'command.help.countrylist.message',
+            description: 'command.help.countrychat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

@@ -34,6 +34,8 @@ import "./api/command";
 
 import "./lib/smartphone";
 
+import "./api/fishing/index";
+
 const version = "ver.1.21.120.β.2.1.0"
 
 world.afterEvents.worldLoad.subscribe(() => {
