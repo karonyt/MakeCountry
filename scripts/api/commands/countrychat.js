@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:countrychat',
-            description: '国内チャットに切り替えます',
+            description: 'command.help.countrylist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -31,7 +31,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:cchat',
-            description: '国内チャットに切り替えます',
+            description: 'command.help.countrychat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

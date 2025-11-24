@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:karonnetwork',
-            description: 'KaronNetWorkのサーバーに転送',
+            description: 'command.help.karonnetwork.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {
@@ -24,7 +24,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:knw',
-            description: 'KaronNetWorkのサーバーに転送',
+            description: 'command.help.karonnetwork.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {

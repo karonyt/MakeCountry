@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:deletecountry',
-            description: '指定されたIDの国を削除します',
+            description: 'command.help.deletecountry.message',
             permissionLevel: CommandPermissionLevel.Admin,
             mandatoryParameters: [{ name: "CountryID", type: CustomCommandParamType.Integer }]
         },

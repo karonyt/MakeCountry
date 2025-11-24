@@ -6,7 +6,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:jobs',
-            description: '職業メニューを開きます',
+            description: 'command.help.jobs.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

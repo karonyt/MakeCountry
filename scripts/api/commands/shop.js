@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:shop',
-            description: 'AdminShopを開きます',
+            description: 'command.help.shop.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

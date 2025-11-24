@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:checkchunk',
-            description: '現在のチャンクの状態を確認します',
+            description: 'command.help.checkchunk.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -38,7 +38,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:cc',
-            description: '現在のチャンクの状態を確認します',
+            description: 'command.help.checkchunk.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

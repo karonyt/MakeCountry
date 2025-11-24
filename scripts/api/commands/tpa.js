@@ -6,7 +6,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:tpa',
-            description: 'テレポートリクエストを送ります',
+            description: 'command.help.tpa.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "player", type: CustomCommandParamType.PlayerSelector }]
         },

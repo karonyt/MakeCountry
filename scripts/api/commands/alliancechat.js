@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:alliancechat',
-            description: '同盟チャットに切り替えます',
+            description: 'command.help.alliancechat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -31,7 +31,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:ac',
-            description: '同盟チャットに切り替えます',
+            description: 'command.help.alliancechat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

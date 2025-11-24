@@ -17,7 +17,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:spawn',
-            description: '他国のパブリックホームへスポーン',
+            description: 'command.help.spawn.message',
             permissionLevel: CommandPermissionLevel.Any,
             mandatoryParameters: [{ name: "countryID", type: CustomCommandParamType.Integer }]
         },

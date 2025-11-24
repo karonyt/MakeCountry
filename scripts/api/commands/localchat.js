@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:localchat',
-            description: 'ローカルチャット(近くの人にしか見えないチャット)に切り替えます',
+            description: 'command.help.localchat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -23,7 +23,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:lc',
-            description: 'ローカルチャット(近くの人にしか見えないチャット)に切り替えます',
+            description: 'command.help.localchat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

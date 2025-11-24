@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:leavecountry',
-            description: '国から抜けます',
+            description: 'command.help.leavecountry.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

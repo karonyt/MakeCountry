@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:countrylist',
-            description: '国家リストを開きます',
+            description: 'command.help.countrylist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -20,7 +20,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:cl',
-            description: '国家リストを開きます',
+            description: 'command.help.countrylist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

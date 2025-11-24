@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:resetchunk',
-            description: 'チャンクの状態をリセットします',
+            description: 'command.help.resetchunk.message',
             permissionLevel: CommandPermissionLevel.Admin,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },
@@ -83,7 +83,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:resetc',
-            description: 'チャンクの状態をリセットします',
+            description: 'command.help.resetchunk.message',
             permissionLevel: CommandPermissionLevel.Admin,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },

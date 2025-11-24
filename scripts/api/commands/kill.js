@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:selfkill',
-            description: '自身をkillします',
+            description: 'command.help.selfkill.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

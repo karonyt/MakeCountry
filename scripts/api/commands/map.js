@@ -6,7 +6,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:map',
-            description: '周辺のチャンクの状況を確認します',
+            description: 'command.help.map.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {

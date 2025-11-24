@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:fixcountrydata',
-            description: '破損した国のデータの復旧を試みます',
+            description: 'command.help.fixcountrydata.message',
             permissionLevel: CommandPermissionLevel.Admin,
         },
         ((origin, ...args) => {

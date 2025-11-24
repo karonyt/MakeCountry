@@ -8,7 +8,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:invade',
-            description: '現在のチャンクを侵略(戦争)します',
+            description: 'command.help.invade.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {

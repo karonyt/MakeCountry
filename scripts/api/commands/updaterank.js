@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:updaterank',
-            description: 'ランキングを更新します',
+            description: 'command.help.updaterank.message',
             permissionLevel: CommandPermissionLevel.Admin,
         },
         ((origin, ...args) => {

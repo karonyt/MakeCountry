@@ -6,7 +6,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:friendlylist',
-            description: '友好リストを開きます',
+            description: 'command.help.friendlylist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -32,7 +32,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:fl',
-            description: '友好リストを開きます',
+            description: 'command.help.friendlylist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

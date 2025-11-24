@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:countryhome',
-            description: '国のパブリックホームにテレポートします',
+            description: 'command.help.countryhome.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {
@@ -59,7 +59,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:chome',
-            description: '国のパブリックホームにテレポートします',
+            description: 'command.help.countryhome.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {

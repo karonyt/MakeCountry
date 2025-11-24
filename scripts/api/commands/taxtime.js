@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:taxtime',
-            description: '徴税を行います',
+            description: 'command.help.taxtime.message',
             permissionLevel: CommandPermissionLevel.Admin,
         },
         ((origin, ...args) => {

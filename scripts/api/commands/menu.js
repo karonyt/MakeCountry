@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:menu',
-            description: 'メニューを開きます',
+            description: 'command.help.menu.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

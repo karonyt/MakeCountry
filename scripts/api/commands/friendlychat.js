@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:friendlychat',
-            description: 'フレンドリーチャット(友好国とのチャット)に切り替えます',
+            description: 'command.help.friendlychat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -22,7 +22,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:fc',
-            description: 'フレンドリーチャット(友好国とのチャット)に切り替えます',
+            description: 'command.help.friendlychat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

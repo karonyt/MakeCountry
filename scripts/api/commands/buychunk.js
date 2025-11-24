@@ -9,7 +9,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:buychunk',
-            description: 'チャンクを購入します',
+            description: 'command.help.buychunk.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },
@@ -35,11 +35,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     const { x, z } = sender.location;
                     const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
                     if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: '§c座標が間違っています' });
+                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
                         return;
                     };
                     if (chunks.length > 300) {
-                        sender.sendMessage({ translate: '1度に買えるチャンクは300チャンクまでです' });
+                        sender.sendMessage({ translate: 'command.error.chunks.limit.buy', with: ['300'] });
                         return;
                     };
                     let chunkPrice = config.defaultChunkPrice;
@@ -192,7 +192,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:buyc',
-            description: 'チャンクを購入します',
+            description: 'command.help.buychunk.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },
@@ -218,11 +218,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     const { x, z } = sender.location;
                     const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
                     if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: '§c座標が間違っています' });
+                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
                         return;
                     };
                     if (chunks.length > 300) {
-                        sender.sendMessage({ translate: '1度に買えるチャンクは300チャンクまでです' });
+                        sender.sendMessage({ translate: 'command.error.chunks.limit.buy', with: ['300'] });
                         return;
                     };
                     let chunkPrice = config.defaultChunkPrice;

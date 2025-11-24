@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:sethome',
-            description: 'ホームをセットします',
+            description: 'command.help.sethome.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "HomeName", type: CustomCommandParamType.String }]
         },

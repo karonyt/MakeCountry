@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:playercount',
-            description: 'ワールドに参加したプレイヤーの合計数を確認します',
+            description: 'command.help.playercount.message',
             permissionLevel: CommandPermissionLevel.Admin,
         },
         ((origin, ...args) => {

@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:homelist',
-            description: 'ホームリストを表示します',
+            description: 'command.help.homelist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -25,7 +25,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:hl',
-            description: 'ホームリストを表示します',
+            description: 'command.help.homelist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -45,7 +45,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:checkhome',
-            description: 'ホームリストを表示します',
+            description: 'command.help.homelist.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:sendmoney',
-            description: '金を送ります',
+            description: 'command.help.sendmoney.message',
             permissionLevel: CommandPermissionLevel.Any,
             mandatoryParameters: [{ name: "amount", type: CustomCommandParamType.Integer }, { name: "player", type: CustomCommandParamType.PlayerSelector }]
         },
@@ -60,7 +60,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:pay',
-            description: '金を送ります',
+            description: 'command.help.sendmoney.message',
             permissionLevel: CommandPermissionLevel.Any,
             mandatoryParameters: [{ name: "amount", type: CustomCommandParamType.Integer }, { name: "player", type: CustomCommandParamType.PlayerSelector }]
         },

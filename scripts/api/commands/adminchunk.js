@@ -7,7 +7,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:adminchunk',
-            description: '特別区域を設定します',
+            description: 'command.help.adminchunk.message',
             permissionLevel: CommandPermissionLevel.Admin,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },
@@ -26,11 +26,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     const { x, z } = sender.location;
                     const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
                     if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: '§c座標が間違っています' });
+                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
                         return;
                     };
                     if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度に特別区にできるチャンクは100チャンクまでです' });
+                        sender.sendMessage({ translate: 'command.error.chunks.limit.toadminchunk', with: ['100'] });
                         return;
                     };
                     for (let i = 0; i < chunks.length; i++) {
@@ -57,7 +57,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:adminc',
-            description: '特別区域を設定します',
+            description: 'command.help.adminchunk.message',
             permissionLevel: CommandPermissionLevel.Admin,
             optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
         },
@@ -76,11 +76,11 @@ system.beforeEvents.startup.subscribe((event) => {
                     const { x, z } = sender.location;
                     const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
                     if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: '§c座標が間違っています' });
+                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
                         return;
                     };
                     if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度に特別区にできるチャンクは100チャンクまでです' });
+                        sender.sendMessage({ translate: 'command.error.chunks.limit.toadminchunk', with: ['100'] });
                         return;
                     };
                     for (let i = 0; i < chunks.length; i++) {

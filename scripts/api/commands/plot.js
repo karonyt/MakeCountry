@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:plot',
-            description: '現在のチャンクのプロットメニューを開きます',
+            description: 'command.help.plot.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

@@ -12,6 +12,8 @@ export function playerSettingDefaultForm(player) {
     const index = uiTypes.indexOf(player.getDynamicProperty('uiType'));
     form.title({ translate: 'form.mainmenu.button.setting' });
     form.dropdown('UI Type', ['default', 'kingdoms', 'towny'], { defaultValueIndex: index });
+    const isSpecialFishing = player.getDynamicProperty('isSpecialFishing');
+    form.toggle({ translate: 'special.fishing' }, isSpecialFishing ? isSpecialFishing == 'true' ? true : false : false);
     form.submitButton({ translate: 'mc.button.update' });
     form.show(player).then((rs) => {
         if (rs.canceled) {
@@ -19,6 +21,7 @@ export function playerSettingDefaultForm(player) {
             return;
         };
         player.setDynamicProperty('uiType', uiTypes[rs.formValues[0]]);
+        player.setDynamicProperty('isSpecialFishing', `${rs.formValues[1]}`);
         player.sendMessage({ translate: 'updated' });
     });
 };

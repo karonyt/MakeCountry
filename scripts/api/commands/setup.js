@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:setup',
-            description: 'セットアップします',
+            description: 'command.help.setup.message',
             permissionLevel: CommandPermissionLevel.Admin
         },
         ((origin, ...args) => {

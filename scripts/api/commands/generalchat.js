@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:generalchat',
-            description: 'ジェネラルチャット(通常のチャット)に切り替えます',
+            description: 'command.help.generalchat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -23,7 +23,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:g',
-            description: 'ジェネラルチャット(通常のチャット)に切り替えます',
+            description: 'command.help.generalchat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -42,7 +42,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:gc',
-            description: 'ジェネラルチャット(通常のチャット)に切り替えます',
+            description: 'command.help.generalchat.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

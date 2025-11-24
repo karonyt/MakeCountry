@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:fixcamera',
-            description: '視点を固定します',
+            description: 'command.help.fixcamera.message',
             permissionLevel: CommandPermissionLevel.Any,
         },
         ((origin, ...args) => {

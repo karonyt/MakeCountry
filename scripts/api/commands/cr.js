@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:cr',
-            description: 'アイテムにコピーライト(自分の名前とID)を付けます',
+            description: 'command.help.cr.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -42,7 +42,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:ic',
-            description: 'アイテムにコピーライト(自分の名前とID)を付けます',
+            description: 'command.help.cr.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

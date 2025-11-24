@@ -4,7 +4,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:itemid',
-            description: '手持ちのアイテムのIDを調べます',
+            description: 'command.help.itemid.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {

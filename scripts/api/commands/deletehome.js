@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:deletehome',
-            description: 'ホームを削除します',
+            description: 'command.help.deletehome.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "HomeName", type: CustomCommandParamType.String }]
         },
@@ -27,7 +27,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:delhome',
-            description: 'ホームを削除します',
+            description: 'command.help.deletehome.message',
             permissionLevel: CommandPermissionLevel.Any,
             optionalParameters: [{ name: "HomeName", type: CustomCommandParamType.String }]
         },

@@ -6,7 +6,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:playermarket',
-            description: 'PlayerMarketを開きます',
+            description: 'command.help.playermarket.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
@@ -28,7 +28,7 @@ system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:pm',
-            description: 'PlayerMarketを開きます',
+            description: 'command.help.playermarket.message',
             permissionLevel: CommandPermissionLevel.Any
         },
         ((origin, ...args) => {
