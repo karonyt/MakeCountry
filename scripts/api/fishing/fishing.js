@@ -480,4 +480,51 @@ export class FishManager {
         const v = Math.random() * (max - min) + min;
         return Math.round(v * 100) / 100;
     }
+
+    getPlayerFishRecord(playerId, fishId) {
+        const countKey = this._playerCountKey(playerId, fishId);
+        const maxKey = this._playerMaxKey(playerId, fishId);
+
+        this._loadPlayerCountIfMissing(playerId, fishId);
+        this._loadPlayerMaxIfMissing(playerId, fishId);
+
+        const count = this.playerCounts.get(countKey) ?? 0;
+        const maxInt = this.playerMaxes.get(maxKey) ?? 0;
+
+        return {
+            count,
+            maxSize: this._restoreSizeFloat(maxInt),
+            obtained: count > 0,
+        };
+    }
+
+    getPlayerAllFishRecords(player) {
+        const result = {};
+        const pid = player.id;
+
+        for (const f of this.config.allFishes) {
+            const record = this.getPlayerFishRecord(pid, f.typeId);
+
+            result[f.typeId] = {
+                name: f.name,
+                count: record.count,
+                maxSize: record.maxSize,
+                obtained: record.count > 0
+            };
+        }
+
+        return result;
+    }
+
+    getServerFishRanking(fishId) {
+        const obj = this.serverRanks.get(fishId);
+        if (!obj) return { top: [] };
+
+        return {
+            top: obj.top.map(r => ({
+                playerId: r.playerId,
+                size: this._restoreSizeFloat(r.size)
+            }))
+        };
+    }
 }

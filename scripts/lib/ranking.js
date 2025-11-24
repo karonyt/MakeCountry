@@ -3,6 +3,7 @@ import * as DyProp from "./DyProp";
 import { GetAndParsePropertyData } from "./util";
 import config from "../config";
 import { DynamicProperties } from "../api/dyp";
+import { FishManager } from "../api/fishing/fishing";
 
 world.afterEvents.entityLoad.subscribe((ev) => {
     if (ev.entity.typeId != "mc:text") return;
@@ -15,7 +16,12 @@ export function updateRanking() {
     const countryDataBase = new DynamicProperties('country');
     const players = playerDataBase.idList.map(key => GetAndParsePropertyData(key)).filter(p => p?.name && !isNaN(parseInt(p?.money)));
     const countries = countryDataBase.idList.map(key => GetAndParsePropertyData(key));
+    const fishManager = new FishManager();
     for (const text of texts) {
+        const tag = text.getTags().find(t => t.startsWith("text:fish_size_"));
+        if (!tag) break;
+
+        const fishTypeId = tag.substring("text:fish_size_".length);
         switch (true) {
             case text.hasTag(`text:baltop`): {
                 let allMoney = 0;
@@ -68,6 +74,24 @@ export function updateRanking() {
                 text.nameTag = rankText;
                 break;
             };
+            case tag.startsWith('text:fish_size_'): {
+                const fishTypeId = tag.substring("text:fish_size_".length);
+
+                const rank = fishManager.getServerFishRanking(fishTypeId);
+
+                let rankText = `§6${fishTypeId.split(':')[1]} Size Ranking TOP${rank.top.length}\n`;
+                for (let i = 0; i < rank.top.length; i++) {
+                    const r = rank.top[i];
+
+                    const pRaw = playerDataBase.get(`player_${r.playerId}`);
+                    const p = pRaw ? JSON.parse(pRaw) : { name: r.playerId };
+
+                    rankText += `\n§e${i + 1}. §f${p.name} - ${r.size}cm`;
+                }
+
+                text.nameTag = rankText;
+                break;
+            }
         };
 
     };

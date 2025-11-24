@@ -5,7 +5,7 @@ system.beforeEvents.startup.subscribe((event) => {
         {
             name: 'makecountry:updaterank',
             description: 'command.help.updaterank.message',
-            permissionLevel: CommandPermissionLevel.Admin,
+            permissionLevel: CommandPermissionLevel.GameDirectors,
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
