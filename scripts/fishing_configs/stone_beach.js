@@ -1,8 +1,6 @@
-//海洋
+//石だらけの海岸
 export default {
-    //春
     spring: {
-        //朝
         morning: [
             {
                 typeId: 'minecraft:salmon',
@@ -14,7 +12,6 @@ export default {
                 }
             }
         ],
-        //昼
         afternoon: [
             {
                 typeId: 'minecraft:salmon',
@@ -26,7 +23,6 @@ export default {
                 }
             }
         ],
-        //夕方
         evening: [
             {
                 typeId: 'minecraft:salmon',
@@ -38,7 +34,6 @@ export default {
                 }
             }
         ],
-        //夜
         night: [
             {
                 typeId: 'minecraft:salmon',

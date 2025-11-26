@@ -1,4 +1,4 @@
-//海洋
+//マングローブの沼地
 export default {
     //春
     spring: {

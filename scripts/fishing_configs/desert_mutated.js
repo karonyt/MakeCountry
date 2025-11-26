@@ -1,4 +1,4 @@
-//海洋
+//砂漠の湖
 export default {
     //春
     spring: {

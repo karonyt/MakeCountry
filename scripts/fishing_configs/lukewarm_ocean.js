@@ -1,4 +1,4 @@
-//海洋
+//ぬるい海
 export default {
     //春
     spring: {

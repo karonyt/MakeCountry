@@ -1,4 +1,4 @@
-//川
+//平原
 export default {
     spring: {
         morning: [
