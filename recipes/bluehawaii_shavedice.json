@@ -20,6 +20,12 @@
                 "data": 18
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:bluehawaii_shavedice",
             "count": 1

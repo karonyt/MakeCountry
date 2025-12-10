@@ -18,6 +18,12 @@
                 "item": "mc:salt"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:butter",

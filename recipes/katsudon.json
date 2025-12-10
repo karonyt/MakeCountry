@@ -25,6 +25,12 @@
                 "item": "minecraft:egg"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:katsudon",
             "count": 1

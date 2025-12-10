@@ -10,6 +10,12 @@
         "input": {
             "item": "minecraft:porkchop"
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "output": {
             "item": "minecraft:dirt",
             "count": 1

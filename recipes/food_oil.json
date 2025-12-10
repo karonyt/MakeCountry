@@ -20,6 +20,12 @@
                 "item": "minecraft:wheat_seeds"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:food_oil",
             "count": 1

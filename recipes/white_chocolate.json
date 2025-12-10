@@ -19,6 +19,12 @@
                 "item": "minecraft:milk_bucket"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:white_chocolate",

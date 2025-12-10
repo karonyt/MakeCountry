@@ -21,6 +21,12 @@
                 "item": "mc:coffee_beans"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:coffee",
             "count": 1

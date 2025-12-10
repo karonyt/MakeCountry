@@ -18,6 +18,12 @@
                 "item": "mc:tai"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:tai_sushi",
             "count": 1

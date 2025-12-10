@@ -29,6 +29,12 @@
                 "item": "mc:straw_berry"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:straw_berry_daifuku",

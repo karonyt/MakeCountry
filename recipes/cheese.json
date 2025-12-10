@@ -15,6 +15,12 @@
                 "item": "mc:cheese_bucket"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:cheese",

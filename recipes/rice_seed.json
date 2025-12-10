@@ -15,6 +15,12 @@
                 "item": "mc:rice_plant"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:rice_seed",
             "count": 1

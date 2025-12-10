@@ -32,6 +32,12 @@
                 "item": "mc:yeast"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:bread_material",

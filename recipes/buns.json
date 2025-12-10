@@ -17,6 +17,12 @@
                 "item": "mc:circle_bread"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:buns",
             "count": 2

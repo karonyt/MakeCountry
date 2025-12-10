@@ -17,6 +17,12 @@
                 "item": "mc:ovlive"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:ovlive_oil",
             "count": 1

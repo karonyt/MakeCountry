@@ -18,6 +18,12 @@
                 "item": "mc:onion"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:onion_mizin",
             "count": 1

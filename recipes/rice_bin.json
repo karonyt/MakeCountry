@@ -16,6 +16,12 @@
                 "item": "minecraft:planks"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:rice_bin",
             "count": 1

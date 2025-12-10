@@ -16,6 +16,12 @@
                 "item": "minecraft:iron_block"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:oven_range",
             "count": 1

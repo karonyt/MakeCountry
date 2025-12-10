@@ -26,6 +26,12 @@
                 "item": "mc:cheese"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:caprese",
             "count": 1

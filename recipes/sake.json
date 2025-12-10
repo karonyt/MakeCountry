@@ -19,6 +19,12 @@
                 "item": "mc:rice"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:sake",
             "count": 1

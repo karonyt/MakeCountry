@@ -24,6 +24,12 @@
                 "item": "mc:milk_chocolate"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:chocolate_banana",
             "count": 1
