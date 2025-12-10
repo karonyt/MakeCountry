@@ -1,4 +1,4 @@
-//海洋
+//Legacy Frozen Ocean
 export default {
     //春
     spring: {
