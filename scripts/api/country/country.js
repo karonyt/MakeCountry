@@ -906,7 +906,7 @@ export class CountryManager {
      * @param {number} lv 
      * @returns {import("@minecraft/server").RawMessage}
      */
-    nationTierLevelNeed(lv = this.countryData.lv + 1) {
+    nationTierLevelNeed(lv = (this.countryData.lv ?? 0) + 1) {
         const need = national_tier_level.needs[lv].item
         const needItems = need.item;
         const needPoint = need.point;
@@ -924,7 +924,7 @@ export class CountryManager {
      * @param {Player} player 
      * @param {number} lv 
      */
-    nationTierLevelCheck(player, lv = this.countryData.lv) {
+    nationTierLevelCheck(player, lv = (this.countryData.lv ?? 0)) {
         const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1].item
         const needItems = need.item;
         const needPoint = need.point;
