@@ -8,6 +8,7 @@ import { settingCountryRoleDefaultForm } from "./role/main";
 import { settingCountryPlotGroupDefaultForm } from "./plot_group/main";
 import { settingCountryInfoDefaultForm } from "./info/info";
 import { countryDeleteCheckDefaultForm } from "./del/main";
+import { nationalTierLevelDefaultForm } from "./ntlv/ntlv";
 
 /**
  * 
@@ -19,6 +20,7 @@ export function settingCountryDefaultForm(player) {
     form.title({ translate: `form.setting.title` });
     form.body({ translate: `form.setting.body` });
     form.button({ translate: `form.setting.button.info` });
+    form.button({ translate: `national.tier.level` });
     form.button({ translate: `form.setting.button.treasury` });
     form.button({ translate: `form.setting.button.invite` });
     form.button({ translate: `form.setting.button.members` });
@@ -44,26 +46,29 @@ export function settingCountryDefaultForm(player) {
                 break;
             };
             case 1: {
+                nationalTierLevelDefaultForm(player);
+            };
+            case 2: {
                 treasuryMainDefaultForm(player);
                 break;
             };
-            case 2: {
+            case 3: {
                 inviteMainDefaultForm(player);
                 break;
             };
-            case 3: {
+            case 4: {
                 settingCountryMembersDefaultForm(player);
                 break;
             };
-            case 4: {
+            case 5: {
                 settingCountryRoleDefaultForm(player);
                 break;
             };
-            case 5: {
+            case 6: {
                 settingCountryPlotGroupDefaultForm(player);
                 break;
             };
-            case 6: {
+            case 7: {
                 countryDeleteCheckDefaultForm(player);
                 break;
             };

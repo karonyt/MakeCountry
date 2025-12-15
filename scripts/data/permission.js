@@ -26,6 +26,7 @@ export const rolePermissions = [
     'entityUse',
     'publicHomeUse',
     'publicHomeAdmin',
+    'nationalTierLevelAdmin',
     'noTarget',
     'plotAdmin',
     'buyChunk',
