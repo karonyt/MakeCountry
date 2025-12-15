@@ -9,6 +9,7 @@ import { settingCountryPlotGroupDefaultForm } from "./plot_group/main";
 import { settingCountryInfoDefaultForm } from "./info/info";
 import { countryDeleteCheckDefaultForm } from "./del/main";
 import { nationalTierLevelDefaultForm } from "./ntlv/ntlv";
+import national_tier_level from "../../../national_tier_level";
 
 /**
  * 
@@ -46,6 +47,10 @@ export function settingCountryDefaultForm(player) {
                 break;
             };
             case 1: {
+                if(!national_tier_level.enabled) {
+                    player.sendMessage({translate: 'national.tier.level.novalidity'});
+                    return;
+                }
                 nationalTierLevelDefaultForm(player);
             };
             case 2: {
