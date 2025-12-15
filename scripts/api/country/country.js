@@ -906,7 +906,7 @@ export class CountryManager {
      * @param {number} lv 
      * @returns {import("@minecraft/server").RawMessage}
      */
-    nationTierLevelNeed(lv) {
+    nationTierLevelNeed(lv = this.countryData.lv + 1) {
         const need = national_tier_level.needs[lv].item
         const needItems = need.item;
         const needPoint = need.point;
