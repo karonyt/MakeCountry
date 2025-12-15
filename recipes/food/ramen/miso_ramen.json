@@ -41,6 +41,12 @@
                 "item": "minecraft:dried_kelp"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": [
             {
                 "item": "mc:miso_ramen",

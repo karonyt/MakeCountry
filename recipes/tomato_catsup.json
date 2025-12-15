@@ -29,6 +29,12 @@
                 "item": "minecraft:sugar"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:tomato_catsup",
             "count": 1

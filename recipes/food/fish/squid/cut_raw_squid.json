@@ -17,6 +17,12 @@
                 "item": "mc:squid"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:cut_raw_squid",
             "count": 1

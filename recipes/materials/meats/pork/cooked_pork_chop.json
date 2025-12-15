@@ -10,6 +10,12 @@
         "input": {
             "item": "mc:pork_chop"
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "output": {
             "item": "minecraft:cooked_porkchop"
         }

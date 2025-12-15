@@ -17,6 +17,12 @@
                 "item": "mc:beef_leg"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:beef_minced_meat",
             "count": 2

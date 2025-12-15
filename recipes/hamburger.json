@@ -26,6 +26,12 @@
                 "item": "minecraft:beetroot"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:hamburger",
             "count": 1

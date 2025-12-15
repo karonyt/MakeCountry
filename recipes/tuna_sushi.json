@@ -18,6 +18,12 @@
                 "item": "mc:tuna"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:tuna_sushi",
             "count": 1

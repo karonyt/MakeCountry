@@ -20,6 +20,12 @@
                 "item": "mc:food_oil"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:fry_stew",
             "count": 1

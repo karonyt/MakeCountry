@@ -17,6 +17,12 @@
                 "item": "mc:tomato"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:tomato_juice",
             "count": 1

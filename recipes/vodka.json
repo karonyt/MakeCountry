@@ -26,6 +26,12 @@
                 "item": "mc:barley"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:vodka",
             "count": 1

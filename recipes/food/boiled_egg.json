@@ -17,6 +17,12 @@
                 "item": "minecraft:egg"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:boiled_egg",
             "count": 1

@@ -18,6 +18,12 @@
                 "item": "mc:karaage"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:karaagedon",
             "count": 1

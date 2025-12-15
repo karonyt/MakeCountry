@@ -17,6 +17,12 @@
                 "item": "mc:pineapple"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:pineapple_cut",
             "count": 6

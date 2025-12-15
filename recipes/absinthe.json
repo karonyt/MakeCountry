@@ -19,6 +19,12 @@
                 "item": "mc:basil"
             }
         },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
         "result": {
             "item": "mc:absinthe",
             "count": 1
