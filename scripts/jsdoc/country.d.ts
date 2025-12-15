@@ -2,6 +2,7 @@ import { CountryPermissionList } from "./permission";
 
 export interface CountryData {
     id: number;
+    lv: number;
     name: string;
     owner: string;
     lore: string;

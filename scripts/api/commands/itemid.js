@@ -1,5 +1,16 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
 
+function itemIdExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    const container = sender.getComponent(`inventory`).container;
+    const item = container.getItem(sender.selectedSlotIndex);
+    if (item) {
+        sender.sendMessage(`§aID: ${item.typeId}`)
+    };
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -9,14 +20,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                const container = sender.getComponent(`inventory`).container;
-                const item = container.getItem(sender.selectedSlotIndex);
-                if (item) {
-                    sender.sendMessage(`§aID: ${item.typeId}`)
-                };
+                itemIdExecuter(origin, args);
             })
         })
     )

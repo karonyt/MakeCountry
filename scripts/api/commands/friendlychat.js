@@ -1,5 +1,13 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
 
+function friendlyChatExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    sender.setDynamicProperty(`chatType`, `friendly`);
+    sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `friendly.chat` }] } }] })
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -9,16 +17,11 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `friendly`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `friendly.chat` }] } }] })
+                friendlyChatExecuter(origin, args);
             })
         })
     )
-});
-system.beforeEvents.startup.subscribe((event) => {
+
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:fc',
@@ -27,11 +30,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `friendly`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `friendly.chat` }] } }] })
+                friendlyChatExecuter(origin, args);
             })
         })
     )

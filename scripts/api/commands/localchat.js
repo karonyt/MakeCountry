@@ -1,4 +1,12 @@
-import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
+import { CommandPermissionLevel, Player, system } from "@minecraft/server";
+
+function localChatExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    sender.setDynamicProperty(`chatType`, `local`);
+    sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `local.chat` }] } }] });
+};
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -9,11 +17,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `local`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `local.chat` }] } }] })
+                localChatExecuter(origin, args);
             })
         })
     )
@@ -28,11 +32,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `local`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `local.chat` }] } }] })
+                localChatExecuter(origin, args)
             })
         })
     )

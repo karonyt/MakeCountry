@@ -5,6 +5,119 @@ import config from "../../config";
 import { GenerateChunkData } from "../../lib/land";
 import { country } from "../api";
 
+function sellChunkExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    const chunkDataBase = new DynamicProperties("chunk");
+    const playerDataBase = new DynamicProperties("player");
+    const countryDataBase = new DynamicProperties("country");
+
+    const rawData = playerDataBase.get(`player_${sender.id}`);
+    const playerData = JSON.parse(rawData);
+
+    if (!playerData.country) {
+        sender.sendMessage({ translate: `command.sellchunk.error.notjoin.country` });
+        return;
+    };
+    const dimension = sender.dimension.id;
+    if (args.length == 2) {
+        const [ix, iz] = args.map(str => Math.floor(Number(str)));
+        const { x, z } = sender.location;
+        const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
+        if (!isNumber(ix) || !isNumber(iz)) {
+            sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
+            return;
+        };
+        if (chunks.length > 100) {
+            sender.sendMessage({ translate: 'command.error.chunks.limit.sell', with: ['100'] });
+            return;
+        };
+        let chunkPrice = config.defaultChunkPrice / 2;
+        for (let i = 0; i < chunks.length; i++) {
+            system.runTimeout(() => {
+                let chunkData = GetAndParsePropertyData(`chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`, chunkDataBase);
+                if (!chunkData) chunkData = GenerateChunkData(chunks[i].chunkX * 16, chunks[i].chunkZ * 16, dimension);
+                if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
+                const cannotSell = CheckPermission(sender, `sellChunk`);
+                if (!chunkData || !chunkData.countryId) {
+                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
+                    return;
+                };
+                if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
+                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
+                    return;
+                };
+                if (cannotSell) {
+                    sender.sendMessage({ translate: `command.permission.error` });
+                    return;
+                };
+                const cores = sender.dimension.getEntities({ type: `mc:core` });
+                let coresChunks = [];
+                for (let i = 0; i < cores.length; i++) {
+                    coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
+                };
+                if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
+                    sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
+                    return;
+                };
+                const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                if (playerCountryData.territories.length < 2) {
+                    sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
+                    return;
+                };
+
+                chunkData.countryId = undefined;
+                playerCountryData.resourcePoint += chunkPrice;
+                playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
+                StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
+                StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
+                sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
+                return;
+            }, i)
+        }
+        return;
+    }
+    const chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(sender));
+    let chunkPrice = config.defaultChunkPrice / 2;
+    if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
+    const cannotSell = CheckPermission(sender, `sellChunk`);
+    if (!chunkData || !chunkData.countryId) {
+        sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
+        return;
+    };
+    if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
+        sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
+        return;
+    };
+    if (cannotSell) {
+        sender.sendMessage({ translate: `command.permission.error` });
+        return;
+    };
+    const cores = sender.dimension.getEntities({ type: `mc:core` });
+    let coresChunks = [];
+    for (let i = 0; i < cores.length; i++) {
+        coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
+    };
+    if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
+        sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
+        return;
+    };
+    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+    if (playerCountryData.territories.length < 2) {
+        sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
+        return;
+    };
+
+    chunkData.countryId = undefined;
+    playerCountryData.resourcePoint += chunkPrice;
+    playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
+    StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
+    StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
+    sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
+    return;
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -15,122 +128,11 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                const chunkDataBase = new DynamicProperties("chunk");
-                const playerDataBase = new DynamicProperties("player");
-                const countryDataBase = new DynamicProperties("country");
-
-                const rawData = playerDataBase.get(`player_${sender.id}`);
-                const playerData = JSON.parse(rawData);
-
-                if (!playerData.country) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.notjoin.country` });
-                    return;
-                };
-                const dimension = sender.dimension.id;
-                if (args.length == 2) {
-                    const [ix, iz] = args.map(str => Math.floor(Number(str)));
-                    const { x, z } = sender.location;
-                    const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-                    if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
-                        return;
-                    };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: 'command.error.chunks.limit.sell', with: ['100'] });
-                        return;
-                    };
-                    let chunkPrice = config.defaultChunkPrice / 2;
-                    for (let i = 0; i < chunks.length; i++) {
-                        system.runTimeout(() => {
-                            let chunkData = GetAndParsePropertyData(`chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`, chunkDataBase);
-                            if (!chunkData) chunkData = GenerateChunkData(chunks[i].chunkX * 16, chunks[i].chunkZ * 16, dimension);
-                            if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                            const cannotSell = CheckPermission(sender, `sellChunk`);
-                            if (!chunkData || !chunkData.countryId) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                                return;
-                            };
-                            if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                                return;
-                            };
-                            if (cannotSell) {
-                                sender.sendMessage({ translate: `command.permission.error` });
-                                return;
-                            };
-                            const cores = sender.dimension.getEntities({ type: `mc:core` });
-                            let coresChunks = [];
-                            for (let i = 0; i < cores.length; i++) {
-                                coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
-                            };
-                            if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
-                                sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
-                                return;
-                            };
-                            const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-                            if (playerCountryData.territories.length < 2) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
-                                return;
-                            };
-
-                            chunkData.countryId = undefined;
-                            playerCountryData.resourcePoint += chunkPrice;
-                            playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
-                            StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-                            StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-                            sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-                            return;
-                        }, i)
-                    }
-                    return;
-                }
-                const chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(sender));
-                let chunkPrice = config.defaultChunkPrice / 2;
-                if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                const cannotSell = CheckPermission(sender, `sellChunk`);
-                if (!chunkData || !chunkData.countryId) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                    return;
-                };
-                if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                    return;
-                };
-                if (cannotSell) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-                const cores = sender.dimension.getEntities({ type: `mc:core` });
-                let coresChunks = [];
-                for (let i = 0; i < cores.length; i++) {
-                    coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
-                };
-                if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
-                    sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
-                    return;
-                };
-                const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-                if (playerCountryData.territories.length < 2) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
-                    return;
-                };
-
-                chunkData.countryId = undefined;
-                playerCountryData.resourcePoint += chunkPrice;
-                playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
-                StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-                StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-                sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-                return;
+                sellChunkExecuter(origin, args);
             })
         })
     )
-});
 
-system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:sellc',
@@ -140,116 +142,21 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
+                sellChunkExecuter(origin, args);
+            })
+        })
+    )
 
-                const chunkDataBase = new DynamicProperties("chunk");
-                const playerDataBase = new DynamicProperties("player");
-                const countryDataBase = new DynamicProperties("country");
-
-                const rawData = playerDataBase.get(`player_${sender.id}`);
-                const playerData = JSON.parse(rawData);
-
-                if (!playerData.country) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.notjoin.country` });
-                    return;
-                };
-                const dimension = sender.dimension.id;
-                if (args.length == 2) {
-                    const [ix, iz] = args.map(str => Math.floor(Number(str)));
-                    const { x, z } = sender.location;
-                    const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-                    if (!isNumber(ix) || !isNumber(iz)) {
-                        sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
-                        return;
-                    };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: 'command.error.chunks.limit.sell', with: ['100'] });
-                        return;
-                    };
-                    let chunkPrice = config.defaultChunkPrice / 2;
-                    for (let i = 0; i < chunks.length; i++) {
-                        system.runTimeout(() => {
-                            let chunkData = GetAndParsePropertyData(`chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`, chunkDataBase);
-                            if (!chunkData) chunkData = GenerateChunkData(chunks[i].chunkX * 16, chunks[i].chunkZ * 16, dimension);
-                            if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                            const cannotSell = CheckPermission(sender, `sellChunk`);
-                            if (!chunkData || !chunkData.countryId) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                                return;
-                            };
-                            if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                                return;
-                            };
-                            if (cannotSell) {
-                                sender.sendMessage({ translate: `command.permission.error` });
-                                return;
-                            };
-                            const cores = sender.dimension.getEntities({ type: `mc:core` });
-                            let coresChunks = [];
-                            for (let i = 0; i < cores.length; i++) {
-                                coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
-                            };
-                            if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
-                                sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
-                                return;
-                            };
-                            const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-                            if (playerCountryData.territories.length < 2) {
-                                sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
-                                return;
-                            };
-
-                            chunkData.countryId = undefined;
-                            playerCountryData.resourcePoint += chunkPrice;
-                            playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
-                            StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-                            StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-                            sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-                            return;
-                        }, i)
-                    }
-                    return;
-                }
-                const chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(sender));
-                let chunkPrice = config.defaultChunkPrice / 2;
-                if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                const cannotSell = CheckPermission(sender, `sellChunk`);
-                if (!chunkData || !chunkData.countryId) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                    return;
-                };
-                if (chunkData && chunkData.countryId && chunkData.countryId != playerData.country) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.thischunk.notterritory` });
-                    return;
-                };
-                if (cannotSell) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-                const cores = sender.dimension.getEntities({ type: `mc:core` });
-                let coresChunks = [];
-                for (let i = 0; i < cores.length; i++) {
-                    coresChunks[coresChunks.length] = GetPlayerChunkPropertyId(cores[i]);
-                };
-                if (coresChunks.includes(GetPlayerChunkPropertyId(sender))) {
-                    sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.already` }] });
-                    return;
-                };
-                const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-                if (playerCountryData.territories.length < 2) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
-                    return;
-                };
-
-                chunkData.countryId = undefined;
-                playerCountryData.resourcePoint += chunkPrice;
-                playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
-                StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-                StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-                sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-                return;
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:releaseland',
+            description: 'command.help.sellchunk.message',
+            permissionLevel: CommandPermissionLevel.Any,
+            optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+                sellChunkExecuter(origin, args);
             })
         })
     )

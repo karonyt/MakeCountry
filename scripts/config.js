@@ -1,6 +1,8 @@
 export default {
     //チャンク制限
     chunkLimit: 3200,
+    //スポーンエッグをスポナーに入れるのを制限するか
+    spawnerSpawnEggBlock: true,
 
     //プレイヤーの初期の所持金
     initialMoney: 0,

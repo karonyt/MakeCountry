@@ -135,7 +135,7 @@ export class RoleManager {
         if (roleData.members.includes(memberId)) {
             return false;
         };
-        roleData.members = roleData.members.push(memberId);
+        roleData.members.push(memberId);
         /**
          * @type {PlayerData}
          */
@@ -170,7 +170,7 @@ export class RoleManager {
          * @type {PlayerData}
          */
         const playerData = JSON.parse(this.playerDataBase.get(`player_${memberId}`));
-        playerData.roles.filter(id => id != memberId);
+        playerData.roles = playerData.roles.filter(id => id != memberId);
         this.playerDataBase.set(`player_${memberId}`, playerData);
         this.setRole(roleId, roleData);
         return true;

@@ -3,62 +3,33 @@ import { DynamicProperties } from "../dyp";
 import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId, isNumber, StringifyAndSavePropertyData } from "../../lib/util";
 import config from "../../config";
 
-system.beforeEvents.startup.subscribe((event) => {
-    event.customCommandRegistry.registerCommand(
-        {
-            name: 'makecountry:resetchunk',
-            description: 'command.help.resetchunk.message',
-            permissionLevel: CommandPermissionLevel.Admin,
-            optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
-        },
-        ((origin, ...args) => {
-            system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
+function resetChunkExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
 
-                const chunkDataBase = new DynamicProperties("chunk");
-                const countryDataBase = new DynamicProperties("country");
-                if (!sender.hasTag("mc_admin")) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-                const dimension = sender.dimension.id;
-                if (args.length == 2) {
-                    const [ix, iz] = args.map(str => Math.floor(Number(str)));
-                    const { x, z } = this.sender.location;
-                    const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-                    if (!isNumber(ix) || !isNumber(iz)) {
-                        this.sender.sendMessage({ translate: '§c座標が間違っています' });
-                        return;
-                    };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度にリセット可能なチャンクは100チャンクまでです' });
-                        return;
-                    };
-                    for (let i = 0; i < chunks.length; i++) {
-                        system.runTimeout(() => {
-                            const chunkId = `chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`;
-                            let chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
-                            if (chunkData) {
-                                if (chunkData?.countryId) {
-                                    const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
-                                    if (countryData) {
-                                        countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
-                                        let chunkPrice = config.defaultChunkPrice / 2;
-                                        if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                                        countryData.money += chunkPrice;
-                                        StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
-                                    };
-                                };
-                            };
-                            chunkDataBase.delete(chunkId);
-                            sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-                        }, i)
-                    }
-                    return;
-                }
-                const chunkId = GetPlayerChunkPropertyId(sender);
-                const chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
+    const chunkDataBase = new DynamicProperties("chunk");
+    const countryDataBase = new DynamicProperties("country");
+    if (!sender.hasTag("mc_admin")) {
+        sender.sendMessage({ translate: `command.permission.error` });
+        return;
+    };
+    const dimension = sender.dimension.id;
+    if (args.length == 2) {
+        const [ix, iz] = args.map(str => Math.floor(Number(str)));
+        const { x, z } = this.sender.location;
+        const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
+        if (!isNumber(ix) || !isNumber(iz)) {
+            this.sender.sendMessage({ translate: '§c座標が間違っています' });
+            return;
+        };
+        if (chunks.length > 100) {
+            sender.sendMessage({ translate: '1度にリセット可能なチャンクは100チャンクまでです' });
+            return;
+        };
+        for (let i = 0; i < chunks.length; i++) {
+            system.runTimeout(() => {
+                const chunkId = `chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`;
+                let chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
                 if (chunkData) {
                     if (chunkData?.countryId) {
                         const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
@@ -73,7 +44,40 @@ system.beforeEvents.startup.subscribe((event) => {
                 };
                 chunkDataBase.delete(chunkId);
                 sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-                return;
+            }, i)
+        }
+        return;
+    }
+    const chunkId = GetPlayerChunkPropertyId(sender);
+    const chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
+    if (chunkData) {
+        if (chunkData?.countryId) {
+            const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
+            if (countryData) {
+                countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
+                let chunkPrice = config.defaultChunkPrice / 2;
+                if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
+                countryData.money += chunkPrice;
+                StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
+            };
+        };
+    };
+    chunkDataBase.delete(chunkId);
+    sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
+    return;
+};
+
+system.beforeEvents.startup.subscribe((event) => {
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:resetchunk',
+            description: 'command.help.resetchunk.message',
+            permissionLevel: CommandPermissionLevel.Admin,
+            optionalParameters: [{ name: "x", type: CustomCommandParamType.Integer }, { name: "z", type: CustomCommandParamType.Integer }]
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+                resetChunkExecuter(origin, args);
             })
         })
     )
@@ -89,67 +93,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                const chunkDataBase = new DynamicProperties("chunk");
-                const countryDataBase = new DynamicProperties("country");
-                if (!sender.hasTag("mc_admin")) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-                const dimension = sender.dimension.id;
-                if (args.length == 2) {
-                    const [ix, iz] = args.map(str => Math.floor(Number(str)));
-                    const { x, z } = this.sender.location;
-                    const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-                    if (!isNumber(ix) || !isNumber(iz)) {
-                        this.sender.sendMessage({ translate: '§c座標が間違っています' });
-                        return;
-                    };
-                    if (chunks.length > 100) {
-                        sender.sendMessage({ translate: '1度にリセット可能なチャンクは100チャンクまでです' });
-                        return;
-                    };
-                    for (let i = 0; i < chunks.length; i++) {
-                        system.runTimeout(() => {
-                            const chunkId = `chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`;
-                            let chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
-                            if (chunkData) {
-                                if (chunkData?.countryId) {
-                                    const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
-                                    if (countryData) {
-                                        countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
-                                        let chunkPrice = config.defaultChunkPrice / 2;
-                                        if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                                        countryData.money += chunkPrice;
-                                        StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
-                                    };
-                                };
-                            };
-                            chunkDataBase.delete(chunkId);
-                            sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-                        }, i)
-                    }
-                    return;
-                }
-                const chunkId = GetPlayerChunkPropertyId(sender);
-                const chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
-                if (chunkData) {
-                    if (chunkData?.countryId) {
-                        const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
-                        if (countryData) {
-                            countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
-                            let chunkPrice = config.defaultChunkPrice / 2;
-                            if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                            countryData.money += chunkPrice;
-                            StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
-                        };
-                    };
-                };
-                chunkDataBase.delete(chunkId);
-                sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-                return;
+                resetChunkExecuter(origin, args);
             })
         })
     )

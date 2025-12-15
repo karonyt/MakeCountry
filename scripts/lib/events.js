@@ -400,6 +400,11 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const permission = `place`
     const { player, block } = ev;
+
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:spawner') {
+        ev.cancel = true;
+        return;
+    };
     const container = player.getComponent("inventory").container;
     if (!container.getItem(player.selectedSlotIndex)) return;
     const { x, z } = block.location;

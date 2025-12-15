@@ -1,5 +1,13 @@
 import { CommandPermissionLevel, Player, system, world } from "@minecraft/server";
 
+function generalChatExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    sender.setDynamicProperty(`chatType`, `general`);
+    sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `general.chat` }] } }] })
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -9,17 +17,11 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `general`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `general.chat` }] } }] })
+                generalChatExecuter(origin, args);
             })
         })
     )
-});
 
-system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:g',
@@ -28,17 +30,11 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                sender.setDynamicProperty(`chatType`, `general`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `general.chat` }] } }] })
+                generalChatExecuter(origin, args)
             })
         })
     )
-});
 
-system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:gc',
@@ -47,11 +43,20 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
+                generalChatExecuter(origin, args)
+            })
+        })
+    )
 
-                sender.setDynamicProperty(`chatType`, `general`);
-                sender.sendMessage({ rawtext: [{ translate: `chattype.changed`, with: { rawtext: [{ translate: `general.chat` }] } }] })
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:generalchatcommand ',
+            description: 'command.help.generalchat.message',
+            permissionLevel: CommandPermissionLevel.Any
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+                generalChatExecuter(origin, args)
             })
         })
     )

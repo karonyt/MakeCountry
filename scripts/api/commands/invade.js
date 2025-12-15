@@ -4,6 +4,31 @@ import { Invade } from "../../lib/war";
 import { CheckPermission } from "../../lib/util";
 import config from "../../config";
 
+function invadeExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    const playerDataBase = new DynamicProperties("player");
+
+    const rawData = playerDataBase.get(`player_${sender.id}`);
+    const playerData = JSON.parse(rawData);
+
+    if (!config.invadeValidity) {
+        sender.sendMessage({ translate: `command.error.invade.novalidity` });
+        return;
+    };
+    if (!playerData?.country) {
+        sender.sendMessage({ translate: `command.sellchunk.error.notjoin.country` });
+        return;
+    };
+    const cancel = CheckPermission(sender, `warAdmin`);
+    if (cancel) {
+        sender.sendMessage({ translate: `command.error.permission` });
+        return;
+    };
+    Invade(sender);
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -13,28 +38,20 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
+                invadeExecuter(origin, args);
+            })
+        })
+    )
 
-                const playerDataBase = new DynamicProperties("player");
-
-                const rawData = playerDataBase.get(`player_${sender.id}`);
-                const playerData = JSON.parse(rawData);
-
-                if (!config.invadeValidity) {
-                    sender.sendMessage({ translate: `command.error.invade.novalidity` });
-                    return;
-                };
-                if (!playerData?.country) {
-                    sender.sendMessage({ translate: `command.sellchunk.error.notjoin.country` });
-                    return;
-                };
-                const cancel = CheckPermission(sender, `warAdmin`);
-                if (cancel) {
-                    sender.sendMessage({ translate: `command.error.permission` });
-                    return;
-                };
-                Invade(sender);
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:startinvasion',
+            description: 'command.help.invade.message',
+            permissionLevel: CommandPermissionLevel.Any,
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+                invadeExecuter(origin, args);
             })
         })
     )

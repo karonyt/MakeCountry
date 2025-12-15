@@ -1,5 +1,17 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 
+function deleteCountryExecuter(origin, args) {
+    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    const sender = origin.sourceEntity;
+
+    if (!sender.hasTag("mc_admin")) {
+        sender.sendMessage({ translate: `command.permission.error` });
+        return;
+    };
+
+    sender.runCommand(`scriptevent karo:deletecountry ${args[0]}`)
+};
+
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
@@ -10,16 +22,7 @@ system.beforeEvents.startup.subscribe((event) => {
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
-                if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-                const sender = origin.sourceEntity;
-
-                if (!sender.hasTag("mc_admin")) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-
-                sender.runCommand(`scriptevent karo:deletecountry ${args[0]}`)
-
+                deleteCountryExecuter(origin, args);
             })
         })
     )

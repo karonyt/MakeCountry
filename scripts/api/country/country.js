@@ -2,7 +2,7 @@ import { DynamicProperties } from "../../api/dyp";
 import { CheckPermission, GetAndParsePropertyData, GetChunkPropertyId, GetPlayerChunkPropertyId, StringifyAndSavePropertyData } from "../../lib/util";
 import { nameSet } from "../../lib/nameset";
 import { country } from "../api";
-import { Player, system, world } from "@minecraft/server";
+import { ItemStack, Player, system, world } from "@minecraft/server";
 import config from "../../config";
 import { acceptFriendlyRequestFunction, denyFriendlyRequestFunction, removeFriendlyFunction, sendFriendlyRequestFunction } from "./lib/friendly";
 import { acceptApplicationRequestFunction, denyApplicationRequestFunction, sendApplicationRequestFunction } from "./lib/application";
@@ -13,6 +13,7 @@ import { inviteFunction } from "./lib/invite";
 import { setNewOwnerFunction } from "./lib/owner";
 import { RoleManager } from "./role";
 import { DeleteCountry, MergeCountry } from "../../lib/land";
+import national_tier_level from "../../national_tier_level";
 /**
  * @typedef {import("../../jsdoc/player").PlayerData} PlayerData
  * @typedef {import("../../jsdoc/country").CountryData} CountryData 
@@ -804,6 +805,7 @@ export class CountryManager {
                 { translate: `form.showcountry.option.name`, with: [this.countryData.name] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.lore`, with: [this.countryData.lore] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.id`, with: [`${this.countryData.id}`] }, { text: `\n§r` },
+                { translate: `form.showcountry.option.lv`, with: [`${this.countryData?.lv ?? 0}`] }, { text: `\n§r` },
                 { text: `${this.roleManager.getRole(this.countryData.ownerRole)?.name || 'None'}: ${ownerName}` }, { text: `\n§r` },
                 { translate: `form.showcountry.option.memberscount`, with: [`${this.countryData.members.length}`] }, { text: `\n§r` },
                 { text: `${this.roleManager.getRole(this.countryData.peopleRole)?.name || 'None'}: ${membersName.join(`§r , `)}` }, { text: `\n§r` },
@@ -821,6 +823,148 @@ export class CountryManager {
             ]
         }
     };
+
+    /**
+     * 
+     * @param {Player} player 
+     */
+    nationTierLevelTryUp(player) {
+        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1].item
+        const needItems = need.item;
+        const needPoint = need.point;
+        const needItemId = needItems.map(a => a.typeId);
+        const container = player.getComponent('inventory').container;
+        const itemMap = new Map();
+        for (let i = 0; i < container.size; i++) {
+            const slot = container.getItem(i);
+            if (slot) {
+                const index = needItemId.indexOf(slot.typeId);
+                if (index != -1) {
+                    itemMap.set(needItemId[index], (itemMap.get(needItemId[index]) ?? 0) + slot.amount);
+                };
+            };
+        };
+        const notEnough = [];
+        for (const item of needItems) {
+            const enough = item.amount - (itemMap.get(item.typeId) ?? 0)
+            if (enough < 0) {
+                notEnough.push({ typeId: item.typeId, need: item.amount, amount: item.typeId, notEnough: enough });
+            };
+        };
+        if (needPoint > this.countryData.resourcePoint) {
+            notEnough.push({ typeId: 'resourcepoint', need: needPoint, amount: this.countryData.resourcePoint, notEnough: needPoint - this.countryData.resourcePoint });
+        } else if (notEnough.length == 0) {
+            for (const item of needItems) {
+                player.runCommand(`clear @s ${item.typeId} -1 ${item.amount}`);
+            };
+            this.countryData.resourcePoint = this.countryData.resourcePoint - needPoint;
+            this.countryData.lv = (this.countryData.lv ?? 0) + 1;
+            this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+            player.onScreenDisplay.setTitle({ text: `§a§lLevel UP!!` });
+            player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - 1} §f>> §e${this.countryData.lv}` });
+            player.sendMessage({ translate: 'national.tier.level.up', with: [this.countryData.lv] });
+            player.playSound('random.levelup', { location: player.location });
+            return;
+        };
+
+        if (notEnough.length != 0) {
+            const result = [];
+            result.push({ translate: 'next.level.need.notenough', with: [`${lv}`] }, { text: '\n\n' })
+            for (const item of notEnough) {
+                result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+            }
+            player.sendMessage({ rawtext: result });
+            player.playSound('note.guitar', { location: player.location });
+            return;
+        };
+    }
+
+    /**
+     * 国家レベルを設定(管理者向け)
+     * @param {number} lv 
+     */
+    nationTierLevelSet(lv) {
+        this.countryData.lv = lv;
+        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+    };
+
+    /**
+     * 国家レベルを増やす
+     * @param {number} add
+     * @param {Player|undefined} player 
+     */
+    nationTierLevelUp(add = 1, player = undefined) {
+        this.countryData.lv = (this.countryData.lv ?? 0) + add;
+        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+        if (player) {
+            player.sendMessage();
+        };
+    };
+
+    /**
+     * 何が必要かのRawMessageを返す
+     * @param {number} lv 
+     * @returns {import("@minecraft/server").RawMessage}
+     */
+    nationTierLevelNeed(lv) {
+        const need = national_tier_level.needs[lv].item
+        const needItems = need.item;
+        const needPoint = need.point;
+        const result = [];
+        result.push({ translate: 'next.level.need.title', with: [`${lv}`] }, { text: '\n\n' })
+        for (const item of needItems) {
+            result.push({ text: '･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` x ${item.amount}\n` })
+        }
+        result.push({ text: '\n･' }, { translate: 'resourcepoint' }, { text: ` x ${needPoint}` });
+        return result
+    }
+
+    /**
+     * 国家レベルを上げられるか確認
+     * @param {Player} player 
+     * @param {number} lv 
+     */
+    nationTierLevelCheck(player, lv = this.countryData.lv) {
+        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1].item
+        const needItems = need.item;
+        const needPoint = need.point;
+        const needItemId = needItems.map(a => a.typeId);
+        const container = player.getComponent('inventory').container;
+        const itemMap = new Map();
+        for (let i = 0; i < container.size; i++) {
+            const slot = container.getItem(i);
+            if (slot) {
+                const index = needItemId.indexOf(slot.typeId);
+                if (index != -1) {
+                    itemMap.set(needItemId[index], (itemMap.get(needItemId[index]) ?? 0) + slot.amount);
+                };
+            };
+        };
+        const notEnough = [];
+        for (const item of needItems) {
+            const enough = item.amount - (itemMap.get(item.typeId) ?? 0)
+            if (enough < 0) {
+                notEnough.push({ typeId: item.typeId, need: item.amount, amount: item.typeId, notEnough: enough });
+            };
+        };
+        if (needPoint > this.countryData.resourcePoint) {
+            notEnough.push({ typeId: 'resourcepoint', need: needPoint, amount: this.countryData.resourcePoint, notEnough: needPoint - this.countryData.resourcePoint });
+        } else if (notEnough.length == 0) {
+            player.sendMessage({ translate: 'next.level.need.can' });
+            return;
+        };
+
+        if (notEnough.length != 0) {
+            const result = [];
+            result.push({ translate: 'next.level.need.notenough', with: [`${lv}`] }, { text: '\n\n' })
+            for (const item of notEnough) {
+                result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+            }
+            player.sendMessage({ rawtext: result });
+            player.playSound('note.guitar', { location: player.location });
+            return;
+        };
+    }
 
     /**
      * 国を削除
