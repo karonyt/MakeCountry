@@ -52,6 +52,7 @@ export function settingCountryDefaultForm(player) {
                     return;
                 }
                 nationalTierLevelDefaultForm(player);
+                break;
             };
             case 2: {
                 treasuryMainDefaultForm(player);
