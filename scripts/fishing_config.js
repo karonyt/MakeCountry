@@ -1,6 +1,5 @@
 import common from "./fishing_configs/common";
 import plains from "./fishing_configs/plains";
-import river from "./fishing_configs/river";
 import savanna from "./fishing_configs/savanna";
 import ocean from "./fishing_configs/ocean";
 import deep_ocean from "./fishing_configs/deep_ocean";
