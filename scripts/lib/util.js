@@ -91,6 +91,7 @@ export function ConvertChunk(rawX, rawZ) {
 
 const checkOnlyRole = [
     `invite`,
+    `nationalTierLevelAdmin`,
     `editCountryName`,
     `editCountryLore`,
     `inviteChange`,

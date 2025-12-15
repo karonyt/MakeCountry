@@ -9,14 +9,14 @@ export default {
     releaseSpeciallFishing: 100,
 
     needs: {
-        1: {
+        '1': {
             item: [
                 { typeId: 'minecraft:apple', amount: 10 }
             ],
             //必要なリソースポイント
             point: 1000
         },
-        2: {
+        '2': {
             item: [
                 { typeId: 'minecraft:stone', amount: 10 },
                 { typeId: 'minecraft:cobblestone', amount: 10 }
