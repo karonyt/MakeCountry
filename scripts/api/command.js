@@ -43,5 +43,6 @@ import "./commands/deletecountry";
 import "./commands/playercount";
 import "./commands/fixcountrydata";
 import "./commands/updaterank";
+import "./commands/nationaltierlevel";
 
 import "./commands/knw";

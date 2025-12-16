@@ -344,7 +344,7 @@ export function jobsForm(player) {
     if (national_tier_level.enabled) {
         const playerDataBase = new DynamicProperties('player');
         const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
-        const lv = countryId ? new CountryManager(countryId).countryData.lv : 0;
+        const lv = countryId ? countryId > 0 ? new CountryManager(countryId).countryData.lv : 0 : 0;
         jobsList = jobs_config.jobsList.filter(job => job.lv <= lv);
     };
     for (const job of jobsList) {
@@ -370,9 +370,9 @@ export function jobsForm(player) {
             return;
         };
         const selected = rs.selection;
-        let isEmploy = player.hasTag(`mcjobs_${jobs_config.jobsList[selected].id}`);
+        let isEmploy = player.hasTag(`mcjobs_${jobsList[selected].id}`);
         if (isEmploy) {
-            player.removeTag(`mcjobs_${jobs_config.jobsList[selected].id}`);
+            player.removeTag(`mcjobs_${jobsList[selected].id}`);
             jobsForm(player);
             return;
         };
@@ -381,7 +381,7 @@ export function jobsForm(player) {
             player.sendMessage({ translate: `message.max.employment.num.over`, with: [`${employAmount}`] });
             return;
         };
-        player.addTag(`mcjobs_${jobs_config.jobsList[selected].id}`);
+        player.addTag(`mcjobs_${jobsList[selected].id}`);
         jobsForm(player);
         return;
     });

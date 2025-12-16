@@ -23,7 +23,7 @@ playerFishingAfterEvent.subscribe((ev) => {
     world.sendMessage(`${dimension.getBiome(itemEntity.location).id}`)
 
     const fishItemStack = new ItemStack(fish.typeId);
-    fishItemStack.setLore([`§r§fSize: ${fish.size}cm`]);
+    fishItemStack.setLore([{ rawtext: [{ text: '§r§f' }, { translate: 'fish.lore.size', with: [`${fish.size}`] }] }]);
     const item = dimension.spawnItem(fishItemStack, itemEntity.location);
     itemEntity.remove();
     item.clearVelocity();

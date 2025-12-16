@@ -16,7 +16,7 @@ function shopExecuter(origin, args) {
         let lv = 0;
         if (playerManager.country) lv = playerManager.country.lv;
         if (lv < national_tier_level.releaseAdminShop) {
-            sender.sendMessage({ translate: `no.available.shop` });
+            sender.sendMessage({ translate: `no.release.shop`, with: [`${national_tier_level.releaseAdminShop}`] });
             return;
         };
     };

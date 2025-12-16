@@ -1,4 +1,4 @@
-import { Player } from "@minecraft/server";
+import { Player, world } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
 import { playerMainMenuDefaultForm } from "../player_main_menu";
 import national_tier_level from "../../../../national_tier_level";
@@ -32,7 +32,7 @@ export function playerSettingDefaultForm(player) {
         const playerManager = new PlayerManager(player.id);
         const countryData = playerManager.country;
         let lv = 0;
-        if (countryData) lv = countryData.lv;
+        if (countryData) lv = countryData.lv ?? 0;
         settings = settings.filter(s => lv >= s.lv);
     };
     for (const setting of settings) {
@@ -48,9 +48,8 @@ export function playerSettingDefaultForm(player) {
             return;
         };
         player.setDynamicProperty('uiType', uiTypes[rs.formValues[0]]);
-        player.setDynamicProperty('isSpecialFishing', `${rs.formValues[1]}`);
         for (let i = 0; i < settings.length; i++) {
-            player.setDynamicProperty(settings[i].dypKey, `${rs.formValues[i + 2]}`);
+            player.setDynamicProperty(settings[i].dypKey, `${rs.formValues[i + 1]}`);
         };
         player.sendMessage({ translate: 'updated' });
     });

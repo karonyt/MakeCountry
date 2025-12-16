@@ -36,7 +36,7 @@ export function playerMainMenuDefaultForm(player) {
     form.divider();
     form.label({
         rawtext: [{ text: `` }, { translate: 'day.year', with: [`${date.year}`] }, { text: `` }, { translate: 'day.month', with: [`${date.month}`] }, { text: `` }, { translate: 'day.day', with: [`${date.day}`] }, { text: '(' }, { translate: `day.${date.weekday}` }, { text: `) - ` }, { translate: `day.${date.season}` },
-        { text: `\n${date.hours}:${date.minutes} - ` }, { translate: `day.${date.period}` }]
+        { text: `\n${date.hours}:${date.minutes < 10 ? '0' : ''}${date.minutes} - ` }, { translate: `day.${date.period}` }]
     });
     form.button({ translate: `form.mainmenu.button.profile` });
     form.button({ translate: `form.mainmenu.button.sendmoney` });
