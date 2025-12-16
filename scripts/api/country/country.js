@@ -14,6 +14,8 @@ import { setNewOwnerFunction } from "./lib/owner";
 import { RoleManager } from "./role";
 import { DeleteCountry, MergeCountry } from "../../lib/land";
 import national_tier_level from "../../national_tier_level";
+import { updateRecipe } from "../../lib/recipe";
+import jobs_config from "../../jobs_config";
 /**
  * @typedef {import("../../jsdoc/player").PlayerData} PlayerData
  * @typedef {import("../../jsdoc/country").CountryData} CountryData 
@@ -864,6 +866,19 @@ export class CountryManager {
             player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - 1} §f>> §e${this.countryData.lv}` });
             player.sendMessage({ translate: 'national.tier.level.up', with: [`${this.countryData.lv}`] });
             player.playSound('random.levelup', { location: player.location });
+            for (const memberId of this.memberManager.members) {
+                const player = world.getEntity(memberId);
+                if (player && (player instanceof Player)) {
+                    updateRecipe(player, this.countryData.lv);
+
+                    const jobsList = jobs_config.jobsList.filter(job => job.lv > this.countryData.lv);
+                    for (const job of jobsList) {
+                        if (player.hasTag(`mcjobs_${job.id}`)) {
+                            player.removeTag(`mcjobs_${job.id}`);
+                        };
+                    }
+                };
+            };
             return;
         };
 
@@ -890,6 +905,19 @@ export class CountryManager {
     nationTierLevelSet(lv) {
         this.countryData.lv = lv;
         this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+        for (const memberId of this.memberManager.members) {
+            const player = world.getEntity(memberId);
+            if (player && (player instanceof Player)) {
+                updateRecipe(player, lv);
+
+                const jobsList = jobs_config.jobsList.filter(job => job.lv > lv);
+                for (const job of jobsList) {
+                    if (player.hasTag(`mcjobs_${job.id}`)) {
+                        player.removeTag(`mcjobs_${job.id}`);
+                    };
+                }
+            };
+        };
     };
 
     /**
@@ -900,8 +928,24 @@ export class CountryManager {
     nationTierLevelUp(add = 1, player = undefined) {
         this.countryData.lv = (this.countryData.lv ?? 0) + add;
         this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+        for (const memberId of this.memberManager.members) {
+            const player = world.getEntity(memberId);
+            if (player && (player instanceof Player)) {
+                updateRecipe(player, this.countryData.lv);
+
+                const jobsList = jobs_config.jobsList.filter(job => job.lv > this.countryData.lv);
+                for (const job of jobsList) {
+                    if (player.hasTag(`mcjobs_${job.id}`)) {
+                        player.removeTag(`mcjobs_${job.id}`);
+                    };
+                }
+            };
+        };
         if (player) {
-            player.sendMessage();
+            player.onScreenDisplay.setTitle({ text: `§a§lLevel UP!!` });
+            player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - add} §f>> §e${this.countryData.lv}` });
+            player.sendMessage({ translate: 'national.tier.level.up', with: [`${this.countryData.lv}`] });
+            player.playSound('random.levelup', { location: player.location });
         };
     };
 
@@ -912,7 +956,7 @@ export class CountryManager {
      */
     nationTierLevelNeed(lv = (this.countryData.lv ?? 0) + 1) {
         const need = national_tier_level.needs[lv];
-        if(!need) return 'max';
+        if (!need) return 'max';
         const needItems = need.item;
         const needPoint = need.point;
         const result = [];

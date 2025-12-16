@@ -8,6 +8,9 @@ import { nameSet } from "./nameset";
 import { JobLevel } from "./jobslevel";
 import { DynamicProperties } from "../api/dyp";
 import { chestLockDefaultForm } from "../forms/default/chest_lock/main";
+import national_tier_level from "../national_tier_level";
+import { updateRecipe } from "./recipe";
+import { CountryManager } from "../api/country/country";
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
@@ -635,11 +638,21 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
             if (config.countryNameDisplayOnPlayerNameTag) {
                 nameSet(player);
             };
-            return;
-        };
-        const beforeData = playerDataBase.get(`player_${player.id}`);
-        if (beforeData) {
-            playerDataBase.set(`player_${player.id}`, beforeData);
+            if (national_tier_level.enabled) {
+                const playerDataBase = new DynamicProperties('player');
+                const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
+                const lv = countryId ? new CountryManager(countryId).countryData.lv : 0;
+
+                const jobsList = jobs_config.jobsList.filter(job => job.lv > lv);
+                for (const job of jobsList) {
+                    if (player.hasTag(`mcjobs_${job.id}`)) {
+                        player.removeTag(`mcjobs_${job.id}`);
+                    };
+                }
+                
+                updateRecipe(player, lv);
+            };
+
             return;
         };
 
@@ -656,6 +669,8 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
                 inviteReceiveMessage: true,
             }
         };
-        StringifyAndSavePropertyData(`player_${player.id}`, newPlayerData, playerDataBase);
+
+        playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
+        return;
     };
 });

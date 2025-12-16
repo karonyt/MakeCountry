@@ -7,6 +7,9 @@ const ActionFormData = ActionForm;
 import playerFishingAfterEvent from "./fishingEvent";
 import { JobLevel } from "./jobslevel";
 import { RewardBuff } from "../api/rewardbuff";
+import { DynamicProperties } from "../api/dyp";
+import { CountryManager } from "../api/country/country";
+import national_tier_level from "../national_tier_level";
 
 let buff
 
@@ -337,7 +340,14 @@ export function jobsForm(player) {
     const form = new ActionFormData();
     form.title({ translate: `jobs.title` });
     const body = [];
-    for (const job of jobs_config.jobsList) {
+    let jobsList = jobs_config.jobsList
+    if (national_tier_level.enabled) {
+        const playerDataBase = new DynamicProperties('player');
+        const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
+        const lv = countryId ? new CountryManager(countryId).countryData.lv : 0;
+        jobsList = jobs_config.jobsList.filter(job => job.lv <= lv);
+    };
+    for (const job of jobsList) {
         let isEmploy = player.hasTag(`mcjobs_${job.id}`);
         let employMessage = `not.yet.employed`;
         const jobs = new JobLevel(player, job.id);

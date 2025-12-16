@@ -18,16 +18,19 @@ export default {
         {
             id: `farmer`, //職業ID(就いてるときに mcjobs_ID のtagが付く)
             name: `farmer`, //formに表示する職業名(翻訳キー(lang)も可能)
+            lv: 75, //文明レベルでの制限
         },
         //鉱夫
         {
             id: `miner`,
             name: `miner`,
+            lv: 25,
         },
         //木こり
         {
             id: `woodcutter`,
             name: `woodcutter`,
+            lv: 0,
         },
         //狩人
         {
@@ -38,31 +41,37 @@ export default {
         {
             id: `fisherman`,
             name: `fisherman`,
+            lv: 50
         },
         //土掘り士
         {
             id: `dirtdigger`,
             name: `dirtdigger`,
+            lv: 5,
         },
         //砂掘り士
         {
             id: `sanddigger`,
             name: `sanddigger`,
+            lv: 15,
         },
         //ネザー掘り士
         {
             id: `netherdigger`,
             name: `netherdigger`,
+            lv: 40,
         },
         //建築士
         {
             id: `builder`,
             name: `builder`,
+            lv: 80,
         },
         //庭師
         {
             id: `gardener`,
             name: `gardener`,
+            lv: 65,
         },
         //ここに追加可能
     ],
