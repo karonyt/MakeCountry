@@ -11,14 +11,15 @@ export default {
     needs: {
         1: {
             item: [
-                { typeId: 'minecraft:apple', amount: 10 }
+                { typeId: 'minecraft:oak_fence', amount: 21 }
+
             ],
             //必要なリソースポイント
             point: 1000
         },
         2: {
             item: [
-                { typeId: 'minecraft:oak_boat', amount: 3 }
+                { typeId: 'minecraft:oak_boat', amount: 5 }
             ],
             point: 1000
         },
@@ -30,14 +31,16 @@ export default {
         },
         4: {
             item: [
-                { typeId: 'minecraft:oak_fence', amount: 21 }
+                { typeId: 'minecraft:wooden_pressure_plate', amount: 32 },
+                { typeId: 'minecraft:oak_sapling', amount: 32 }
+
             ],
             point: 1000
         },
         5: {
             item: [
-                { typeId: 'minecraft:wooden_pressure_plate', amount: 32 },
-                { typeId: 'minecraft:oak_sapling', amount: 32 }
+                { typeId: 'minecraft:apple', amount: 10 }
+
             ],
             point: 5000
         },
