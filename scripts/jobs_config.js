@@ -36,6 +36,7 @@ export default {
         {
             id: `hunter`,
             name: `hunter`,
+            lv: 100
         },
         //漁師
         {
