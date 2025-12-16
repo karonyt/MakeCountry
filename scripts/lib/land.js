@@ -5,6 +5,9 @@ import config from "../config";
 import { nameSet } from "./nameset";
 import { country } from "../api/api";
 import { DynamicProperties } from "../api/dyp";
+import jobs_config from "../jobs_config.js";
+import { updateRecipe } from "./recipe.js";
+import { CountryManager } from "../api/country/country.js";
 
 /**
  * @type {DynamicProperties}
@@ -229,6 +232,23 @@ export function DeleteCountry(countryId) {
                             playerData.roles = [];
                             playerData.country = undefined;
                             playerDataBase.set(`player_${m}`, JSON.stringify(playerData));
+                        };
+
+                        const playerEntity = world.getEntity(m);
+                        if (playerEntity && playerEntity instanceof Player) {
+                            if (config.countryNameDisplayOnPlayerNameTag) {
+                                nameSet(p);
+                            };
+
+                            updateRecipe(playerEntity, 0);
+
+                            const jobsList = jobs_config.jobsList.filter(job => job.lv > 0);
+                            for (const job of jobsList) {
+                                if (playerEntity.hasTag(`mcjobs_${job.id}`)) {
+                                    playerEntity.removeTag(`mcjobs_${job.id}`);
+                                };
+                            }
+
                         };
                     } catch (error) {
                     };
@@ -514,14 +534,6 @@ export function DeleteCountry(countryId) {
         //ここら辺に国際組織から抜ける処理を追加しておく
         countryDataBase.delete(`country_${countryId}`);
     }, 19);
-    system.runTimeout(() => {
-        const players = world.getPlayers();
-        for (const p of players) {
-            if (config.countryNameDisplayOnPlayerNameTag) {
-                nameSet(p);
-            };
-        };
-    }, 20);
 
     system.runTimeout(() => {
         country.afterEvents.delete.emit({
@@ -771,6 +783,15 @@ export function playerCountryLeave(player) {
             if (config.countryNameDisplayOnPlayerNameTag) {
                 nameSet(player);
             };
+
+            updateRecipe(player, 0);
+
+            const jobsList = jobs_config.jobsList.filter(job => job.lv > 0);
+            for (const job of jobsList) {
+                if (player.hasTag(`mcjobs_${job.id}`)) {
+                    player.removeTag(`mcjobs_${job.id}`);
+                };
+            }
         }, 2);
     } catch (error) {
         console.warn(error);
@@ -1259,6 +1280,23 @@ export function MergeCountry(fromCountryId, toCountryId, player = undefined) {
                             playerData.roles = [toCountryData.peopleRole];
                             playerData.country = toCountryData.id;
                             StringifyAndSavePropertyData(`player_${m}`, playerData);
+                        };
+
+                        const playerEntity = world.getEntity(m);
+                        if (playerEntity && playerEntity instanceof Player) {
+                            if (config.countryNameDisplayOnPlayerNameTag) {
+                                nameSet(p);
+                            };
+
+                            updateRecipe(playerEntity, countryData?.lv ?? 0);
+
+                            const jobsList = jobs_config.jobsList.filter(job => job.lv > countryData?.lv ?? 0);
+                            for (const job of jobsList) {
+                                if (playerEntity.hasTag(`mcjobs_${job.id}`)) {
+                                    playerEntity.removeTag(`mcjobs_${job.id}`);
+                                };
+                            }
+
                         };
                     } catch (error) {
                     };

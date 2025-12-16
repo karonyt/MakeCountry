@@ -167,12 +167,21 @@ class CountryMemberManager {
                 player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `kicked.finish.message.sender`, with: [targetMemberData.name] }] });
             }
             const kickedMemberEntity = world.getEntity(playerId);
-            if (kickedMemberEntity) {
+            if (kickedMemberEntity && kickedMemberEntity instanceof Player) {
                 kickedMemberEntity.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `kicked.country` }] });
                 system.runTimeout(() => {
                     if (config.countryNameDisplayOnPlayerNameTag) {
                         nameSet(kickedMemberEntity);
                     };
+
+                    updateRecipe(kickedMemberEntity, 0);
+
+                    const jobsList = jobs_config.jobsList.filter(job => job.lv > 0);
+                    for (const job of jobsList) {
+                        if (kickedMemberEntity.hasTag(`mcjobs_${job.id}`)) {
+                            kickedMemberEntity.removeTag(`mcjobs_${job.id}`);
+                        };
+                    }
                 }, 2);
             };
         } catch (error) {
