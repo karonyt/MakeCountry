@@ -829,7 +829,7 @@ export class CountryManager {
      * @param {Player} player 
      */
     nationTierLevelTryUp(player) {
-        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1].item
+        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1];
         const needItems = need.item;
         const needPoint = need.point;
         const needItemId = needItems.map(a => a.typeId);
@@ -846,9 +846,9 @@ export class CountryManager {
         };
         const notEnough = [];
         for (const item of needItems) {
-            const enough = item.amount - (itemMap.get(item.typeId) ?? 0)
-            if (enough < 0) {
-                notEnough.push({ typeId: item.typeId, need: item.amount, amount: item.typeId, notEnough: enough });
+            const enough = item.amount - (itemMap.get(item.typeId) ?? 0);
+            if (enough > 0) {
+                notEnough.push({ typeId: item.typeId, need: item.amount, amount: (itemMap.get(item.typeId) ?? 0), notEnough: enough });
             };
         };
         if (needPoint > this.countryData.resourcePoint) {
@@ -862,16 +862,20 @@ export class CountryManager {
             this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
             player.onScreenDisplay.setTitle({ text: `§a§lLevel UP!!` });
             player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - 1} §f>> §e${this.countryData.lv}` });
-            player.sendMessage({ translate: 'national.tier.level.up', with: [this.countryData.lv] });
+            player.sendMessage({ translate: 'national.tier.level.up', with: [`${this.countryData.lv}`] });
             player.playSound('random.levelup', { location: player.location });
             return;
         };
 
         if (notEnough.length != 0) {
             const result = [];
-            result.push({ translate: 'next.level.need.notenough', with: [`${lv}`] }, { text: '\n\n' })
+            result.push({ translate: 'next.level.need.notenough', with: [`${(this.countryData.lv ?? 0) + 1}`] }, { text: '\n\n' })
             for (const item of notEnough) {
-                result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+                if (item.typeId == 'resourcepoint') {
+                    result.push({ text: '§c･' }, { translate: 'resourcepoint' }, { text: ` (${item.amount}/${item.need})\n` })
+                } else {
+                    result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+                };
             }
             player.sendMessage({ rawtext: result });
             player.playSound('note.guitar', { location: player.location });
@@ -906,8 +910,9 @@ export class CountryManager {
      * @param {number} lv 
      * @returns {import("@minecraft/server").RawMessage}
      */
-    nationTierLevelNeed(lv = this.countryData.lv + 1) {
-        const need = national_tier_level.needs[lv].item
+    nationTierLevelNeed(lv = (this.countryData.lv ?? 0) + 1) {
+        const need = national_tier_level.needs[lv];
+        if(!need) return 'max';
         const needItems = need.item;
         const needPoint = need.point;
         const result = [];
@@ -924,8 +929,8 @@ export class CountryManager {
      * @param {Player} player 
      * @param {number} lv 
      */
-    nationTierLevelCheck(player, lv = this.countryData.lv) {
-        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1].item
+    nationTierLevelCheck(player, lv = (this.countryData.lv ?? 0)) {
+        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1];
         const needItems = need.item;
         const needPoint = need.point;
         const needItemId = needItems.map(a => a.typeId);
@@ -942,9 +947,9 @@ export class CountryManager {
         };
         const notEnough = [];
         for (const item of needItems) {
-            const enough = item.amount - (itemMap.get(item.typeId) ?? 0)
-            if (enough < 0) {
-                notEnough.push({ typeId: item.typeId, need: item.amount, amount: item.typeId, notEnough: enough });
+            const enough = item.amount - (itemMap.get(item.typeId) ?? 0);
+            if (enough > 0) {
+                notEnough.push({ typeId: item.typeId, need: item.amount, amount: (itemMap.get(item.typeId) ?? 0), notEnough: enough });
             };
         };
         if (needPoint > this.countryData.resourcePoint) {
@@ -958,7 +963,11 @@ export class CountryManager {
             const result = [];
             result.push({ translate: 'next.level.need.notenough', with: [`${lv}`] }, { text: '\n\n' })
             for (const item of notEnough) {
-                result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+                if (item.typeId == 'resourcepoint') {
+                    result.push({ text: '§c･' }, { translate: 'resourcepoint' }, { text: ` (${item.amount}/${item.need})\n` })
+                } else {
+                    result.push({ text: '§c･' }, { translate: new ItemStack(item.typeId).localizationKey }, { text: ` (${item.amount}/${item.need})\n` })
+                };
             }
             player.sendMessage({ rawtext: result });
             player.playSound('note.guitar', { location: player.location });

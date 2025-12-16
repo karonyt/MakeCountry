@@ -3,10 +3,10 @@ export default {
     enabled: true,
 
     //AdminShopを何レベから解放するか
-    releaseAdminShop: 50,
+    releaseAdminShop: 100,
 
     //特殊釣りを何レベから解放するか
-    releaseSpeciallFishing: 100,
+    releaseSpeciallFishing: 130,
 
     needs: {
         1: {

@@ -10,7 +10,7 @@ function setUpExecuter(origin, args) {
     return;
 };
 
-system.beforeEFvents.startup.subscribe((event) => {
+system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
         {
             name: 'makecountry:setup',

@@ -27,37 +27,48 @@ export function nationalTierLevelDefaultForm(player) {
 
     const showBody = countryManager.nationTierLevelNeed();
 
+    const isMax = showBody == 'max';
+
     const form = new ActionFormData();
     form.title({ translate: `national.tier.level` });
-    form.header({ translate: 'national.tier.level', with: [`${countryData.lv}`] });
-    form.label({ rawtext: showBody });
-    form.button({ translate: `national.tier.level.form.check.button` });
-    form.button({ translate: `national.tier.level.form.levelup.button` });
+    form.label({ translate: 'national.tier.level.now', with: [`${countryData.lv ?? 0}`] });
+    form.divider();
+    form.label(isMax ? { translate: 'national.tier.level.max' } : { rawtext: showBody });
+    if (isMax) {
+        form.button({ translate: 'mc.button.close' });
+    } else {
+        form.button({ translate: `national.tier.level.form.check.button` });
+        form.button({ translate: `national.tier.level.form.levelup.button` });
+    };
 
     form.show(player).then(rs => {
         if (rs.canceled) {
             settingCountryDefaultForm(player);
             return;
         };
-        switch (rs.selection) {
-            case 0: {
-                if (!CheckPermission(player, `nationalTierLevelAdmin`)) {
-                    countryManager.reload();
-                    countryManager.nationTierLevelCheck(player);
-                } else {
-                    player.sendMessage({ translate: `no.permission` });
+        if (isMax) {
+            return;
+        } else {
+            switch (rs.selection) {
+                case 0: {
+                    if (!CheckPermission(player, `nationalTierLevelAdmin`)) {
+                        countryManager.reload();
+                        countryManager.nationTierLevelCheck(player);
+                    } else {
+                        player.sendMessage({ translate: `no.permission` });
+                    };
+                    break;
                 };
-                break;
-            };
-            case 1: {
-                if (!CheckPermission(player, `nationalTierLevelAdmin`)) {
-                    countryManager.reload();
-                    countryManager.nationTierLevelTryUp(player);
-                } else {
-                    player.sendMessage({ translate: `no.permission` });
+                case 1: {
+                    if (!CheckPermission(player, `nationalTierLevelAdmin`)) {
+                        countryManager.reload();
+                        countryManager.nationTierLevelTryUp(player);
+                    } else {
+                        player.sendMessage({ translate: `no.permission` });
+                    };
+                    break;
                 };
-                break;
             };
-        };
+        }
     });
 };
