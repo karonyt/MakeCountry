@@ -3,6 +3,9 @@
     "minecraft:block": {
         "description": {
             "identifier": "mc:shaved_ice_machine",
+            "menu_category": {
+                "category": "items"
+            },
             "traits": {
                 "minecraft:placement_direction": {
                     "enabled_states": [

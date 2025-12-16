@@ -3,6 +3,9 @@
     "minecraft:block": {
         "description": {
             "identifier": "mc:oven_range",
+            "menu_category": {
+                "category": "items"
+            },
             "traits": {
                 "minecraft:placement_direction": {
                     "enabled_states": [
