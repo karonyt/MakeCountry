@@ -39,3 +39,24 @@ export const rolePermissions = [
     'withDrawResourcepoint',
     'withDrawTreasurybudget'
 ];
+
+export const checkOnlyRole = [
+    `invite`,
+    `editCountryName`,
+    `editCountryLore`,
+    `inviteChange`,
+    `neutralityPermission`,
+    `warAdmin`,
+    `allyAdmin`,
+    `hostilityAdmin`,
+    `taxAdmin`,
+    `peaceChange`,
+    `kick`,
+    `owner`,
+    `admin`,
+    `withDrawResourcepoint`,
+    `withDrawTreasurybudget`,
+    `publicHomeAdmin`,
+    `sellChunk`,
+    `buyChunk`
+];

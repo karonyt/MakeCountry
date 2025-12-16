@@ -3,6 +3,7 @@ import * as Dyprop from "./DyProp";
 import config from "../config";
 import jobs_config from "../jobs_config";
 import { DynamicProperties } from "../api/dyp";
+import { checkOnlyRole } from "../data/permission";
 
 /**
  * 指定した座標、ディメンションのチャンクのダイプロのプロパティを取得
@@ -88,27 +89,6 @@ export function ConvertChunk(rawX, rawZ) {
     const z = Math.floor(rawZ / 16);
     return { x, z }
 };
-
-const checkOnlyRole = [
-    `invite`,
-    `editCountryName`,
-    `editCountryLore`,
-    `inviteChange`,
-    `neutralityPermission`,
-    `warAdmin`,
-    `allyAdmin`,
-    `hostilityAdmin`,
-    `taxAdmin`,
-    `peaceChange`,
-    `kick`,
-    `owner`,
-    `admin`,
-    `withDrawResourcepoint`,
-    `withDrawTreasurybudget`,
-    `publicHomeAdmin`,
-    `sellChunk`,
-    `buyChunk`
-];
 
 /**
  * 権限確認
