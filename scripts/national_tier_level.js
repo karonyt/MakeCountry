@@ -12,7 +12,6 @@ export default {
         1: {
             item: [
                 { typeId: 'minecraft:oak_fence', amount: 21 }
-
             ],
             //必要なリソースポイント
             point: 1000
