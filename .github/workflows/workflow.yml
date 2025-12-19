@@ -31,8 +31,7 @@ jobs:
         run: |
           cd other
           zip -r MakeCountryResource.zip * -x ".github/*" "*.zip" "README.md"
-          cd ..
-          mv MakeCountryResource.zip MakeCountryResource.mcpack
+          mv MakeCountryResource.zip ../MakeCountryResource.mcpack
 
       - name: Create mcaddon
         run: |
