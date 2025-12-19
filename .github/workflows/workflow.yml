@@ -1,0 +1,47 @@
+name: Build mcaddon
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Zip pack from repo A
+        run: |
+          zip -r MakeCountryBehavior.zip * -x ".github/*" "*.zip" "README.md"
+          mv MakeCountryBehavior.zip MakeCountryBehavior.mcpack
+
+      - name: Checkout other repo
+        uses: actions/checkout@v4
+        with:
+          repository: karonyt/MakeCountryResourcePack
+          path: other
+          token: ${{ secrets.OTHER_REPO_TOKEN }}
+
+      - name: Zip pack from repo B
+        run: |
+          cd other
+          zip -r MakeCountryResource.zip * -x ".github/*" "*.zip" "README.md"
+          cd ..
+          mv MakeCountryResource.zip MakeCountryResource.mcpack
+
+      - name: Create mcaddon
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          zip "MakeCountry-${VERSION}.zip" MakeCountryBehavior.mcpack MakeCountryResource.mcpack
+          mv "MakeCountry-${VERSION}.zip" "MakeCountry-${VERSION}.mcaddon"
+
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MakeCountry-${{ github.ref_name }}.mcaddon
