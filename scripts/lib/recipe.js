@@ -20,10 +20,6 @@ export function updateRecipe(player, lv = undefined) {
     };
     const detectLv = lv;
     const nowLv = Number(player.getDynamicProperty('countryLv') ?? '0');
-    if(detectLv == 0) {
-        player.runCommand(`recipe take @s *`);
-        return;
-    }
     const allow = recipe_config.filter(a => a.lv <= detectLv && a.lv > nowLv);
     const deny = recipe_config.filter(a => a.lv > detectLv && a.lv <= nowLv);
     for (const a of allow) {
