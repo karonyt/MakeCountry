@@ -192,10 +192,12 @@ export function tax() {
 world.afterEvents.worldLoad.subscribe(() => {
     if (!config.getMoneyByScoreboard) return;
     if (!world.scoreboard.getObjective(config.moneyScoreboardName)) world.scoreboard.addObjective(config.moneyScoreboardName)
-    for (const player of world.getPlayers()) {
-        const playerDataBase = new DynamicProperties('player');
-        const rawData = playerDataBase.get(`player_${sender.id}`);
-        const playerData = JSON.parse(rawData);
-        player.runCommand(`scoreboard players set money ${Math.floor(playerData.money)}`);
-    };
+    system.runInterval(() => {
+        for (const player of world.getPlayers()) {
+            const playerDataBase = new DynamicProperties('player');
+            const rawData = playerDataBase.get(`player_${sender.id}`);
+            const playerData = JSON.parse(rawData);
+            player.runCommand(`scoreboard players set money ${Math.floor(playerData.money)}`);
+        };
+    });
 });
