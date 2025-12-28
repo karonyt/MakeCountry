@@ -379,7 +379,7 @@ function adminAddForm(player, dbKey, isOwner) {
     form.button({ translate: 'mc.button.back' });
     const playerIds = [];
     const playerNames = [];
-    for (const p of shopData.admins) {
+    for (const p of world.getPlayers().filter(p => !shopData.admins.includes(p.id) && shopData.owner != p.id)) {
         form.button(`${p.name}`);
         playerNames.push(p.name);
         playerIds.push(p.id);
