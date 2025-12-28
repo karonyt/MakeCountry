@@ -46,62 +46,6 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     return;
 });
 
-world.beforeEvents.playerBreakBlock.subscribe((ev) => {
-    const { player, block } = ev;
-    const dimId = block.dimension.id;
-
-    if (block.typeId == 'minecraft:barrel') {
-        const shopBlock = block.above();
-        if (shopBlock && shopBlock?.typeId == 'mc:shop_block') {
-            const barrelShopDB = new DynamicProperties('barrelShop');
-            const { x, y, z } = shopBlock.location;
-            const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
-            if (!rawShopData) {
-                return;
-            };
-            const shopData = JSON.parse(rawShopData);
-
-            if (shopData.owner == player.id) {
-                ev.cancel = false;
-                return;
-            };
-            if (shopData.admins.includes(player.id)) {
-                ev.cancel = false;
-                return;
-            };
-            ev.cancel = true;
-            return;
-        };
-    };
-
-    if (block.typeId == 'mc:shop_block') {
-        const barrel = block.below();
-        if (!barrel || barrel?.typeId != 'minecraft:barrel') {
-            return;
-        };
-
-        const barrelShopDB = new DynamicProperties('barrelShop');
-        const { x, y, z } = block.location;
-        const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
-        if (!rawShopData) {
-            return;
-        };
-
-        const shopData = JSON.parse(rawShopData);
-
-        if (shopData.owner == player.id) {
-            ev.cancel = false;
-            return;
-        };
-        if (shopData.admins.includes(player.id)) {
-            ev.cancel = false;
-            return;
-        };
-        ev.cancel = true;
-        return;
-    };
-});
-
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const { player, block } = ev;
     const dimId = block.dimension.id;
@@ -135,6 +79,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     };
 
     if (block.typeId == 'mc:shop_block') {
+        ev.cancel = true;
         const barrel = block.below();
         if (!barrel || barrel?.typeId != 'minecraft:barrel') {
             system.runTimeout(() => {

@@ -26,6 +26,13 @@
                     "render_method": "opaque"
                 }
             },
+            "minecraft:crafting_table": {
+                "grid_size": 3,
+                "crafting_tags": [
+                    "shop_block"
+                ],
+                "table_name": "tile.mc:shop_block.name"
+            },
             "minecraft:custom_components": [
                 "mc:shop_block"
             ]
