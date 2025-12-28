@@ -279,6 +279,7 @@ function adminsForm(player, dbKey, isOwner) {
     const adminIds = [];
     for (const admin of shopData.admins) {
         const adminPlayerData = JSON.parse(playerDB.get(`player_${admin}`));
+        form.button(adminPlayerData.name)
         adminNames.push(adminPlayerData.name);
         adminIds.push(admin);
     };
