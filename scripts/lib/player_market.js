@@ -255,6 +255,7 @@ export function PlayerMarketExhibitMainMenu(player) {
     });
 };
 
+const commission = 10000;
 /**
  * 出品
  * @param {{ slot: number,itemStack: ItemStack }} itemData 
@@ -267,6 +268,7 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
     form.slider(``, 1, itemData.itemStack.amount, 1);
     form.textField({ translate: `input.price` }, { translate: `price.label` });
     form.toggle({ translate: `form.button.notify` });
+    form.label({ translate: `form.label.commission`, with: [`${commission}${config.MoneyName}`] });
     form.show(player).then(rs => {
         const newContainer = player.getComponent(`inventory`).container;
         const item = newContainer.getItem(itemData.slot);
@@ -283,6 +285,14 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
             player.sendMessage({ translate: `command.error.canuse.number.more`, with: [`1`] });
             return;
         };
+
+        const playerData = GetAndParsePropertyData(`player_${player.id}`);
+
+        if (playerData.money < commission) {
+            player.sendMessage({ translate: 'error.notenough.money' });
+            return;
+        };
+        playerData.money = playerData.money - commission;
 
         if (rs.formValues[2]) {
             world.sendMessage({ rawtext: [{ text: `§a[PlayerMarket]\n` }, { translate: `exhibited.message`, with: { rawtext: [{ translate: `${langChangeItemName(itemData.itemStack.typeId)}` }] } }] });
@@ -306,7 +316,7 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
                 typeId: itemData.itemStack.typeId,
                 lore: itemData.itemStack.getLore(),
                 amount: itemAmount,
-                potion: potionComponent.isValid ? {
+                potion: potionComponent?.isValid ? {
                     delivery: potionComponent.potionDeliveryType.id,
                     effect: potionComponent.potionEffectType.id,
                     duration: potionComponent.potionEffectType?.durationTicks
@@ -321,7 +331,6 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
             newContainer.setItem(itemData.slot, editItem);
         };
         allCommons.unshift(data);
-        const playerData = GetAndParsePropertyData(`player_${player.id}`);
         player.sendMessage({ rawtext: [{ text: `§a[PlayerMarket]\n` }, { translate: `success.exhibited.message`, with: { rawtext: [{ translate: `${langChangeItemName(itemData.itemStack.typeId)}` }] } }] });
         StringifyAndSavePropertyData(`player_${player.id}`, playerData);
         StringifyAndSavePropertyData(`player_market_commons`, allCommons);

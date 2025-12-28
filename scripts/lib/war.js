@@ -392,7 +392,20 @@ world.afterEvents.worldLoad.subscribe(() => {
                 if (selectItem) {
                     const selectItemStackTypeId = selectItem.typeId;
                     let cleared = false;
-                    if (selectItemStackTypeId == `minecraft:mace` || selectItemStackTypeId == `minecraft:trident` || selectItemStackTypeId == `minecraft:ender_pearl`) {
+                    const kisei = [
+                        'minecraft:mace',
+                        'minecraft:trident',
+                        'minecraft:ender_pearl',
+                        'minecraft:wooden_spear',
+                        'minecraft:stone_spear',
+                        'minecraft:copper_spear',
+                        'minecraft:iron_spear',
+                        'minecraft:golden_spear',
+                        'minecraft:diamond_spear',
+                        'minecraft:netherite_spear',
+
+                    ];
+                    if (kisei.includes(selectItemStackTypeId)) {
                         for (let i = 9; i < container.size; i++) {
                             if (!container.getItem(i) && !cleared) {
                                 container.setItem(player.selectedSlotIndex);

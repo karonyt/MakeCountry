@@ -39,7 +39,7 @@ export function addHostilityCountryFromListDefaultForm(player, countryId) {
                     return;
                 };
                 case 1: {
-                    checkAddHostilityDefaultForm(player, countryId);
+                    checkAddHostilityDefaultForm(player, countryData.id);
                     return;
                 };
             };

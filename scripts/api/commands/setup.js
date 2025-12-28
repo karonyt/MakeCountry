@@ -6,7 +6,9 @@ function setUpExecuter(origin, args) {
 
     sender.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `system.setup.complete` }] });
     sender.addTag("mc_admin");
-    world.setDynamicProperty(`start2`, `true`)
+    world.setDynamicProperty(`start2`, `true`);
+    world.getPlayers()[0].runCommand('gamerule recipesunlock true');
+    world.getPlayers()[0].runCommand('gamerule dolimitedcrafting true');
     return;
 };
 

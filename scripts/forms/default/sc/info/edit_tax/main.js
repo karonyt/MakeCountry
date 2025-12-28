@@ -26,6 +26,7 @@ export function editTaxMainDefaultForm(player) {
     form.title({ translate: `form.setting.info.button.tax` })
     form.toggle({ translate: `tax.select.toggle.label` }, { defaultValue: lastountryData.taxInstitutionIsPer });
     form.textField({ translate: taxMessageLabel }, { translate: `input.number` }, { defaultValue: `${lastountryData.taxPer}` });
+    form.textField({ translate: 'label.input.taxper.consumption' }, { translate: `input.number` }, { defaultValue: `${lastountryData?.consumptionTax ?? 0}` });
     form.show(player).then((rs) => {
         if (rs.canceled) {
             settingCountryInfoDefaultForm(player);
@@ -49,11 +50,19 @@ export function editTaxMainDefaultForm(player) {
             player.sendMessage({ translate: `input.error.under0` });
             return;
         };
-        const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
+        if (100 < Number(rs.formValues[2])) {
+            player.sendMessage({ translate: `input.error.over100` });
+            return;
+        };
+        if (Number(rs.formValues[2]) < 0) {
+            player.sendMessage({ translate: `input.error.under0` });
+            return;
+        };
         countryManager.reload();
         const countryData = countryManager.countryData;
         countryData.taxInstitutionIsPer = rs.formValues[0];
         countryData.taxPer = Number(rs.formValues[1]);
+        countryData.consumptionTax = Number(rs.formValues[2]);
         countryDataBase.set(`country_${countryData.id}`, countryData);
         player.sendMessage({ translate: `updated` });
         return;

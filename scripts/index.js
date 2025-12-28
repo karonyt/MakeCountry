@@ -22,7 +22,7 @@ import "./lib/war";
 
 import "./lib/penname";
 
-import "./lib/chest_shop";
+import "./lib/barrel_shop";
 
 import "./lib/ranking";
 
@@ -36,7 +36,7 @@ import "./lib/smartphone";
 
 import "./api/fishing/index";
 
-const version = "ver.2.2.0-beta"
+const version = "ver.2.3.0"
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: `world.message.addon`, with: [version] });

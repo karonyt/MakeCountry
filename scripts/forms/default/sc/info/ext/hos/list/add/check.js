@@ -9,7 +9,7 @@ import { CountryManager } from "../../../../../../../../api/country/country";
 /**
  * 敵対追加チェックフォーム
  * @param {Player} player 
- * @param {Number} countryId 
+ * @param {number} countryId 
  */
 export function checkAddHostilityDefaultForm(player, countryId) {
     const form = new ActionFormData();

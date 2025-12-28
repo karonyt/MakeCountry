@@ -135,12 +135,12 @@ export function removeFriendlyFunction(countryId, countryData, id, isVaildProper
  */
 export function sendFriendlyRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
     if (!rawTargetCountryData) {
-        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
         return false;
     };
 
@@ -156,6 +156,7 @@ export function sendFriendlyRequestFunction(countryId, countryData, id, isVaildP
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
+    console.log(`友好申請を送ったよ\n${countryData.name} → ${targetCountryData.name}`);
     if (player) {
         //player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.friendly.request`, with: [`${targetCountryData.name}`] }] })
     };

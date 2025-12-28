@@ -1,4 +1,6 @@
 export default {
+    world: 'karoearth',
+
     //チャンク制限
     chunkLimit: 3200,
     //スポーンエッグをスポナーに入れるのを制限するか

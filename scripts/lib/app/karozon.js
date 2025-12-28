@@ -8,29 +8,32 @@ import config from "../../config";
 import { itemIdToPath } from "../../texture_config";
 import shop_config from "../../shop_config";
 import { SmartPhoneHomeScreen } from "../smartphone";
-import { PlayerManager } from "../../api/player/player";
 import national_tier_level from "../../national_tier_level";
+import { PlayerManager } from "../../api/player/player";
 
 export function KarozonApp(player) {
+
     if (!config.shopValidity) {
         player.sendMessage({ translate: `no.available.shop` });
         return;
     };
+
+    ShopCommonsMenu(player);
+};
+
+function ShopCommonsMenu(player, page = 0) {
+    const form = new ChestFormData("large").setTitle(`Admin Shop`);
+    let lv = 0;
     if (national_tier_level.enabled) {
         const playerManager = new PlayerManager(player.id);
-        let lv = 0;
         if (playerManager.country) lv = playerManager.country.lv ?? 0;
         if (lv < national_tier_level.releaseAdminShop) {
             player.sendMessage({ translate: `no.release.shop`, with: [`${national_tier_level.releaseAdminShop}`] });
             return;
         };
     };
-    ShopCommonsMenu(player);
-};
 
-function ShopCommonsMenu(player, page = 0) {
-    const form = new ChestFormData("large").setTitle(`Admin Shop`);
-    const allCommons = shop_config;
+    const allCommons = shop_config.filter(common => common.lv <= lv);
     if (allCommons.length < page * 36 + 1) {
         ShopCommonsMenu(player, page - 1);
         return;

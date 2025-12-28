@@ -18,12 +18,12 @@ import { DynamicProperties } from "../../dyp";
  */
 export function acceptAllianceRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
     if (!rawTargetCountryData) {
-        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
         return false;
     };
 
@@ -60,12 +60,12 @@ export function acceptAllianceRequestFunction(countryId, countryData, id, isVail
  */
 export function denyAllianceRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
     if (!rawTargetCountryData) {
-        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
         return false;
     };
 
@@ -98,12 +98,12 @@ export function denyAllianceRequestFunction(countryId, countryData, id, isVaildP
  */
 export function removeAllianceFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
     if (!rawTargetCountryData) {
-        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
         return false;
     };
 
@@ -135,12 +135,12 @@ export function removeAllianceFunction(countryId, countryData, id, isVaildProper
  */
 export function sendAllianceRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
     if (!rawTargetCountryData) {
-        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
         return false;
     };
 

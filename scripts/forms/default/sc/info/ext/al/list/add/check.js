@@ -9,7 +9,7 @@ import { CountryManager } from "../../../../../../../../api/country/country";
 /**
  * 同盟申請送信チェックフォーム
  * @param {Player} player 
- * @param {Number} countryId 
+ * @param {number} countryId 
  */
 export function checkAddAllianceDefaultForm(player, countryId) {
     const form = new ActionFormData();

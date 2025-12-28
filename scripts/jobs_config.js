@@ -33,16 +33,16 @@ export default {
             lv: 0,
         },
         //狩人
-        {
+        /*{
             id: `hunter`,
             name: `hunter`,
             lv: 100
-        },
+        },*/
         //漁師
         {
             id: `fisherman`,
             name: `fisherman`,
-            lv: 50
+            lv: 55
         },
         //土掘り士
         {
@@ -60,13 +60,13 @@ export default {
         {
             id: `netherdigger`,
             name: `netherdigger`,
-            lv: 40,
+            lv: 45,
         },
         //建築士
         {
             id: `builder`,
             name: `builder`,
-            lv: 80,
+            lv: 85,
         },
         //庭師
         {

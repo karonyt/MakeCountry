@@ -3,6 +3,8 @@ import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "./util";
 import { uiManager } from "@minecraft/server-ui";
 import { tax } from "./interval";
 import { fixCountryData } from "./fixdata";
+import { DynamicProperties } from "../api/dyp";
+import config from "../config";
 
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
     if (ev.sourceType !== ScriptEventSource.Entity || !(ev.sourceEntity instanceof Player)) return;
@@ -49,6 +51,29 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
         };
         case 'mc:fixcountrydata': {
             fixCountryData();
+            break;
+        };
+        case 'mc:resetplayerdata': {
+            const player = world.getPlayers({ name: message })[0];
+            if (!player) return;
+
+            const newPlayerData = {
+                name: player.name,
+                id: player.id,
+                country: undefined,
+                money: config.initialMoney,
+                roles: [],
+                chunks: [],
+                days: 0,
+                invite: [],
+                settings: {
+                    inviteReceiveMessage: true,
+                }
+            };
+
+            const playerDataBase = new DynamicProperties('player');
+            playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
+
             break;
         };
     };

@@ -3,7 +3,7 @@ export default {
     enabled: true,
 
     //AdminShopを何レベから解放するか
-    releaseAdminShop: 100,
+    releaseAdminShop: 30,
 
     //特殊釣りを何レベから解放するか
     releaseSpeciallFishing: 130,
@@ -238,7 +238,7 @@ export default {
         },
         27: {
             item: [
-                { typeId: 'raw_copper_block', amount: 128 },
+                { typeId: 'minecraft:raw_copper_block', amount: 128 },
                 { typeId: 'minecraft:coal_block', amount: 64 },
                 { typeId: 'minecraft:raw_iron_block', amount: 32 },
                 { typeId: 'minecraft:smooth_stone', amount: 64 },

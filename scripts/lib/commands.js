@@ -5,6 +5,8 @@ import config from "../config";
 import { playerHandler } from "../api/api";
 import { CountryManager } from "../api/country/country";
 
+const GENERAL_CHAT_COOLDOWN = 3000;
+
 class ChatHandler {
     constructor(event) {
         this.event = event;
@@ -49,9 +51,25 @@ class ChatHandler {
         };
         const isCanceled = playerHandler.beforeEvents.chat.emit(eventData);
         if (isCanceled) return;
+        if (chatType === 'general') {
+            const now = Date.now();
+            const lastChat = this.sender.getDynamicProperty('lastGeneralChatTime') ?? 0;
+
+            if (now - lastChat < GENERAL_CHAT_COOLDOWN) {
+                this.event.cancel = true;
+                this.sender.sendMessage({
+                    text: `§cジェネラルチャットは${GENERAL_CHAT_COOLDOWN / 1000}秒に1回までです`
+                });
+                return;
+            }
+
+            this.sender.setDynamicProperty('lastGeneralChatTime', now);
+        }
+        
         eventData.cancel = undefined;
         playerHandler.afterEvents.chat.emit(eventData);
         const playerDataBase = new DynamicProperties("player");
+
         switch (chatType) {
             case `general`: {
                 world.sendMessage([{ text: `[§${this.playerCountryData?.color ?? `a`}` }, { translate: land }, { text: `${penname}§r] §7${this.sender.name}§f: ${this.message}` }]);

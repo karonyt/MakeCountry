@@ -22,7 +22,7 @@ export class RoleManager {
         let returns = [];
         for (const role of roleDatas) {
             const roleData = {
-                name: role.name,
+                name: role.name ?? 'newRole',
                 color: `${role.color}`,
                 icon: `${role.icon}`,
                 id: id,
@@ -33,7 +33,7 @@ export class RoleManager {
             returns.push(roleData.id);
             id++;
         };
-        this.setRoleNum(id++);
+        this.setRoleNum(id);
         return returns;
     };
 
@@ -140,7 +140,7 @@ export class RoleManager {
          * @type {PlayerData}
          */
         const playerData = JSON.parse(this.playerDataBase.get(`player_${memberId}`));
-        playerData.roles.push(memberId);
+        playerData.roles.push(roleId);
         this.playerDataBase.set(`player_${memberId}`, playerData);
         this.setRole(roleId, roleData);
         return true;
@@ -170,7 +170,7 @@ export class RoleManager {
          * @type {PlayerData}
          */
         const playerData = JSON.parse(this.playerDataBase.get(`player_${memberId}`));
-        playerData.roles = playerData.roles.filter(id => id != memberId);
+        playerData.roles = playerData.roles.filter(id => id != roleId);
         this.playerDataBase.set(`player_${memberId}`, playerData);
         this.setRole(roleId, roleData);
         return true;
@@ -190,7 +190,7 @@ export class RoleManager {
         const countryData = countryManager.countryData;
         countryData.roles = countryData.roles.filter(role => role != roleId);
         const countryDataBase = new DynamicProperties('country');
-        countryDataBase.set(countryData);
+        countryDataBase.set(`country_${countryId}`, JSON.stringify(countryData));
         this.roleDataBase.delete(`role_${roleId}`);
     };
 

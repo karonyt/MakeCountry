@@ -11,6 +11,7 @@ import { chestLockDefaultForm } from "../forms/default/chest_lock/main";
 import national_tier_level from "../national_tier_level";
 import { updateRecipe } from "./recipe";
 import { CountryManager } from "../api/country/country";
+import * as DyProp from "./DyProp";
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
@@ -116,102 +117,73 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
     const { player, block, dimension } = ev;
     const { x, y, z } = block.location;
     const now = Date.now();
-    if (player?.breakInfo) {
-        if ((now - player?.breakInfo?.time) < 10000 && ev.block.typeId == player?.breakInfo?.typeId && ev.block.location == player?.breakInfo?.location) {
-            ev.cancel = player?.breakInfo?.cancel;
-            return;
-        };
-    };
 
     const chestId = `chest_${x}_${y}_${z}_${dimension.id}`;
     const chestLockData = GetAndParsePropertyData(chestId);
     const isChest = block.typeId.includes('chest');
     let pL = player.location;
-    const doorPermutation = block.below().permutation.getAllStates();
-    const permutation = block.permutation;
-    const states = permutation.getAllStates();
-    const typeId = block.typeId;
-    const itemTypeId = block.getItemStack().typeId;
 
+    const dimId = dimension.id;
 
-    const signTexts = getSignTexts(block);
-    if (signTexts) {
-        if (signTexts[1] == chestShopConfig.shopId) {
-            const shopData = getShopData(signTexts, block);
-            if (shopData != undefined) {
-                if (shopData.player != player.name && !player.hasTag(`adminmode`)) {
-                    player.breakInfo = {
-                        time: now,
-                        typeId: block.typeId,
-                        location: block.location,
-                        cancel: true
-                    };
-                    ev.cancel = true;
-                    if (!player?.breaktp) {
-                        player.breaktp = true;
-                        system.run(() => {
-                            player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                            player.setGameMode(GameMode.Adventure);
-                        });
-                        system.runTimeout(() => {
-                            player.breaktp = false;
-                            player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                            player.setGameMode(GameMode.Survival);
-                        }, 5);
-                    };
-                    return;
-                };
+    if (block.typeId == 'minecraft:barrel') {
+        const shopBlock = block.above();
+        if (shopBlock && shopBlock?.typeId == 'mc:shop_block') {
+            const barrelShopDB = new DynamicProperties('barrelShop');
+            const { x, y, z } = shopBlock.location;
+            const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
+            if (!rawShopData) {
+                return;
             };
-        };
-    };
+            const shopData = JSON.parse(rawShopData);
 
-    if (chestShopConfig.shopBlockIds.includes(block.typeId)) {
-        const isOwner = isShopOwner(block, player.name);
-        if (isOwner == false && !player.hasTag(`adminmode`)) {
-            player.breakInfo = {
-                time: now,
-                typeId: block.typeId,
-                location: block.location,
-                cancel: true
+            if (shopData.owner == player.id) {
+                ev.cancel = false;
+                return;
+            };
+            if (shopData.admins.includes(player.id)) {
+                ev.cancel = false;
+                return;
             };
             ev.cancel = true;
-            if (!player?.breaktp) {
-                player.breaktp = true;
-                system.run(() => {
-                    player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.Adventure);
-                });
-                system.runTimeout(() => {
-                    player.breaktp = false;
-                    player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
-                    player.setGameMode(GameMode.Survival);
-                }, 5);
-            };
             return;
         };
-        if (isOwner == true) {
-            player.breakInfo = {
-                time: now,
-                typeId: block.typeId,
-                location: block.location,
-                cancel: false
-            };
-            ev.cancel = false;
-        };
     };
+
+    if (block.typeId == 'mc:shop_block') {
+        const barrel = block.below();
+        if (!barrel || barrel?.typeId != 'minecraft:barrel') {
+            return;
+        };
+
+        const barrelShopDB = new DynamicProperties('barrelShop');
+        const { x, y, z } = block.location;
+        const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
+        if (!rawShopData) {
+            return;
+        };
+
+        const shopData = JSON.parse(rawShopData);
+
+        if (shopData.owner == player.id) {
+            ev.cancel = false;
+            return;
+        };
+        if (shopData.admins.includes(player.id)) {
+            ev.cancel = false;
+            return;
+        };
+        ev.cancel = true;
+        return;
+    };
+
 
     if (chestLockData) {
         const chestDataBase = new DynamicProperties("chest");
         if (isChest && chestLockData.player === player.id) {
             system.runTimeout(() => chestDataBase.delete(chestId));
+            return;
         } else if (isChest) {
             if (player.hasTag(`adminmode`)) return;
-            player.breakInfo = {
-                time: Date.now(),
-                typeId: block.typeId,
-                location: block.location,
-                cancel: true
-            };
             ev.cancel = true;
             if (!player?.breaktp) {
                 player.breaktp = true;
@@ -232,6 +204,13 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
         }
         return;
     }
+
+    if (player?.breakInfo) {
+        if ((now - player?.breakInfo?.time) < 10000 && ev.block.typeId == player?.breakInfo?.typeId && ev.block.location == player?.breakInfo?.location) {
+            ev.cancel = player?.breakInfo?.cancel;
+            return;
+        };
+    };
 
     const cannot = CheckPermissionFromLocation(player, x, z, dimension.id, permission);
     player.breakInfo = {
@@ -341,44 +320,32 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     const permission = `place`;
     const { x, z } = block.location;
     const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
-    const now = Date.now();
     if (cannot) {
         ev.cancel = true;
-        player.placeInfo = {
-            time: now,
-            typeId: permutationBeingPlaced?.type?.id,
-            location: block.location,
-            cancel: true
-        };
         return;
     };
     const chest = block.above();
     if (!chest) return;
     //ショップ
-    if (chestShopConfig.shopBlockIds.includes(chest.typeId)) {
-        const isOwner = isShopOwner(chest, player.name);
-        if (typeof isOwner != "undefined") {
-            if (isOwner == false && !player.hasTag(`adminmode`)) {
-                ev.cancel = true;
-                player.placeInfo = {
-                    time: now,
-                    typeId: permutationBeingPlaced?.type?.id,
-                    location: block.location,
-                    cancel: true
+    if (chest.typeId == 'minecraft:barrel') {
+        const shopBlock = chest.above();
+        if (shopBlock && shopBlock?.typeId == 'mc:shop_block') {
+            const barrelShopDB = new DynamicProperties('barrelShop');
+            const rawShopData = barrelShopDB.get(`shop_${shopBlock.dimension.id}_${shopBlock.x}_${shopBlock.y}_${shopBlock.z}_`);
+            if (rawShopData) {
+                const shopData = JSON.parse(rawShopData);
+                const isOwner = shopData.owner == player.id;
+                if (typeof isOwner != "undefined") {
+                    if (isOwner == false && !player.hasTag(`adminmode`)) {
+                        ev.cancel = true;
+                        return;
+                    };
+                    if (isOwner == true) {
+                        ev.cancel = false;
+                    };
                 };
-                player.sendMessage({ translate: `cannot.place.hopper.below.lockchest` });
-                return;
             };
-            if (isOwner == true) {
-                player.placeInfo = {
-                    time: now,
-                    typeId: permutationBeingPlaced?.type?.id,
-                    location: block.location,
-                    cancel: false
-                };
-                ev.cancel = false;
-            };
-        };
+        }
     };
 
     //保護チェスト
@@ -388,12 +355,6 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     if (chestLockData) {
         if (player.hasTag(`adminmode`)) return;
         ev.cancel = true;
-        player.placeInfo = {
-            time: now,
-            typeId: permutationBeingPlaced?.type?.id,
-            location: block.location,
-            cancel: true
-        };
         //保護されているチェストの下にホッパーを置くことはできません
         player.sendMessage({ translate: `cannot.place.hopper.below.lockchest` });
     };
@@ -437,12 +398,12 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const { player, block } = ev;
     const now = Date.now();
     const { x, y, z } = block.location;
-    if (player?.interactWithBlockInfo) {
-        if ((now - player?.interactWithBlockInfo?.time) < 5000 && ev.block.typeId == player?.interactWithBlockInfo?.typeId && ev.block.location == player?.interactWithBlockInfo?.location) {
-            ev.cancel = player?.interactWithBlockInfo?.cancel;
-            return;
-        };
+
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:spawner') {
+        ev.cancel = true;
+        return;
     };
+
     const dimensionId = player.dimension.id;
     const chestId = `chest_${x}_${y}_${z}_${dimensionId}`;
     const isChest = block.typeId.includes('chest'); // チェストかどうか
@@ -450,44 +411,6 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const isSneaking = player.isSneaking; // スニーク状態かどうか
     const container = player.getComponent('inventory')?.container;
     const selectedItem = container?.getItem(player.selectedSlotIndex);
-    const signTexts = getSignTexts(block);
-    if (signTexts) {
-        if (signTexts[0].split('\n')[0] === chestShopConfig.shopId || signTexts[0].split('\n')[4] === chestShopConfig.shopId || signTexts[1] === chestShopConfig.shopId) {
-            ev.cancel = true;
-            player.interactWithBlockInfo = {
-                time: now,
-                typeId: block?.typeId,
-                location: block.location,
-                cancel: true
-            };
-            return;
-        };
-    };
-
-    if (chestShopConfig.shopBlockIds.includes(block.typeId)) {
-        const isOwner = isShopOwner(block, player.name);
-        if (typeof isOwner != "undefined") {
-            if (isOwner == false && !player.hasTag(`adminmode`)) {
-                ev.cancel = true;
-                player.interactWithBlockInfo = {
-                    time: now,
-                    typeId: block?.typeId,
-                    location: block.location,
-                    cancel: true
-                };
-                return;
-            };
-            if (isOwner == true) {
-                player.interactWithBlockInfo = {
-                    time: now,
-                    typeId: block?.typeId,
-                    location: block.location,
-                    cancel: false
-                };
-                ev.cancel = false;
-            };
-        };
-    };
 
     // インベントリの操作確認
     if (block.getComponent('inventory')) {
@@ -634,7 +557,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
             playerData.name = player.name;
             playerData.lastLogined = Date.now();
             playerData.money = Math.floor(playerData.money);
-            StringifyAndSavePropertyData(`player_${player.id}`, playerData, playerDataBase);
+            playerDataBase.set(`player_${player.id}`, JSON.stringify(playerData));
             if (config.countryNameDisplayOnPlayerNameTag) {
                 nameSet(player);
             };
@@ -649,7 +572,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
                         player.removeTag(`mcjobs_${job.id}`);
                     };
                 }
-                
+
                 updateRecipe(player, lv);
             };
 
@@ -671,6 +594,7 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         };
 
         playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
+        updateRecipe(player, 0);
         return;
     };
 });

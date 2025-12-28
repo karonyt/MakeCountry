@@ -2,8 +2,7 @@ import { EnchantmentType, EnchantmentTypes, Player, system, world } from "@minec
 import { GetAndParsePropertyData, getRandomInteger, StringifyAndSavePropertyData } from "./util";
 import jobs_config from "../jobs_config";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionForm } from "./form_class";
-const ActionFormData = ActionForm;
+import { ActionFormData } from "@minecraft/server-ui";
 import playerFishingAfterEvent from "./fishingEvent";
 import { JobLevel } from "./jobslevel";
 import { RewardBuff } from "../api/rewardbuff";
@@ -344,8 +343,8 @@ export function jobsForm(player) {
     if (national_tier_level.enabled) {
         const playerDataBase = new DynamicProperties('player');
         const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
-        const lv = countryId ? countryId > 0 ? new CountryManager(countryId).countryData.lv : 0 : 0;
-        jobsList = jobs_config.jobsList.filter(job => job.lv <= lv);
+        const lv = countryId ? (countryId > 0 ? new CountryManager(countryId).countryData?.lv : 0) : 0;
+        jobsList = jobs_config.jobsList.filter(job => job.lv <= (lv ?? 0));
     };
     for (const job of jobsList) {
         let isEmploy = player.hasTag(`mcjobs_${job.id}`);

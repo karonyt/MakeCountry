@@ -13,8 +13,8 @@ import { Player } from "@minecraft/server";
 export function RoleNameChangeDefaultForm(player, roleData) {
     if (!CheckPermission(player, 'admin')) {
         const form = new ModalFormData();
-        form.title({ translate: 'form.role.namechange.title', with: [roleData.name] });
-        form.textField({ translate: 'form.role.namechange.label' }, { translate: 'form.role.namechange.input' }, { defaultValue: roleData.name });
+        form.title({ translate: 'form.role.namechange.title', with: [roleData.name ?? 'Unknown Name Role'] });
+        form.textField({ translate: 'form.role.namechange.label' }, { translate: 'form.role.namechange.input' }, { defaultValue: roleData.name ?? 'Unknown Name Role' });
         form.submitButton({ translate: 'mc.button.change' });
         form.show(player).then(rs => {
             if (rs.canceled) {

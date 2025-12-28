@@ -38,7 +38,7 @@ export function countryListDefaultForm(player, type = undefined) {
              */
             const countryData = JSON.parse(rawCountryData);
             countries.push(countryData);
-            form.button(`${countryData.name} \n§rID: ${countryData.id}`);
+            form.button(`${countryData.name} \n§rID: ${countryData.id} Lv: ${countryData.lv ?? 0}`);
             amount++;
         };
     };

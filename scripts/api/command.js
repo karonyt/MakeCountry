@@ -34,6 +34,7 @@ import "./commands/cr";
 import "./commands/al";
 import "./commands/fl";
 import "./commands/friendlychat";
+import "./commands/price";
 
 import "./commands/itemid";
 import "./commands/spawn";

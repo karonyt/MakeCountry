@@ -36,7 +36,7 @@ export function addAllianceCountryFromListDefaultForm(player, countryId) {
                     return;
                 };
                 case 1: {
-                    checkAddAllianceDefaultForm(player, countryId);
+                    checkAddAllianceDefaultForm(player, countryData.id);
                     return;
                 };
             };

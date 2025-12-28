@@ -112,7 +112,7 @@ export class PlotGroupManager {
      */
     addPlotGroupNum(add = 1) {
         this.plotGroupNum = this.plotGroupNum + add;
-        world.setDynamicProperty('roleId', String(this.plotGroupNum));
+        world.setDynamicProperty('plotgroupId', String(this.plotGroupNum));
         return this.plotGroupNum;
     };
 
@@ -122,7 +122,7 @@ export class PlotGroupManager {
      */
     setPlotGroupNum(num) {
         this.plotGroupNum = num;
-        world.setDynamicProperty('roleId', String(this.plotGroupNum));
+        world.setDynamicProperty('plotgroupId', String(this.plotGroupNum));
         return this.plotGroupNum;
     };
 };

@@ -13,8 +13,8 @@ import { Player } from "@minecraft/server";
 export function RoleIconChangeDefaultForm(player, roleData) {
     if (!CheckPermission(player, 'admin')) {
         const form = new ModalFormData();
-        form.title({ translate: 'form.role.iconchange.title', with: [roleData.icon] });
-        form.textField({ translate: 'form.role.iconchange.label' }, { translate: 'form.role.iconchange.input' }, { defaultValue: roleData.icon });
+        form.title({ translate: 'form.role.iconchange.title', with: [roleData.icon ?? 'textures/blocks/stone'] });
+        form.textField({ translate: 'form.role.iconchange.label' }, { translate: 'form.role.iconchange.input' }, { defaultValue: roleData.icon ?? 'textures/blocks/stone' });
         form.submitButton({ translate: `mc.button.change` });
         form.show(player).then(rs => {
             if (rs.canceled) {

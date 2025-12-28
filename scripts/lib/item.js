@@ -61,3 +61,14 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
         };
     };
 });
+
+function getWeight(min, max) {
+    if (!Number.isInteger(min) || !Number.isInteger(max)) {
+        throw new TypeError("getWeight: min/max must be integers");
+    }
+    if (min > max) {
+        throw new RangeError("getWeight: min must be <= max");
+    }
+
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}

@@ -42,7 +42,7 @@ export function plotGroupEditRolesListDefaultForm(player, plotGroupId, isPlotAdm
             const roleData = JSON.parse(rawRoleData);
             aliveRoles.push(roleData.id);
             aliveRolesData.push(roleData);
-            form.button(`${roleData.name}\nID: ${roleData.id}`);
+            form.button(`${roleData.name ?? 'Unknown Name Role'}\nID: ${roleData.id}`);
         };
     };
     plotGroupData.roles = plotGroupData.roles.filter(d => aliveRoles.includes(d.id));

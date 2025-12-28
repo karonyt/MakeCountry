@@ -4,6 +4,7 @@ import { sendMergeRequestListDefaultForm } from "./send_req_list";
 import { DynamicProperties } from "../../../../../../api/dyp";
 import { checkSendMergeDefaultForm } from "./check";
 import { ActionFormData } from "@minecraft/server-ui";
+import { CheckPermission } from "../../../../../../lib/util";
 /**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData */
 
 /**
@@ -43,7 +44,7 @@ export function sendMergeRequestFromListDefaultForm(player, countryId) {
                     return;
                 };
                 case 1: {
-                    checkSendMergeDefaultForm(player, countryId);
+                    checkSendMergeDefaultForm(player, countryData.id);
                     return;
                 };
             };

@@ -7,7 +7,7 @@ import { ActionForm } from "./form_class";
 const ActionFormData = ActionForm;
 import { itemIdToPath } from "../texture_config";
 import { updateRanking } from "./ranking";
-import { fixCountryData } from "./fixdata";
+import { fixCountryData, resetRoleData } from "./fixdata";
 import { DynamicProperties } from "../api/dyp";
 
 let playerDataBase
@@ -60,7 +60,8 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             break;
         };
         case `karo:countrydata`: {
-            sourceEntity.sendMessage(`${DyProp.getDynamicProperty(`country_${message}`)}`);
+            const countryDataBase = new DynamicProperties('country');
+            sourceEntity.sendMessage(`${countryDataBase.get(`country_${message}`)}`);
             break;
         };
         case `karo:addcountrydata`: {
@@ -71,12 +72,14 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             break;
         };
         case `karo:roledata`: {
-            sourceEntity.sendMessage(`${DyProp.getDynamicProperty(`role_${message}`)}`);
+            const roleDataBase = new DynamicProperties('role');
+            sourceEntity.sendMessage(`${roleDataBase.get(`role_${message}`)}`);
             break;
         };
         case `karo:playerdata`: {
             const player = world.getPlayers({ name: message })[0];
-            sourceEntity.sendMessage(`${DyProp.getDynamicProperty(`player_${player.id}`)}`);
+            const playerDataBase = new DynamicProperties('player');
+            sourceEntity.sendMessage(`${playerDataBase.get(`player_${message}`)}`);
             break;
         };
         case `karo:addroledata`: {
@@ -258,6 +261,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             sourceEntity.sendMessage(`${ids.join(' , ')}`)
             break;
         }
+        case 'karo:resetrole': {
+            resetRoleData();
+            break;
+        };
     };
 });
 

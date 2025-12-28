@@ -36,7 +36,7 @@ export function addFriendlyCountryFromListDefaultForm(player, countryId) {
                     return;
                 };
                 case 1: {
-                    checkAddFriendlyDefaultForm(player, countryId);
+                    checkAddFriendlyDefaultForm(player, countryData.id);
                     return;
                 };
             };

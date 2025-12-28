@@ -46,12 +46,13 @@ export function roleAddPlotGroupDefaultForm(player, plotGroupId, isPlotAdmin, se
          * @type {RoleData}
          */
         const roleData = JSON.parse(rawRoleData);
+        if (roleData.name == undefined) roleData.name = 'Unknown Name Role';
         if (search) {
             if (!roleData.name.includes(keyword)) continue;
         };
         if (plotGroupData.roles.find(d => d?.id == roleData.id)) continue;
         aliveRoles.push(roleData)
-        form.button(`${roleData.name}§r\nID: ${roleData.id}`);
+        form.button(`${roleData.name ?? 'Unknown Name Role'}§r\nID: ${roleData.id}`);
     };
     form.show(player).then(rs => {
         if (rs.canceled) {

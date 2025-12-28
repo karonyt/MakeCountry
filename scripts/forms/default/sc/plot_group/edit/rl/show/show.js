@@ -16,7 +16,7 @@ import { plotGroupEditRolesListDefaultForm } from "../roles_list";
  */
 export function plotGroupRoleSelectedShowDefaultForm(player, targetData, plotGroupId, isPlotAdmin = false) {
     const form = new ActionFormData();
-    form.title({ text: `${targetData?.name}` });
+    form.title({ text: `${targetData?.name ?? 'Unknown Name Role'}` });
     form.button({ translate: `mc.button.back` });
     form.button({ translate: `mc.button.edit.permission` });
     form.button({ translate: `mc.button.delete` });

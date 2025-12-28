@@ -51,7 +51,7 @@ export class ChestFormData {
     /**
      * 
      * @param {number} slot 
-     * @param {{ iconPath: string|number, name: string, stackAmount?: number, lore?: string[], editedName?: boolean, isGlint?: boolean }} itemData
+     * @param {{ iconPath: string|number, name: string|import("@minecraft/server").RawMessage[], stackAmount?: number, lore?: string[]|import("@minecraft/server").RawMessage[], editedName?: boolean, isGlint?: boolean }} itemData
      * @returns {ChestFormData}
      */
     setButton(slot, itemData) {

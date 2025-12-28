@@ -39,7 +39,6 @@ class CountryMemberManager {
          */
         this.countryData = this.countryRawData ? JSON.parse(this.countryRawData) : undefined;
         this.isVaildProperty = this.countryData ? true : false;
-        this.members = this.countryData.members || [];
         this.owner = this.countryData.owner;
         this.id = id;
         this.name = this.countryData.name;
@@ -73,7 +72,7 @@ class CountryMemberManager {
     has(player) {
         if (!this.isVaildProperty) {
             console.error(`[MakeCountry CountryMemberManager] The Country ${this.id} is not vaild.`)
-            return;
+            return false;
         };
         let playerId = '';
         if (player instanceof Player) {
@@ -84,7 +83,7 @@ class CountryMemberManager {
             return false;
         }
 
-        return this.members.includes(playerId);
+        return this.countryData.members.includes(playerId);
     };
 
     /**
@@ -142,7 +141,7 @@ class CountryMemberManager {
          * @type {PlayerData}
          */
         const targetMemberData = JSON.parse(this.playerDataBase.get(`player_${playerId}`));
-        this.countryData.members = this.members.filter(m => m != playerId);
+        this.countryData.members = this.countryData.members.filter(m => m != playerId);
         this.countryDataBase.set(`country_${this.id}`, this.countryData);
 
         try {
@@ -242,7 +241,12 @@ class CountryMemberManager {
         newMemberData.roles.push(this.countryData.peopleRole);
         newMemberData.country = this.countryData.id;
         newMemberData.invite = [];
-        const memberRoleData = JSON.parse(this.roleDataBase.get(`role_${this.countryData.peopleRole}`));
+        const roleRawData = this.roleDataBase.get(`role_${this.countryData.peopleRole}`);
+        const memberRoleData = roleRawData ? JSON.parse(roleRawData) : {
+            id: this.countryData.peopleRole,
+            members: [],
+            permissions: []
+        };
         memberRoleData.members.push(`${playerId}`);
         this.roleDataBase.set(`role_${memberRoleData.id}`, memberRoleData);
         this.playerDataBase.set(`player_${playerId}`, newMemberData);
@@ -297,21 +301,27 @@ class CountryMemberManager {
          */
         const targetMemberData = JSON.parse(this.playerDataBase.get(`player_${playerId}`));
         if (targetMemberData.country) {
-            this.countryData.members = this.members.filter(m => m != playerId);
-            this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+            const targetMemberCountryRawData = this.countryDataBase.get(targetMemberData.country);
+            if (targetMemberCountryRawData) {
+                /**
+                 * @type {CountryData}
+                 */
+                const targetMemberCountryData = JSON.parse(targetMemberCountryRawData);
+                targetMemberCountryData.members = this.countryData.members.filter(m => m != playerId);
+                this.countryDataBase.set(`country_${targetMemberCountryData.id}`, targetMemberCountryData);
 
-            try {
-                const playerRoles = targetMemberData.roles ?? [];
-                for (const roleId of playerRoles) {
-                    const role = JSON.parse(this.roleDataBase.get(`role_${roleId}`));
-                    if (role) {
-                        role.members = role.members.filter(m => m != targetMemberData.id);
-                        this.roleDataBase.set(`role_${roleId}`, role);
+                try {
+                    const playerRoles = targetMemberData.roles ?? [];
+                    for (const roleId of playerRoles) {
+                        const role = JSON.parse(this.roleDataBase.get(`role_${roleId}`));
+                        if (role) {
+                            role.members = role.members.filter(m => m != targetMemberData.id);
+                            this.roleDataBase.set(`role_${roleId}`, role);
+                        };
                     };
-                };
-                targetMemberData.roles = [];
-                this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
-            } catch (error) { }
+                    targetMemberData.roles = [];
+                } catch (error) { }
+            };
         };
 
         /**
@@ -372,9 +382,9 @@ export class CountryManager {
         this.countryData = this.countryRawData ? JSON.parse(this.countryRawData) : undefined;
         this.isVaildProperty = this.countryData ? true : false;
         this.id = id;
-        this.name = this.countryData.name;
-        this.memberManager = new CountryMemberManager(id);
-        this.roleManager = new RoleManager();
+        this.name = this.isVaildProperty ? this.countryData?.name : undefined;
+        this.memberManager = this.isVaildProperty ? new CountryMemberManager(id) : undefined;
+        this.roleManager = this.isVaildProperty ? new RoleManager() : undefined;
     }
 
     /**
@@ -407,7 +417,7 @@ export class CountryManager {
 
         if (isCanceled) return;
         this.countryData.name = newName;
-        this.countryDataBase.set(`country_${countryData.id}`, this.countryData);
+        this.countryDataBase.set(`country_${this.id}`, this.countryData);
         if (player) {
             player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `changed.countryname` }, { text: `\n§r${beforeName} ->§r ${newName}` }] });
         };
@@ -716,14 +726,11 @@ export class CountryManager {
      * データの更新
      */
     reload() {
-        const rawCountryData = this.countryDataBase.get(`country_${this.id}`);
-        /**
-         * @type {CountryData|undefined}
-         */
-        this.countryData = this.countryRawData ? JSON.parse(this.countryRawData) : undefined;
-        this.isVaildProperty = this.countryData ? true : false;
-        this.name = this.countryData.name;
-    };
+        const raw = this.countryDataBase.get(`country_${this.id}`);
+        this.countryData = raw ? JSON.parse(raw) : undefined;
+        this.isVaildProperty = !!this.countryData;
+        this.name = this.countryData?.name;
+    }
 
     /**
      * プレイヤーを招待
@@ -826,6 +833,7 @@ export class CountryManager {
                 { translate: `form.showcountry.option.peace`, with: [`${this.countryData.peace}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.invite`, with: [`${this.countryData.invite}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.taxper`, with: [`${this.countryData.taxPer}`] }, { text: `\n§r` },
+                { translate: `form.showcountry.option.consumptiontax`, with: [`${this.countryData?.consumptionTax ?? 0}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.taxinstitutionisper`, with: [`${this.countryData.taxInstitutionIsPer}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.alliance`, with: [`${allianceCountryName.join(`§r , `)}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.hostility`, with: [`${hostilityCountryName.join(`§r , `)}`] }, { text: `\n§r` },

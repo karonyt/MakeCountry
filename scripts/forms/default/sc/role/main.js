@@ -1,5 +1,5 @@
 import { Player, system } from "@minecraft/server";
-import { CheckPermission } from "../../../../lib/util";
+import { CheckPermission, HasPermission } from "../../../../lib/util";
 import { DynamicProperties } from "../../../../api/dyp";
 import { CountryManager } from "../../../../api/country/country";
 import { ActionFormData } from "@minecraft/server-ui";
@@ -31,12 +31,12 @@ export function settingCountryRoleDefaultForm(player) {
         const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
         const countryManager = new CountryManager(playerData.country);
         let countryData = countryManager.countryData;
+        const playerAdminRoles = [];
         if (countryData?.owner === player.id) {
             for (const role of countryData?.roles) {
                 EnableEditRoleIds.push(role);
             };
         } else {
-            const playerAdminRoles = [];
             for (const role of countryData?.roles) {
                 const rawRoleData = roleDataBase.get(`role_${role}`);
                 if (!rawRoleData) continue;
@@ -52,6 +52,7 @@ export function settingCountryRoleDefaultForm(player) {
             };
         };
         const form = new ActionFormData();
+        if (HasPermission(player, 'admin')) EnableEditRoleIds.push(...playerAdminRoles);
         if (EnableEditRoleIds.length === 0) {
             form.title({ translate: `form.setting.button.role` });
             form.body({ translate: `not.exsit.can.accessrole` });
@@ -79,7 +80,7 @@ export function settingCountryRoleDefaultForm(player) {
                 roles.push(roleData);
             };
             for (const role of roles) {
-                form.button(role.name, role.icon);
+                form.button(role.name ?? 'Unknown Name Role', role.icon);
             };
             form.show(player).then(rs => {
                 countryManager.reload();

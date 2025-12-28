@@ -19,7 +19,7 @@ import { country } from "../../api";
  */
 export function sendMergeRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
     if (!isVaildProperty) {
-        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
         return false;
     };
     const isCanceled = country.beforeEvents.sendMergeRequest.emit({
@@ -34,12 +34,12 @@ export function sendMergeRequestFunction(countryId, countryData, id, isVaildProp
      * @type {CountryData}
      */
     const targetCountryData = JSON.parse(countryDataBase.get(`country_${countryId}`));
-    const receive = countryData?.mergeRequestReceive ?? [];
-    receive.splice(receive.indexOf(countryData.id), 1);
+    let receive = countryData?.mergeRequestReceive ?? [];
+    receive = receive.splice(receive.indexOf(countryData.id), 1);
     receive.push(countryData.id);
     targetCountryData.mergeRequestReceive = receive;
-    const send = countryData?.mergeRequestSend ?? [];
-    send.splice(send.indexOf(Number(countryId)), 1);
+    let send = countryData?.mergeRequestSend ?? [];
+    send = send.splice(send.indexOf(Number(countryId)), 1);
     send.push(Number(countryId));
     countryData.mergeRequestSend = send;
     countryDataBase.set(`country_${countryData.id}`, countryData);

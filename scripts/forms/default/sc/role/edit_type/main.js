@@ -17,7 +17,7 @@ import { RoleManager } from "../../../../../api/country/role";
 export function selectRoleEditTypeDefaultForm(player, roleData) {
     if (!CheckPermission(player, `admin`)) {
         const form = new ActionFormData();
-        form.title({ translate: `form.role.edit.select.title`, with: [roleData.name] });
+        form.title({ translate: `form.role.edit.select.title`, with: [roleData.name ?? 'Unknown Name Role'] });
         form.button({ translate: `form.role.edit.select.button.name` });
         form.button({ translate: `form.role.edit.select.button.icon` });
         //form.button({translate: `form.role.edit.select.button.members`});

@@ -13,7 +13,7 @@ import { RoleManager } from "../../../../../api/country/role";
 export function setRolePermissionDefaultForm(player, roleData) {
     if (!CheckPermission(player, `admin`)) {
         const form = new ModalFormData();
-        form.title({ translate: `role.permission.edit`, with: [roleData.name] });
+        form.title({ translate: `role.permission.edit`, with: [`${roleData?.name ?? 'Unknown Name Role'}`] });
         for (const permission of rolePermissions) {
             form.toggle({ translate: `permission.${permission}` }, { defaultValue: roleData.permissions.includes(permission) });
         };
