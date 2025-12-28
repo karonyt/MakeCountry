@@ -327,6 +327,7 @@ function adminRemoveForm(player, dbKey, isOwner) {
     const adminIds = [];
     for (const admin of shopData.admins.filter(a => a != player.id)) {
         const adminPlayerData = JSON.parse(playerDB.get(`player_${admin}`));
+        form.button(adminPlayerData.name);
         adminNames.push(adminPlayerData.name);
         adminIds.push(admin);
     };
