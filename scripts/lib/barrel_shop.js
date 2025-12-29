@@ -74,6 +74,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                 return;
             };
             ev.cancel = true;
+            buyMainForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
             return;
         };
     };
