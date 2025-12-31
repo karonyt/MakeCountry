@@ -548,13 +548,13 @@ function buyCheckForm(player, barrel, dbKey, index) {
 
                 if (rawChunkData) {
                     const chunkData = JSON.parse(rawChunkData);
-                    if (chunkData?.country && chunkData?.country > 0) {
-                        const rawCountryData = countryDB.get(`country_${chunkData?.country}`);
+                    if (chunkData?.countryId && chunkData?.countryId > 0) {
+                        const rawCountryData = countryDB.get(`country_${chunkData?.countryId}`);
                         if (rawCountryData) {
                             const countryData = JSON.parse(rawCountryData);
                             tax = Math.floor((result / 100) * (countryData?.consumptionTax ?? 0));
                             countryData.money = countryData.money + tax;
-                            countryDB.set(`country_${chunkData?.country}`, countryData);
+                            countryDB.set(`country_${chunkData?.countryId}`, countryData);
                         };
                     };
                 };
