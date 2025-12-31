@@ -36,7 +36,7 @@ import "./lib/smartphone";
 
 import "./api/fishing/index";
 
-const version = "ver.2.3.0"
+const version = "ver.2.3.1-beta"
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: `world.message.addon`, with: [version] });
