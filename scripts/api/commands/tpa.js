@@ -1,6 +1,6 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import config from "../../config";
-import { AcceptTeleportRequest, teleportRequest, tpaMainForm } from "../../lib/tpa";
+import { AcceptTeleportRequest, teleportRequest, tpaMainForm } from "../player/tpa";
 
 function tpaExecuter(origin, args) {
     if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;

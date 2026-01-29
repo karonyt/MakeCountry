@@ -2,7 +2,7 @@
     "format_version": "1.12",
     "minecraft:recipe_shaped": {
         "description": {
-            "identifier": "mc:beef_minced_meatrecipe"
+            "identifier": "mc:beef_minced_meat_recipe"
         },
         "tags": [
             "mixer"

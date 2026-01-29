@@ -10,7 +10,9 @@ system.beforeEvents.startup.subscribe((ev) => {
     ev.blockComponentRegistry.registerCustomComponent('mc:shop_block', {
         onBreak: (event) => {
             const { block, dimension } = event;
-            const { x, y, z } = block.location;
+            const x = block.x;
+            const y = block.y;
+            const z = block.z;
             const dimId = dimension.id;
 
             const barrelShopDB = new DynamicProperties('barrelShop');
@@ -25,18 +27,20 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     if (block.typeId != 'mc:shop_block') return;
     const barrel = block.below();
     if (!barrel || barrel?.typeId != 'minecraft:barrel') {
-        dimension.spawnItem(new ItemStack('mc:shop_block'), block.location);
+        dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
         block.setType('minecraft:air'); return;
     };
     const dimId = dimension.id;
 
     const barrelShopDB = new DynamicProperties('barrelShop');
 
-    const { x, y, z } = block.location;
+    const x = block.x;
+    const y = block.y;
+    const z = block.z;
     const initialData = {
         owner: player.id,
         admins: [],
-        location: block.location,
+        location: { x: block.x, y: block.y, z: block.z },
         dimension: dimId,
         money: 0,
         name: `${player.name}'s shop`
@@ -54,11 +58,13 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         const shopBlock = block.above();
         if (shopBlock && shopBlock?.typeId == 'mc:shop_block') {
             const barrelShopDB = new DynamicProperties('barrelShop');
-            const { x, y, z } = shopBlock.location;
+            const x = shopBlock.x;
+            const y = shopBlock.y;
+            const z = shopBlock.z;
             const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
             if (!rawShopData) {
                 system.runTimeout(() => {
-                    block.dimension.spawnItem(new ItemStack('mc:shop_block'), shopBlock.location);
+                    block.dimension.spawnItem(new ItemStack('mc:shop_block'), { x: shopBlock.x, y: shopBlock.y, z: shopBlock.z });
                     shopBlock.setType('minecraft:air');
                 });
                 return;
@@ -84,18 +90,20 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         const barrel = block.below();
         if (!barrel || barrel?.typeId != 'minecraft:barrel') {
             system.runTimeout(() => {
-                block.dimension.spawnItem(new ItemStack('mc:shop_block'), block.location);
+                block.dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
                 block.setType('minecraft:air');
             });
             return;
         };
 
         const barrelShopDB = new DynamicProperties('barrelShop');
-        const { x, y, z } = block.location;
+        const x = block.x;
+        const y = block.y;
+        const z = block.z;
         const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
         if (!rawShopData) {
             system.runTimeout(() => {
-                block.dimension.spawnItem(new ItemStack('mc:shop_block'), block.location);
+                block.dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
                 block.setType('minecraft:air');
             });
             return;
@@ -426,7 +434,7 @@ function adminAddForm(player, dbKey, isOwner) {
  * @param {string} dbKey 
  */
 function buyMainForm(player, barrel, dbKey) {
-    const block = player.dimension.getBlock(barrel.location);
+    const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
     const container = block.getComponent('inventory')?.container;
     if (!container) return;
@@ -481,7 +489,7 @@ function buyMainForm(player, barrel, dbKey) {
  * @returns 
  */
 function buyCheckForm(player, barrel, dbKey, index) {
-    const block = player.dimension.getBlock(barrel.location);
+    const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
     const container = block.getComponent('inventory')?.container;
     if (!container) return;
@@ -519,7 +527,7 @@ function buyCheckForm(player, barrel, dbKey, index) {
                 const barrelShopDB = new DynamicProperties('barrelShop');
                 const rawShopData = barrelShopDB.get(dbKey);
                 if (!rawShopData) return;
-                const newBlock = player.dimension.getBlock(barrel.location);
+                const newBlock = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
                 if (newBlock?.typeId != 'minecraft:barrel') return;
                 const newContainer = newBlock.getComponent('inventory')?.container;
                 if (!newContainer) return;
@@ -543,7 +551,7 @@ function buyCheckForm(player, barrel, dbKey, index) {
 
                 const chunkDB = new DynamicProperties('chunk');
                 const countryDB = new DynamicProperties('country');
-                const rawChunkData = chunkDB.get(`chunk_${newBlock.x}_${newBlock.z}_${player.dimension.id.replace('minecraft:', '')}`)
+                const rawChunkData = chunkDB.get(`chunk_${Math.floor(newBlock.x / 16)}_${Math.floor(newBlock.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`)
                 let tax = 0;
 
                 if (rawChunkData) {
@@ -553,8 +561,26 @@ function buyCheckForm(player, barrel, dbKey, index) {
                         if (rawCountryData) {
                             const countryData = JSON.parse(rawCountryData);
                             tax = Math.floor((result / 100) * (countryData?.consumptionTax ?? 0));
-                            countryData.money = countryData.money + tax;
-                            countryDB.set(`country_${chunkData?.countryId}`, countryData);
+
+                            if (tax !== 0) {
+                                countryData.money = countryData.money + tax;
+
+                                countryData.treasuryBudgetLog ||= [];
+
+                                if (countryData.treasuryBudgetLog.length > 50) {
+                                    countryData.treasuryBudgetLog.shift();
+                                }
+
+                                countryData.treasuryBudgetLog.push({
+                                    timestamp: Date.now(),
+                                    actor: player.name,
+                                    action: 'add',
+                                    amount: tax,
+                                    reason: 'Consumption TAX'
+                                });
+
+                                countryDB.set(`country_${chunkData?.countryId}`, countryData);
+                            }
                         };
                     };
                 };

@@ -1,0 +1,23 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_furnace": {
+        "description": {
+            "identifier": "mc:cooked_beef_loin_recipe"
+        },
+        "tags": [
+            "furnace", "smoker", "campfire"
+        ],
+        "input": {
+            "item": "mc:beef_loin"
+        },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
+        "output": {
+            "item": "minecraft:cooked_beef"
+        }
+    }
+}

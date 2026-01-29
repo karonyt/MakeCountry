@@ -11,7 +11,7 @@ import { editCountryPeaceDefaultForm } from "./peace";
 import { editCountryInviteDefaultForm } from "./invite";
 import { editTaxMainDefaultForm } from "./edit_tax/main";
 import { externalAffairsMainDefaultForm } from "./ext/main";
-import { publicSpawnDefaultForm } from "./public_spawn";
+import { publicSpawnDefaultForm, publicSpawnManageForm } from "./public_spawn";
 import { publicSettingDefaultForm } from "./public_setting";
 import { webSettingDefaultForm } from "./web_setting";
 /** @typedef {import("../../../../api/country/country").CountryData} CountryData */
@@ -103,7 +103,7 @@ export function settingCountryInfoDefaultForm(player, countryData = undefined) {
             };
             case 6: {
                 if (!CheckPermission(player, `publicHomeAdmin`)) {
-                    publicSpawnDefaultForm(player);
+                    publicSpawnManageForm(player);
                 } else {
                     player.sendMessage({ translate: `no.permission` });
                 };

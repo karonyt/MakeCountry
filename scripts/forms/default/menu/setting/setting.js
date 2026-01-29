@@ -26,6 +26,36 @@ export function playerSettingDefaultForm(player) {
             dypKey: 'isStreamerSettings',
             lv: 0
         },
+        {
+            translate: 'mute.killlog',
+            dypKey: 'isMuteKillLog',
+            lv: 0
+        },
+        {
+            translate: 'mute.generalchat',
+            dypKey: 'isMuteGeneralChat',
+            lv: 0
+        },
+        {
+            translate: 'mute.countrychat',
+            dypKey: 'isMuteCountryChat',
+            lv: 0
+        },
+        {
+            translate: 'mute.alliancechat',
+            dypKey: 'isMuteAllianceChat',
+            lv: 0
+        },
+        {
+            translate: 'mute.friendlychat',
+            dypKey: 'isMuteFriendlyChat',
+            lv: 0
+        },
+        {
+            translate: 'mute.localchat',
+            dypKey: 'isMuteLocalChat',
+            lv: 0
+        },
     ];
 
     if (national_tier_level.enabled) {

@@ -45,6 +45,21 @@ export function treasurybudgetWithdrawDefaultForm(player) {
         };
         playerData2.money = (Math.floor(playerData2.money * 100) / 100) + needMoney;
         countryData.money = (Math.floor(countryData.money * 100) / 100) - needMoney;
+
+        countryData.treasuryBudgetLog ||= [];
+
+        if (countryData.treasuryBudgetLog.length > 50) {
+            countryData.treasuryBudgetLog.shift();
+        }
+
+        countryData.treasuryBudgetLog.push({
+            timestamp: Date.now(),
+            actor: player.name,
+            action: 'withdraw',
+            amount: -needMoney,
+            reason: 'treasurybudget.withdraw'
+        });
+
         const countryDataBase = new DynamicProperties('country');
         playerDataBase.set(`player_${player.id}`, playerData2);
         countryDataBase.set(`country_${playerData2.country}`, countryData);

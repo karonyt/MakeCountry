@@ -11,6 +11,9 @@ world.afterEvents.entityHurt.subscribe(ev => {
         if (!(damageSource.damagingEntity instanceof Player)) return;
     };
     combatSeconds.set(hurtEntity.id, config.combatTagSeconds);
+    if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
+        combatSeconds.set(hurtEntity.id, config.combatTagSeconds * 2);
+    };
     hurtEntity.addTag(`mc_combat`);
     return;
 });

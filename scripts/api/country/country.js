@@ -688,7 +688,7 @@ export class CountryManager {
      * @param {Player} player 
      */
     acceptMergeRequest(countryId, player = undefined) {
-        MergeCountry(this.id, countryId, player)
+        MergeCountry(countryId, this.id, player)
         //return acceptMergeRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     };
 
@@ -883,7 +883,7 @@ export class CountryManager {
             player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - 1} §f>> §e${this.countryData.lv}` });
             player.sendMessage({ translate: 'national.tier.level.up', with: [`${this.countryData.lv}`] });
             player.playSound('random.levelup', { location: player.location });
-            for (const memberId of this.memberManager.members) {
+            for (const memberId of this.countryData.members) {
                 const player = world.getEntity(memberId);
                 if (player && (player instanceof Player)) {
                     updateRecipe(player, this.countryData.lv);

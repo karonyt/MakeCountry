@@ -18,7 +18,7 @@ function mapExecuter(origin, args) {
     const alliance = playerCountryData?.alliance ?? [];
     const hostility = playerCountryData?.hostility ?? [];
     const friendly = playerCountryData?.friendly ?? [];
-    let [chunk, currentX, currentZ, dimension] = playerCurrentChunk.split(`_`);
+    let [chunk, currentX, currentZ, ...dimension] = playerCurrentChunk.split(`_`);
     let currentXNum = Number(currentX);
     let currentZNum = Number(currentZ);
     let playerCountryId = playerData?.country ?? -10;
@@ -28,7 +28,7 @@ function mapExecuter(origin, args) {
         for (let j = -10; j < 11; j++) {
             let chunkX = currentXNum + i;
             let chunkZ = currentZNum + j;
-            let chunkId = `${chunk}_${chunkX}_${chunkZ}_${dimension}`;
+            let chunkId = `${chunk}_${chunkX}_${chunkZ}_${dimension.join(`_`)}`;
             let chunkData = GetAndParsePropertyData(`${chunkId}`, chunkDataBase);
             let colorCode = "f"
             if (chunkData?.countryId) {

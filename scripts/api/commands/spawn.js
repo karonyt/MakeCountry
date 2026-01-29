@@ -1,70 +1,102 @@
-import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
+import {
+    CommandPermissionLevel,
+    CustomCommandParamType,
+    Player,
+    system,
+    world
+} from "@minecraft/server";
 import { DynamicProperties } from "../dyp";
-import { CheckPermissionFromLocation, GetAndParsePropertyData } from "../../lib/util";
+import { CheckPermissionFromLocation } from "../../lib/util";
 import config from "../../config";
 
 function spawnExecuter(origin, args) {
-    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    if (!origin?.sourceEntity || !(origin.sourceEntity instanceof Player)) return;
     const sender = origin.sourceEntity;
 
     system.runTimeout(() => {
         const countryDataBase = new DynamicProperties("country");
 
-        const rawCountryData = countryDataBase.get(`country_${args[0]}`);
-        if (!rawCountryData) return
+        const countryId = args[0];
+        const spawnName = args[1] ?? "default";
+
+        const rawCountryData = countryDataBase.get(`country_${countryId}`);
+        if (!rawCountryData) {
+            sender.sendMessage({ translate: "command.spawn.error.country_not_found" });
+            return;
+        }
+
         const countryData = JSON.parse(rawCountryData);
 
         if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
             sender.sendMessage({ translate: "teleport.error.combattag" });
             return;
         }
-        if (config.invaderNoTeleportValidity && sender.getTags().find(tag => tag.startsWith("war"))) {
+
+        if (config.invaderNoTeleportValidity && sender.getTags().some(t => t.startsWith("war"))) {
             sender.sendMessage({ translate: "teleport.error.invader" });
             return;
         }
-        if (sender.hasTag(`mc_notp`)) return;
 
-        if (!countryData?.spawn || !countryData?.publicSpawn) return;
+        if (sender.hasTag("mc_notp")) {
+            sender.sendMessage({ translate: "command.spawn.error.notp" });
+            return;
+        }
 
-        let [x, y, z, rx, ry, dimensionId] = countryData.spawn.split(`_`);
-        if (CheckPermissionFromLocation(sender, Number(x), Number(z), dimensionId, `publicHomeUse`)) {
-            sender.sendMessage({ translate: `no.permission` });
+        const spawnData = countryData.spawn?.[spawnName];
+        if (!spawnData) {
+            sender.sendMessage({ translate: "command.spawn.error.spawn_not_found" });
+            return;
+        }
+
+        if (spawnData.enabled !== true) {
+            sender.sendMessage({ translate: "command.spawn.error.spawn_disabled" });
+            return;
+        }
+
+        const [x, y, z, rx, ry, dimensionId] = spawnData.pos.split("_");
+
+        if (
+            CheckPermissionFromLocation(
+                sender,
+                Number(x),
+                Number(z),
+                dimensionId,
+                "publicHomeUse"
+            )
+        ) {
+            sender.sendMessage({ translate: "no.permission" });
             return;
         }
 
         sender.teleport(
             { x: Number(x), y: Number(y), z: Number(z) },
             {
-                dimension: world.getDimension(dimensionId.replace(`minecraft:`, ``)),
+                dimension: world.getDimension(dimensionId.replace("minecraft:", "")),
                 rotation: { x: Number(rx), y: Number(ry) }
             }
         );
-        sender.sendMessage({ translate: `command.chome.result` });
+
+        sender.sendMessage({ translate: "command.chome.result" });
     });
-};
+}
 
 system.beforeEvents.startup.subscribe((event) => {
-    //const countryDataBaseTop = new DynamicProperties("country");
-    /*const countryStr = [];
-    for (const countryKey of countryDataBaseTop.idList) {
-        const countryRawData = countryDataBaseTop.get(countryKey);
-        const countryData = JSON.parse(countryRawData);
-        countryStr.push(`${countryData.id}_${countryData.name}`);
-    }*/
-
-    //event.customCommandRegistry.registerEnum("makecountry:country", countryStr);
-
     event.customCommandRegistry.registerCommand(
         {
-            name: 'makecountry:spawn',
-            description: 'command.help.spawn.message',
+            name: "makecountry:spawn",
+            description: "command.help.spawn.message",
             permissionLevel: CommandPermissionLevel.Any,
-            mandatoryParameters: [{ name: "countryID", type: CustomCommandParamType.Integer }]
+            mandatoryParameters: [
+                { name: "countryID", type: CustomCommandParamType.Integer }
+            ],
+            optionalParameters: [
+                { name: "spawnName", type: CustomCommandParamType.String }
+            ]
         },
-        ((origin, ...args) => {
+        (origin, ...args) => {
             system.runTimeout(() => {
                 spawnExecuter(origin, args);
             });
-        })
+        }
     );
 });

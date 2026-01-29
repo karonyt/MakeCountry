@@ -67,28 +67,31 @@ export class DynamicProperties {
  * @param {string} value
  */
 export function setDynamicProperty(id, value) {
-    const pattern = `dyp#${id}#dy`;
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
         throw ReferenceError("Input must be a string");
     }
 
-    const existingKeys = [];
-    for (let i = 0; i < 10000; i++) {
-        const test = world.getDynamicProperty(`${pattern}${i}`);
-        if (!test) break;
-        existingKeys.push(i);
-    }
-
+    const pattern = `dyp#${id}#dy`;
     const chunkSize = 20000;
+    const chunks = Math.ceil(value.length / chunkSize);
 
-    const newValueLength = Math.ceil(value.length / chunkSize);
-    for (let i = 0; i < Math.max(existingKeys.length, newValueLength); i++) {
-        if (i <= newValueLength) {
-            world.setDynamicProperty(`${pattern}${i}`, value.substring(i * chunkSize, (i + 1) * chunkSize));
-            continue;
-        }
-        world.setDynamicProperty(`${pattern}${i}`, undefined);
+    for (let i = 0; i < chunks; i++) {
+        world.setDynamicProperty(
+            `${pattern}${i}`,
+            value.substring(i * chunkSize, (i + 1) * chunkSize)
+        );
     }
+
+    for (let i = chunks; ; i++) {
+        const key = `${pattern}${i}`;
+        if (!world.getDynamicProperty(key)) break;
+        world.setDynamicProperty(key, undefined);
+    }
+
+    world.setDynamicProperty(
+        `dyp#${id}#meta`,
+        JSON.stringify({ chunks })
+    );
 }
 
 /**
@@ -96,17 +99,19 @@ export function setDynamicProperty(id, value) {
  */
 export function deleteDynamicProperty(id) {
     const pattern = `dyp#${id}#dy`;
+    const metaRaw = world.getDynamicProperty(`dyp#${id}#meta`);
 
-    const existingKeys = [];
-    for (let i = 0; i < 10000; i++) {
-        const test = world.getDynamicProperty(`${pattern}${i}`);
-        if (!test) break;
-        existingKeys.push(i);
+    const max = metaRaw
+        ? JSON.parse(metaRaw).chunks
+        : 10000;
+
+    for (let i = 0; i < max; i++) {
+        const key = `${pattern}${i}`;
+        if (!world.getDynamicProperty(key)) break;
+        world.setDynamicProperty(key, undefined);
     }
 
-    for (let i = 0; i < existingKeys.length; i++) {
-        world.setDynamicProperty(`${pattern}${i}`, undefined);
-    }
+    world.setDynamicProperty(`dyp#${id}#meta`, undefined);
 }
 
 /**
@@ -115,14 +120,38 @@ export function deleteDynamicProperty(id) {
  * @returns {string|undefined}
  */
 export function getDynamicProperty(id) {
-    const matches = [];
     const pattern = `dyp#${id}#dy`;
-    for (let i = 0; i < 10000; i++) {
-        const test = world.getDynamicProperty(`${pattern}${i}`);
-        if (!test) break;
-        matches.push(test);
+    const metaKey = `dyp#${id}#meta`;
+    const metaRaw = world.getDynamicProperty(metaKey);
+
+    const chunks = [];
+    let count = 0;
+
+    if (metaRaw) {
+        const meta = JSON.parse(metaRaw);
+        for (let i = 0; i < meta.chunks; i++) {
+            const v = world.getDynamicProperty(`${pattern}${i}`);
+            if (!v) break;
+            chunks.push(v);
+        }
+        return chunks.length ? chunks.join("") : undefined;
     }
-    return matches.length > 0 ? matches.join('') : undefined;
+
+    for (let i = 0; i < 10000; i++) {
+        const v = world.getDynamicProperty(`${pattern}${i}`);
+        if (!v) break;
+        chunks.push(v);
+        count++;
+    }
+
+    if (count === 0) return undefined;
+
+    world.setDynamicProperty(
+        metaKey,
+        JSON.stringify({ chunks: count })
+    );
+
+    return chunks.join("");
 }
 
 /**

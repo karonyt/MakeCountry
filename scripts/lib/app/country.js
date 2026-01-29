@@ -4,6 +4,7 @@ import { SmartPhoneHomeScreen } from "../smartphone";
 import { CheckPermissionFromLocation, GetAndParsePropertyData } from "../util";
 import { DynamicProperties } from "../../api/dyp";
 import { FormCancelationReason } from "@minecraft/server-ui";
+import { CountryManager } from "../../api/country/country";
 const ActionFormData = ActionForm;
 
 /**
@@ -65,99 +66,64 @@ export function CountryApp(player, al = false) {
  */
 function showCountryInfo(player, countryData, al = false) {
     try {
-        const ownerData = GetAndParsePropertyData(`player_${countryData.owner}`);
-        const membersId = countryData.members.filter(m => m !== ownerData.id);
-        let membersName = [];
-        membersId.forEach(member => {
-            const memberData = GetAndParsePropertyData(`player_${member}`);
-            membersName.push(memberData.name);
-        });
-        let money = `show.private`;
-        let resourcePoint = `show.private`;
-        if (!countryData.hideMoney) {
-            money = `${config.MoneyName} ${countryData.money}`;
-            resourcePoint = `${countryData.resourcePoint}`;
-        };
-        const allianceIds = countryData.alliance;
-        let allianceCountryName = [];
-        allianceIds.forEach(id => {
-            const subCountryData = GetAndParsePropertyData(`country_${id}`);
-            if (subCountryData) {
-                allianceCountryName.push(subCountryData.name);
-            };
-        });
-        const hostilityIds = countryData.hostility;
-        let hostilityCountryName = [];
-        hostilityIds.forEach(id => {
-            const subCountryData = GetAndParsePropertyData(`country_${id}`);
-            if (subCountryData) {
-                hostilityCountryName.push(subCountryData.name);
-            };
-        });
-        const warNowIds = countryData.warNowCountries;
-        let warNowCountryName = [];
-        warNowIds.forEach(id => {
-            const subCountryData = GetAndParsePropertyData(`country_${id}`);
-            if (subCountryData) {
-                warNowCountryName.push(subCountryData.name);
-            };
-        });
-        const showBody =
-        {
-            rawtext: [
-                { translate: `form.showcountry.option.name`, with: [countryData.name] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.lore`, with: [countryData.lore] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.id`, with: [`${countryData.id}`] }, { text: `\n§r` },
-                { text: `${GetAndParsePropertyData(`role_${countryData.ownerRole}`).name}: ${ownerData.name}` }, { text: `\n§r` },
-                { translate: `form.showcountry.option.memberscount`, with: [`${countryData.members.length}`] }, { text: `\n§r` },
-                { text: `${GetAndParsePropertyData(`role_${countryData.peopleRole}`).name}: ${membersName.join(`§r , `)}` }, { text: `\n§r` },
-                { translate: `form.showcountry.option.territories`, with: [`${countryData.territories.length}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.money`, with: { rawtext: [{ translate: `${money}` }] } }, { text: `\n§r` },
-                { translate: `form.showcountry.option.resourcepoint`, with: { rawtext: [{ translate: `${resourcePoint}` }] } }, { text: `\n§r` },
-                { translate: `form.showcountry.option.peace`, with: [`${countryData.peace}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.invite`, with: [`${countryData.invite}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.taxper`, with: [`${countryData.taxPer}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.taxinstitutionisper`, with: [`${countryData.taxInstitutionIsPer}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.alliance`, with: [`${allianceCountryName.join(`§r , `)}`] }, { text: `\n§r` },
-                { translate: `form.showcountry.option.hostility`, with: [`${hostilityCountryName.join(`§r , `)}`] }, { text: `\n§r` },
-                { translate: 'form.showcountry.option.days', with: [`${countryData.days}`] }, { text: `\n§r` },
-            ]
-        };
+        const defaultSpawn = countryData?.spawn?.default;
+
+        const countryManager = new CountryManager(countryData.id);
+        countryData = countryManager.countryData;
+
         const form = new ActionFormData();
         form.title(countryData.name);
-        form.body(showBody);
+        form.body(countryManager.getCountryInfoRawText());
+
         form.button({ translate: `mc.button.close` });
-        if (countryData?.publicSpawn && countryData?.spawn) {
+
+        if (countryData.publicSpawn && defaultSpawn?.enabled) {
             form.button({ translate: `button.publichome.tp` });
-        };
+        }
+
         form.show(player).then(rs => {
             if (rs.canceled) {
-                CountryApp(player);
+                CountryApp(player, al);
                 return;
-            };
-            switch (rs.selection) {
-                case 0: {
-                    //閉じる
-                    break;
-                };
-                case 1: {
-                    //パブリックホーム
-                    /**
-                     * @type {Array<string>}
-                     */
-                    let [x, y, z, rx, ry, dimensionId] = countryData?.spawn.split(`_`);
-                    if (CheckPermissionFromLocation(player, Number(x), Number(z), dimensionId, `publicHomeUse`)) {
-                        //権限がない！！
-                        player.sendMessage({ translate: `no.permission` });
-                        return
-                    };
-                    //tp
-                    player.teleport({ x: Number(x), y: Number(y), z: Number(z) }, { dimension: world.getDimension(`${dimensionId.replace(`minecraft:`, ``)}`), rotation: { x: Number(rx), y: Number(ry) } });
-                    break;
-                };
-            };
+            }
+
+            if (rs.selection === 1) {
+
+                if (!defaultSpawn) {
+                    player.sendMessage({ translate: "command.spawn.error.spawn_not_found" });
+                    return;
+                }
+
+                if (!defaultSpawn.enabled) {
+                    player.sendMessage({ translate: "command.spawn.error.spawn_disabled" });
+                    return;
+                }
+
+                const [x, y, z, rx, ry, dimensionId] = defaultSpawn.pos.split("_");
+
+                if (
+                    CheckPermissionFromLocation(
+                        player,
+                        Number(x),
+                        Number(z),
+                        dimensionId,
+                        "publicHomeUse"
+                    )
+                ) {
+                    player.sendMessage({ translate: "no.permission" });
+                    return;
+                }
+
+                player.teleport(
+                    { x: Number(x), y: Number(y), z: Number(z) },
+                    {
+                        dimension: world.getDimension(dimensionId.replace("minecraft:", "")),
+                        rotation: { x: Number(rx), y: Number(ry) }
+                    }
+                );
+            }
         });
-    } catch (error) {
-        console.warn(error);
-    };
-};
+    } catch (e) {
+        console.warn(e);
+    }
+}

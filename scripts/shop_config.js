@@ -1,54 +1,34 @@
 export default [
     {
-        name: `建材1 [丸太]`,
-        lore: `building material 1 [logs]`,
-        icon: `minecraft:oak_log`,
-        items: [
-            { id: `minecraft:oak_log`, price: 10 },
-            { id: `minecraft:acacia_log`, price: 10 },
-            { id: `minecraft:birch_log`, price: 10 },
-            { id: `minecraft:cherry_log`, price: 10 },
-            { id: `minecraft:dark_oak_log`, price: 10 },
-            { id: `minecraft:jungle_log`, price: 10 },
-            { id: `minecraft:mangrove_log`, price: 10 },
-            { id: `minecraft:spruce_log`, price: 10 },
-            { id: `minecraft:pale_oak_log`, price: 10 },
-            { id: `minecraft:white_concrete`, price: 10 },
-            { id: `minecraft:light_gray_concrete`, price: 10 },
-            { id: `minecraft:gray_concrete`, price: 10 },
-            { id: `minecraft:black_concrete`, price: 10 },
-            { id: `minecraft:brown_concrete`, price: 10 },
-            { id: `minecraft:orange_concrete`, price: 10 },
-            { id: `minecraft:red_concrete`, price: 10 },
-            { id: `minecraft:yellow_concrete`, price: 10 },
-            { id: `minecraft:lime_concrete`, price: 10 },
-            { id: `minecraft:greeen_concrete`, price: 10 },
-            { id: `minecraft:cyan_concrete`, price: 10 },
-            { id: `minecraft:blue_concrete`, price: 10 },
-            { id: `minecraft:light_blue_concrete`, price: 10 },
-            { id: `minecraft:purple_concrete`, price: 10 },
-            { id: `minecraft:magenta_concrete`, price: 10 },
-            { id: `minecraft:pink_concrete`, price: 10 },
-        ],
-        lv: 30
-    },
-    {
-        name: `建材2`,
-        lore: `building material 2`,
-        icon: `minecraft:oak_log`,
-        items: [
-            { id: `minecraft:white_wool`, price: 10 },
-            { id: `minecraft:gravel`, price: 8 },
-            { id: `minecraft:white_concrete_powder`, price: 4 },
-            { id: `minecraft:glass`, price: 4 },
-        ],
-        lv: 40
-    },
-    /*{
         name: `建材`,
         lore: `building material`,
         icon: `minecraft:oak_log`,
         items: [
+            { id: `minecraft:oak_log`, price: 4 },
+            { id: `minecraft:acacia_log`, price: 4 },
+            { id: `minecraft:birch_log`, price: 4 },
+            { id: `minecraft:cherry_log`, price: 4 },
+            { id: `minecraft:dark_oak_log`, price: 4 },
+            { id: `minecraft:jungle_log`, price: 4 },
+            { id: `minecraft:mangrove_log`, price: 4 },
+            { id: `minecraft:spruce_log`, price: 4 },
+            { id: `minecraft:pale_oak_log`, price: 4 },
+            { id: `minecraft:white_concrete`, price: 4 },
+            { id: `minecraft:light_gray_concrete`, price: 4 },
+            { id: `minecraft:gray_concrete`, price: 4 },
+            { id: `minecraft:black_concrete`, price: 4 },
+            { id: `minecraft:brown_concrete`, price: 4 },
+            { id: `minecraft:orange_concrete`, price: 4 },
+            { id: `minecraft:red_concrete`, price: 4 },
+            { id: `minecraft:yellow_concrete`, price: 4 },
+            { id: `minecraft:lime_concrete`, price: 4 },
+            { id: `minecraft:green_concrete`, price: 4 },
+            { id: `minecraft:cyan_concrete`, price: 4 },
+            { id: `minecraft:blue_concrete`, price: 4 },
+            { id: `minecraft:light_blue_concrete`, price: 4 },
+            { id: `minecraft:purple_concrete`, price: 4 },
+            { id: `minecraft:magenta_concrete`, price: 4 },
+            { id: `minecraft:pink_concrete`, price: 4 },
             { id: `minecraft:quartz_block`, price: 4 },
             { id: `minecraft:sandstone`, price: 4 },
             { id: `minecraft:brick_block`, price: 4 },
@@ -76,12 +56,22 @@ export default [
             { id: `minecraft:pale_moss_block`, price: 8 },
             { id: `minecraft:pale_hanging_moss`, price: 8 },
             { id: `minecraft:prismarine_bricks`, price: 8 },
-            { id: `minecraft:brick`, price: 2 },
-            { id: `minecraft:netherbrick`, price: 3 },
+            { id: `minecraft:white_wool`, price: 10 },
+            { id: `minecraft:gravel`, price: 8 },
+            { id: `minecraft:white_concrete_powder`, price: 4 },
+            { id: `minecraft:glass`, price: 4 },
+        ],
+        lv: 0
+    },
+    /*{
+        name: `建材`,
+        lore: `building material`,
+        icon: `minecraft:oak_log`,
+        items: [
         ],
         lv: 30
     },*/
-    {
+    /*{
         name: `食べ物`,
         lore: `food`,
         icon: `minecraft:bread`,
@@ -96,14 +86,14 @@ export default [
             { id: `mc:pineapple`, price: 1000 },
             { id: `mc:straw_berry`, price: 620 },
             { id: `mc:mikan`, price: 700 },
-            /*{ id: `mc:xmas_chicken`, price: 1500 },
+            { id: `mc:xmas_chicken`, price: 1500 },
             { id: `mc:pizza`, price: 2000 },
             { id: `mc:osechi`, price: 2200 },
             { id: `mc:omochi`, price: 500 },
-           */
+           
         ],
         lv: 50
-    },
+    },*/
     /*{
         name: `スポーンエッグ`,
         lore: `spawn egg`,
@@ -130,7 +120,7 @@ export default [
             { id: `minecraft:shulker_shell`, price: 600 },
         ]
     },*/
-    {
+    /*{
         name: `農業`,
         lore: `agriculture`,
         icon: `minecraft:carrot`,
@@ -167,7 +157,7 @@ export default [
             { id: `minecraft:pink_petals`, price: 100 },
         ],
         lv: 70
-    },
+    },*/
     {
         name: `鍛冶型`,
         lore: `smithing template`,
@@ -178,7 +168,7 @@ export default [
             { id: `minecraft:snout_armor_trim_smithing_template`, price: 50000 },
             { id: `minecraft:rib_armor_trim_smithing_template`, price: 50000 },
         ],
-        lv: 90
+        lv: 0
     },
     /*{
         name: `その他`,
@@ -213,12 +203,13 @@ export default [
         lore: `other`,
         icon: `minecraft:torch`,
         items: [
+            { id: `minecraft:scaffolding`, price: 50 },
             { id: `minecraft:torch`, price: 10 },
             { id: `minecraft:lantern`, price: 20 },
             { id: `minecraft:sea_lantern`, price: 20 },
-            { id: `minecraft:experience_bottle`, price: 100 },
+            //{ id: `minecraft:experience_bottle`, price: 100 },
             { id: `minecraft:blue_ice`, price: 15 },
         ],
-        lv: 300
+        lv: 0
     },
 ];

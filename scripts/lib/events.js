@@ -11,7 +11,29 @@ import { chestLockDefaultForm } from "../forms/default/chest_lock/main";
 import national_tier_level from "../national_tier_level";
 import { updateRecipe } from "./recipe";
 import { CountryManager } from "../api/country/country";
-import * as DyProp from "./DyProp";
+import { GrowthPlantReward } from "./jobs";
+import { itemUseItems, projectileUseItems } from "../useitems_config";
+
+world.beforeEvents.itemUse.subscribe((ev) => {
+    const { source, itemStack } = ev;
+
+    const { x, z } = source.location;
+    const dimensionId = source.dimension.id;
+
+    if (source.dimension.getEntities({ location: source.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
+        return;
+    };
+
+    if (itemUseItems.includes(itemStack?.typeId)) {
+        ev.cancel = CheckPermissionFromLocation(source, x, z, dimensionId, 'itemUse');
+        return;
+    };
+
+    if (projectileUseItems.includes(itemStack?.typeId)) {
+        ev.cancel = CheckPermissionFromLocation(source, x, z, dimensionId, 'projectileUse');
+        return;
+    };
+});
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
@@ -26,7 +48,8 @@ world.afterEvents.worldLoad.subscribe(() => {
                         try {
                             const block = player.dimension.getBlock({ x: px + i, y: py - j, z: pz });
                             if (block?.isValid) {
-                                const { x, z } = block.location;
+                                const x = block.x;
+                                const z = block.z;
                                 if (block.typeId == "minecraft:farmland") {
                                     const cannot = CheckPermissionFromLocation(player, x, z, block.dimension.id, permission);
                                     if (cannot) {
@@ -44,7 +67,8 @@ world.afterEvents.worldLoad.subscribe(() => {
                         try {
                             const block2 = player.dimension.getBlock({ x: px, y: py - j, z: pz + i });
                             if (block2?.isValid) {
-                                const { x: x2, z: z2 } = block2.location;
+                                const x2 = block2.x;
+                                const z2 = block2.z;
                                 if (block2.typeId == "minecraft:farmland") {
                                     const cannot = CheckPermissionFromLocation(player, x2, z2, block.dimension.id, permission);
                                     if (cannot) {
@@ -63,7 +87,9 @@ world.afterEvents.worldLoad.subscribe(() => {
                     try {
                         const block = player.dimension.getBlock({ x: px, y: py - j, z: pz });
                         if (block?.isValid) {
-                            const { x, y, z } = block.location;
+                            const x = block.x;
+                            const z = block.z;
+
                             if (block.typeId == "minecraft:farmland") {
                                 const cannot = CheckPermissionFromLocation(player, x, z, block.dimension.id, permission);
                                 if (cannot) {
@@ -115,7 +141,9 @@ world.afterEvents.entityHurt.subscribe(ev => {
 world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
     const permission = 'break';
     const { player, block, dimension } = ev;
-    const { x, y, z } = block.location;
+    const x = block.x;
+    const y = block.y;
+    const z = block.z;
     const now = Date.now();
 
     const chestId = `chest_${x}_${y}_${z}_${dimension.id}`;
@@ -129,7 +157,9 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
         const shopBlock = block.above();
         if (shopBlock && shopBlock?.typeId == 'mc:shop_block') {
             const barrelShopDB = new DynamicProperties('barrelShop');
-            const { x, y, z } = shopBlock.location;
+            const x = shopBlock.x;
+            const y = shopBlock.y;
+            const z = shopBlock.z;
             const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
             if (!rawShopData) {
                 return;
@@ -156,7 +186,9 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
         };
 
         const barrelShopDB = new DynamicProperties('barrelShop');
-        const { x, y, z } = block.location;
+        const x = block.x;
+        const y = block.y;
+        const z = block.z;
         const rawShopData = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
         if (!rawShopData) {
             return;
@@ -205,18 +237,11 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
         return;
     }
 
-    if (player?.breakInfo) {
-        if ((now - player?.breakInfo?.time) < 10000 && ev.block.typeId == player?.breakInfo?.typeId && ev.block.location == player?.breakInfo?.location) {
-            ev.cancel = player?.breakInfo?.cancel;
-            return;
-        };
-    };
-
     const cannot = CheckPermissionFromLocation(player, x, z, dimension.id, permission);
     player.breakInfo = {
         time: Date.now(),
         typeId: block.typeId,
-        location: block.location,
+        location: { x: block.x, y: block.y, z: block.z },
         cancel: cannot
     };
     if (cannot) {
@@ -268,15 +293,10 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     const permission = `place`
-    const { player, block, permutationBeingPlaced } = ev;
-    const { x, z } = block.location;
+    const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
+    const x = block.x;
+    const z = block.z;
     const now = Date.now();
-    if (player?.placeInfo) {
-        if ((now - player?.placeInfo?.time) < 5000 && ev.block.typeId == player?.placeInfo?.typeId && ev.block.location == player?.placeInfo?.location) {
-            ev.cancel = player?.placeInfo?.cancel;
-            return;
-        };
-    };
 
     if (permutationBeingPlaced?.type.id.includes(`hopper`)) return;
     if (permutationBeingPlaced?.type.id.includes(`piston`)) return;
@@ -284,7 +304,7 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     player.placeInfo = {
         time: now,
         typeId: permutationBeingPlaced?.type?.id,
-        location: block.location,
+        location: { x: block.x, y: block.y, z: block.z },
         cancel: cannot
     };
     ev.cancel = cannot;
@@ -297,17 +317,11 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     const permission = `pistonPlace`
-    const { player, block, permutationBeingPlaced } = ev;
+    const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
     if (!permutationBeingPlaced?.type.id.includes(`piston`)) return;
-    const { x, z } = block.location;
-    const now = Date.now();
+    const x = block.x;
+    const z = block.z;
     const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
-    player.placeInfo = {
-        time: now,
-        typeId: permutationBeingPlaced?.type?.id,
-        location: block.location,
-        cancel: cannot
-    };
     ev.cancel = cannot;
     if (!cannot) return;
     player.sendMessage({ translate: `cannot.permission.${permission}` });
@@ -315,10 +329,11 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
-    const { player, block, permutationBeingPlaced } = ev;
+    const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
     if (!permutationBeingPlaced?.type.id.includes(`hopper`)) return;
     const permission = `place`;
-    const { x, z } = block.location;
+    const x = block.x;
+    const z = block.z;
     const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
     if (cannot) {
         ev.cancel = true;
@@ -350,7 +365,7 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 
     //保護チェスト
     if (!chest.typeId.includes('chest')) return;
-    const chestId = `chest_${chest.location.x}_${chest.location.y}_${chest.location.z}_${chest.dimension.id}`;
+    const chestId = `chest_${chest.x}_${chest.y}_${chest.z}_${chest.dimension.id}`;
     const chestLockData = GetAndParsePropertyData(chestId);
     if (chestLockData) {
         if (player.hasTag(`adminmode`)) return;
@@ -365,27 +380,28 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const permission = `place`
     const { player, block } = ev;
 
-    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:spawner') {
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner') {
         ev.cancel = true;
         return;
     };
     const container = player.getComponent("inventory").container;
     if (!container.getItem(player.selectedSlotIndex)) return;
-    const { x, z } = block.location;
+    const x = block.x;
+    const z = block.z;
     const now = Date.now();
-    if (player?.itemUseOnInfo) {
+    /*if (player?.itemUseOnInfo) {
         if ((now - player?.itemUseOnInfo?.time) < 5000 && ev.block.typeId == player?.itemUseOnInfo?.typeId && ev.block.location == player?.itemUseOnnfo?.location) {
             ev.cancel = player?.itemUseOnInfo?.cancel;
             return;
         };
-    };
+    };*/
     const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
-    player.itemUseOnInfo = {
+    /*player.itemUseOnInfo = {
         time: now,
         typeId: block?.typeId,
-        location: block.location,
+        location: { x: block.x, y: block.y, z: block.z },
         cancel: cannot
-    };
+    };*/
     ev.cancel = cannot;
     if (!cannot) return;
     player.sendMessage({ translate: `cannot.permission.${permission}` });
@@ -397,9 +413,11 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const permission = 'blockUse'; // ブロックの使用権限
     const { player, block } = ev;
     const now = Date.now();
-    const { x, y, z } = block.location;
+    const x = block.x;
+    const y = block.y;
+    const z = block.z;
 
-    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:spawner') {
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner') {
         ev.cancel = true;
         return;
     };
@@ -426,7 +444,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                         player.interactWithBlockInfo = {
                             time: now,
                             typeId: block?.typeId,
-                            location: block.location,
+                            location: { x: block.x, y: block.y, z: block.z },
                             cancel: true
                         };
                         ev.cancel = true;
@@ -437,7 +455,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                     player.interactWithBlockInfo = {
                         time: now,
                         typeId: block?.typeId,
-                        location: block.location,
+                        location: { x: block.x, y: block.y, z: block.z },
                         cancel: true
                     };
                     ev.cancel = true;
@@ -452,7 +470,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                 player.interactWithBlockInfo = {
                     time: now,
                     typeId: block?.typeId,
-                    location: block.location,
+                    location: { x: block.x, y: block.y, z: block.z },
                     cancel: true
                 };
                 system.runTimeout(() => chestLockDefaultForm(player, chestId));
@@ -463,7 +481,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         player.interactWithBlockInfo = {
             time: now,
             typeId: block?.typeId,
-            location: block.location,
+            location: { x: block.x, y: block.y, z: block.z },
             cancel: cannot2
         };
         return;
@@ -474,7 +492,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         player.interactWithBlockInfo = {
             time: now,
             typeId: block?.typeId,
-            location: block.location,
+            location: { x: block.x, y: block.y, z: block.z },
             cancel: cannot2
         };
         return;
@@ -486,38 +504,11 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     player.interactWithBlockInfo = {
         time: now,
         typeId: block?.typeId,
-        location: block.location,
+        location: { x: block.x, y: block.y, z: block.z },
         cancel: cannot
     };
     if (!cannot) {
-        const growth = block.permutation.getState('growth');
-        system.run(() => {
-            // 農家ジョブの報酬
-            if (block.typeId === 'minecraft:sweet_berry_bush' && player.hasTag('mcjobs_farmer') && growth > 1 && !player.isSneaking) {
-                const container = player.getComponent("inventory").container;
-                const item = container.getItem(player.selectedSlotIndex);
-                if (growth != 3) {
-                    if (item && item?.typeId == "minecraft:bone_meal") {
-                        return;
-                    }
-                }
-                if (item && item?.typeId.includes("minecraft:bucket")) {
-                    return;
-                }
-                if (CheckPermissionFromLocation(player, x, z, dimensionId, `place`)) return;
-                //block.setPermutation(block.permutation.withState(`growth`, 0));
-                const playerData = GetAndParsePropertyData(`player_${playerId}`);
-                const jobs = new JobLevel(player, "farmer");
-                const jobsLevel = jobs.getLevel();
-                jobs.addXp(jobs_config.jobsXp);
-                const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel)) / 100;
-                const reward = Math.ceil((random / 10 * growth) * 100) / 100;
-                playerData.money += reward;
-                StringifyAndSavePropertyData(`player_${playerId}`, playerData);
-                if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${reward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
-                return;
-            }
-        });
+        GrowthPlantReward(player, block);
         return;
     }
 
@@ -550,35 +541,54 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
 world.afterEvents.playerSpawn.subscribe((ev) => {
     const { player, initialSpawn } = ev;
     if (initialSpawn) {
-        const playerDataBase = new DynamicProperties("player");
-        const dataCheck = playerDataBase.get(`player_${player.id}`);
-        if (dataCheck) {
-            const playerData = JSON.parse(dataCheck);
-            playerData.name = player.name;
-            playerData.lastLogined = Date.now();
-            playerData.money = Math.floor(playerData.money);
-            playerDataBase.set(`player_${player.id}`, JSON.stringify(playerData));
-            if (config.countryNameDisplayOnPlayerNameTag) {
-                nameSet(player);
-            };
-            if (national_tier_level.enabled) {
-                const playerDataBase = new DynamicProperties('player');
-                const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
-                const lv = countryId ? new CountryManager(countryId).countryData.lv : 0;
+        playerDataCheck(player);
+    };
+});
 
-                const jobsList = jobs_config.jobsList.filter(job => job.lv > lv);
-                for (const job of jobsList) {
-                    if (player.hasTag(`mcjobs_${job.id}`)) {
-                        player.removeTag(`mcjobs_${job.id}`);
-                    };
-                }
+world.afterEvents.worldLoad.subscribe(() => {
+    for (const player of world.getPlayers()) {
+        playerDataCheck(player);
+        return;
+    };
+})
 
-                updateRecipe(player, lv);
-            };
+/**
+ * 
+ * @param {Player} player 
+ */
+function playerDataCheck(player) {
+    const playerDataBase = new DynamicProperties("player");
+    const dataCheck = playerDataBase.get(`player_${player.id}`);
+    if (dataCheck) {
+        const playerData = JSON.parse(dataCheck);
+        playerData.name = player.name;
+        playerData.lastLogined = Date.now();
+        playerData.money = Math.floor(playerData.money);
+        playerDataBase.set(`player_${player.id}`, JSON.stringify(playerData));
+        if (config.countryNameDisplayOnPlayerNameTag) {
+            nameSet(player);
+        };
+        if (national_tier_level.enabled) {
+            const playerDataBase = new DynamicProperties('player');
+            const countryId = JSON.parse(playerDataBase.get(`player_${player.id}`))?.country;
+            const lv = countryId ? new CountryManager(countryId).countryData?.lv || 0 : 0;
 
-            return;
+            const jobsList = jobs_config.jobsList.filter(job => job.lv > lv);
+            for (const job of jobsList) {
+                if (player.hasTag(`mcjobs_${job.id}`)) {
+                    player.removeTag(`mcjobs_${job.id}`);
+                };
+            }
+
+            updateRecipe(player, lv);
         };
 
+        return;
+    };
+
+    //同名の既存データがないか確認
+    const exist = getDataFromName(player.name);
+    if (exist.length == 0) {
         const newPlayerData = {
             name: player.name,
             id: player.id,
@@ -596,5 +606,38 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
         playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
         updateRecipe(player, 0);
         return;
+    } else {
+        const newPlayerData = exist[0].data;
+        const oldId = newPlayerData.id;
+
+        newPlayerData.id = player.id;
+        playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
+        playerDataBase.delete(`player_${oldId}`);
+        //プレイ時間の移行
+        const playTimeDB = new DynamicProperties('playtime');
+        playTimeDB.set(`player_${player.id}_total`, playTimeDB.get(`player_${oldId}_total`) || '0');
+        playTimeDB.set(`player_${player.id}_daily`, playTimeDB.get(`player_${oldId}_daily`) || '{}');
+        playTimeDB.set(`player_${player.id}_monthly`, playTimeDB.get(`player_${oldId}_monthly` || '{}'));
+        playTimeDB.set(`player_${player.id}_yearly`, playTimeDB.get(`player_${oldId}_yearly`) || '{}');
     };
-});
+};
+
+/**
+ * 
+ * @param {string} name 
+ * @returns {Array<{id: string, data: any}>}
+ */
+function getDataFromName(name) {
+    const playerDataBase = new DynamicProperties('player');
+    let resultData = [];
+    for (const id of playerDataBase.idList) {
+        const dataraw = playerDataBase.get(id);
+        if (dataraw) {
+            const data = JSON.parse(dataraw);
+            if (data.name == name) {
+                resultData.push({ id: id, data: data });
+            };
+        };
+    };
+    return resultData;
+};

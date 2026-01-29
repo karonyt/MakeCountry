@@ -240,8 +240,6 @@ export function PlayerMarketExhibitMainMenu(player) {
                     player.sendMessage({ translate: `error.notenough.money` });
                     return;
                 };
-                playerData.money = playerData.money - config.playerMarketCommission;
-                StringifyAndSavePropertyData(`player_${player.id}`, playerData);
                 const newContainer = player.getComponent(`inventory`).container;
                 const item2 = newContainer.getItem(items[rs.selection - 1].slot);
                 if (item2.typeId != itemStackArray[rs.selection - 1].typeId || item2.amount != itemStackArray[rs.selection - 1].amount) {
@@ -255,7 +253,6 @@ export function PlayerMarketExhibitMainMenu(player) {
     });
 };
 
-const commission = 10000;
 /**
  * 出品
  * @param {{ slot: number,itemStack: ItemStack }} itemData 
@@ -268,7 +265,7 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
     form.slider(``, 1, itemData.itemStack.amount, 1);
     form.textField({ translate: `input.price` }, { translate: `price.label` });
     form.toggle({ translate: `form.button.notify` });
-    form.label({ translate: `form.label.commission`, with: [`${commission}${config.MoneyName}`] });
+    form.label({ translate: `form.label.commission`, with: [`${config.playerMarketCommission}${config.MoneyName}`] });
     form.show(player).then(rs => {
         const newContainer = player.getComponent(`inventory`).container;
         const item = newContainer.getItem(itemData.slot);
@@ -288,11 +285,11 @@ export function PlayerMarketExhibitSelectItemMenu(player, itemData, itemStack) {
 
         const playerData = GetAndParsePropertyData(`player_${player.id}`);
 
-        if (playerData.money < commission) {
+        if (playerData.money < config.playerMarketCommission) {
             player.sendMessage({ translate: 'error.notenough.money' });
             return;
         };
-        playerData.money = playerData.money - commission;
+        playerData.money = playerData.money - config.playerMarketCommission;
 
         if (rs.formValues[2]) {
             world.sendMessage({ rawtext: [{ text: `§a[PlayerMarket]\n` }, { translate: `exhibited.message`, with: { rawtext: [{ translate: `${langChangeItemName(itemData.itemStack.typeId)}` }] } }] });

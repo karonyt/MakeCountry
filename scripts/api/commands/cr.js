@@ -8,6 +8,7 @@ function crExecuter(origin, args) {
     const item = container.getItem(sender.selectedSlotIndex);
     if (item) {
         if (item.typeId == "mc:penname_after" || item.typeId == "mc:penname_before") {
+            sender.sendMessage({ translate: 'command.error.cannot.this.item' });
             return;
         };
         const loreArray = item.getLore();
@@ -19,6 +20,7 @@ function crExecuter(origin, args) {
         if (loreArray.find(lore => lore.includes(`§c§r§d`))) {
             //item.setLore(loreArray.filter(lore => !lore.includes(`§c§r§d`)));
             //container.setItem(sender.selectedSlotIndex, item);
+            sender.sendMessage({ translate: 'command.error.cannot.this.item' });
             return;
         };
         loreArray.unshift(`§c§r§d${sender.name}(${sender.id})`);

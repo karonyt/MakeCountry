@@ -22,9 +22,25 @@ export function resourcepointSelectDefaultForm(player) {
     const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
     const countryManager = new CountryManager(playerData.country);
     const countryData = countryManager.countryData;
+    const resourcePointLog = countryData?.resourcePointLog || [];
+    let logLabelText = [];
+
+    for (const log of resourcePointLog) {
+        const date = new Date(log.timestamp);
+        const time = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} `
+            + `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+        const sign = log.amount >= 0 ? '§a+' : '§c';
+        const reason = log.reason ? `（${log.reason}）` : '';
+
+        logLabelText.unshift({ text: `[${time}] \n${log.actor} : ${log.action.toUpperCase()} \n${sign}${log.amount} §r(` }, { translate: `${reason}` }, { text: ')\n' });
+    }
     const form = new ActionFormData();
     form.title({ translate: `resourcepoint` });
     form.body({ rawtext: [{ translate: `resourcepoint` }, { text: `${config.MoneyName} ${countryData.resourcePoint}` }] });
+    form.divider();
+    form.label({ translate: 'resource.point.log' });
+    if (logLabelText.length != 0) form.label({rawtext: logLabelText});
     form.button({ translate: `conversion` });
     if (!CheckPermission(player, `withDrawResourcepoint`)) form.button({ translate: `withdraw` });
     form.show(player).then(rs => {

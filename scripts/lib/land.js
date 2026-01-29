@@ -62,7 +62,9 @@ export function MakeCountry(owner, reason, name = `country`, invite = true, peac
     const [ownerRole, adminRole, peopleRole] = CreateRole([
         { name: `Owner`, permissions: [`admin`], iconTextureId: `gold_block`, color: `e` },
         { name: `Admin`, permissions: [`admin`], iconTextureId: `iron_block`, color: `f` },
-        { name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`], iconTextureId: `stone`, color: `a` }
+        {
+            name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`, 'itemUse', 'projectileUse', 'entityAttack', 'playerAttack',], iconTextureId: `stone`, color: `a`
+        }
     ]);
     ownerData.roles.push(ownerRole);
     const countryData = {
@@ -210,9 +212,9 @@ export function DeleteCountry(countryId) {
     const raw = countryDB.get(`country_${cid}`);
     if (!raw) return; // 既に消えてるなら何もしない
 
-    let country;
+    let del_country;
     try {
-        country = JSON.parse(raw);
+        del_country = JSON.parse(raw);
     } catch {
         // 壊れてるなら即消す
         countryDB.delete(`country_${cid}`);
@@ -220,11 +222,11 @@ export function DeleteCountry(countryId) {
     }
 
     // ===== 削除ロック =====
-    if (country.deleting === true) return;
-    country.deleting = true;
-    countryDB.set(`country_${cid}`, JSON.stringify(country));
+    if (del_country.deleting === true) return;
+    del_country.deleting = true;
+    countryDB.set(`country_${cid}`, JSON.stringify(del_country));
 
-    const countryName = country.name;
+    const countryName = del_country.name;
 
     // ===== before event =====
     const cancel = country.beforeEvents?.delete?.emit?.({
@@ -234,21 +236,21 @@ export function DeleteCountry(countryId) {
         cancel: false
     });
     if (cancel) {
-        delete country.deleting;
-        countryDB.set(`country_${cid}`, JSON.stringify(country));
+        delete del_country.deleting;
+        countryDB.set(`country_${cid}`, JSON.stringify(del_country));
         return;
     }
 
     // ===== オーナー返金 =====
     try {
-        if (country.owner) {
-            const rawOwner = playerDB.get(`player_${country.owner}`);
+        if (del_country.owner) {
+            const rawOwner = playerDB.get(`player_${del_country.owner}`);
             if (rawOwner) {
                 const owner = JSON.parse(rawOwner);
                 owner.money =
                     (owner.money ?? 0) +
-                    (country.money ?? 0) +
-                    (country.resourcePoint ?? 0);
+                    (del_country.money ?? 0) +
+                    (del_country.resourcePoint ?? 0);
                 playerDB.set(`player_${owner.id}`, JSON.stringify(owner));
             }
         }
@@ -257,7 +259,7 @@ export function DeleteCountry(countryId) {
     }
 
     // ===== メンバー解除 =====
-    for (const pid of country.members ?? []) {
+    for (const pid of del_country.members ?? []) {
         try {
             const rawPlayer = playerDB.get(`player_${pid}`);
             if (rawPlayer) {
@@ -305,7 +307,7 @@ export function DeleteCountry(countryId) {
     }
 
     // ===== ロール削除 =====
-    for (const rid of country.roles ?? []) {
+    for (const rid of del_country.roles ?? []) {
         try {
             roleDB.delete(`role_${rid}`);
         } catch (e) {
@@ -314,7 +316,7 @@ export function DeleteCountry(countryId) {
     }
 
     // ===== プロットグループ削除 =====
-    for (const gid of country.plotgroup ?? []) {
+    for (const gid of del_country.plotgroup ?? []) {
         try {
             plotDB.delete(`plotgroup_${gid}`);
         } catch (e) {
@@ -358,11 +360,11 @@ export function DeleteCountry(countryId) {
 
 /**
  * 指定した国でロールを作成
- * @param {string} countryId 
- * @param {string} name 
- * @param {Array<string>} permissions 
- * @param {string} iconTextureId 
- * @param {string} color 
+ * @param {string} countryId
+ * @param {string} name
+ * @param {Array<string>} permissions
+ * @param {string} iconTextureId
+ * @param {string} color
  */
 export function CreateRoleToCountry(countryId, name, permissions = [], iconTextureId = `stone`, color = `e`) {
     const countryDataBase = new DynamicProperties('country');

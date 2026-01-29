@@ -1,5 +1,5 @@
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionForm, ModalForm} from "./form_class";
+import { ActionForm, ModalForm } from "./form_class";
 const ActionFormData = ActionForm;
 const ModalFormData = ModalForm;
 import { CheckPermissionFromLocation, GetAndParsePropertyData, GetPlayerChunkPropertyId, isDecimalNumberZeroOK, StringifyAndSavePropertyData } from "./util";
@@ -692,7 +692,7 @@ export function CreatePlotForm(player, chunkId) {
     plotGroups.push({ rawtext: [{ translate: `none` }] });
     for (const group of countryData?.plotgroup ?? []) {
         const groupData = GetAndParsePropertyData(`plotgroup_${group}`);
-        plotGroups.push(groupData?.name);
+        plotGroups.push({ text: `${groupData?.name}` });
         plotGroupsDatas.push(groupData);
     };
     const type = ["public", "private", "embassy"];

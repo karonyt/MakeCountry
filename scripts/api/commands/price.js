@@ -12,10 +12,12 @@ function priceExecuter(origin, args) {
     const item = container.getItem(sender.selectedSlotIndex);
     if (item) {
         if (item.typeId == "mc:penname_after" || item.typeId == "mc:penname_before") {
+            sender.sendMessage({ translate: 'command.error.cannot.this.item' });
             return;
         };
         const price = args[0];
-        if (price <= 0) {
+        if (price <= 0 || 1000000000000 < price) {
+            sender.sendMessage({ translate: 'command.number.limit.range', with: ['1', '1,000,000,000,000'] });
             return;
         };
         let loreArray = item.getRawLore();

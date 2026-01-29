@@ -1,5 +1,11 @@
+import { world } from "@minecraft/server";
 import { DynamicProperties } from "./dyp";
-const buffData = new DynamicProperties("rewardBuff");
+
+let buffData;
+
+world.afterEvents.worldLoad.subscribe(() => {
+  buffData = new DynamicProperties("rewardBuff");
+});
 
 export class RewardBuff {
   constructor() {
@@ -21,6 +27,8 @@ export class RewardBuff {
     const now = Date.now();
     const expireTime = now + durationMinutes * 60 * 1000;
 
+    this.buffs = this._loadBuffs();
+
     if (!this.buffs[job]) {
       this.buffs[job] = [];
     }
@@ -31,6 +39,9 @@ export class RewardBuff {
 
   getMultiplier(job) {
     const now = Date.now();
+
+    this.buffs = this._loadBuffs();
+
     if (!this.buffs[job]) return 1;
 
     this.buffs[job] = this.buffs[job].filter(buff => buff.expireTime > now);
@@ -40,6 +51,8 @@ export class RewardBuff {
   }
 
   removeBuff(job, multiplier) {
+    this.buffs = this._loadBuffs();
+
     if (!this.buffs[job]) return;
 
     const index = this.buffs[job].findIndex(buff => buff.multiplier === multiplier);
@@ -53,6 +66,8 @@ export class RewardBuff {
   }
 
   clearBuffs(job) {
+    this.buffs = this._loadBuffs();
+
     if (this.buffs[job]) {
       delete this.buffs[job];
       this._saveBuffs();
@@ -61,6 +76,8 @@ export class RewardBuff {
 
   getBuffList(job) {
     const now = Date.now();
+    this.buffs = this._loadBuffs();
+
     if (!this.buffs[job]) return [];
 
     this.buffs[job] = this.buffs[job].filter(buff => buff.expireTime > now);
@@ -75,6 +92,8 @@ export class RewardBuff {
   getAllBuffs() {
     const now = Date.now();
     const allBuffs = {};
+    
+    this.buffs = this._loadBuffs();
 
     for (const job in this.buffs) {
       this.buffs[job] = this.buffs[job].filter(buff => buff.expireTime > now);

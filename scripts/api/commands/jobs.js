@@ -26,4 +26,16 @@ system.beforeEvents.startup.subscribe((event) => {
             })
         })
     )
+    event.customCommandRegistry.registerCommand(
+        {
+            name: 'makecountry:job',
+            description: 'command.help.jobs.message',
+            permissionLevel: CommandPermissionLevel.Any
+        },
+        ((origin, ...args) => {
+            system.runTimeout(() => {
+                jobsExecuter(origin, args);
+            })
+        })
+    )
 });

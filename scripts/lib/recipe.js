@@ -15,7 +15,7 @@ export function updateRecipe(player, lv = undefined) {
             lv = 0;
         } else {
             const playerCountryData = GetAndParsePropertyData(`country_${playerData?.country}`);
-            lv = playerCountryData.lv ?? 0;
+            lv = playerCountryData.lv || 0;
         };
     };
     const detectLv = lv;
