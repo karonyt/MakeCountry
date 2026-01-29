@@ -22,6 +22,9 @@ export function sendMergeRequestFromListDefaultForm(player, countryId) {
         const form = new ActionFormData();
         form.title(countryData.name);
         form.body(showBody);
+        form.divider();
+        form.label({ translate: `form.merge.send.confirm.description` });
+        form.divider();
         form.button({ translate: `mc.button.close` });
         form.button({ translate: `mc.button.send` });
         form.show(player).then(rs => {

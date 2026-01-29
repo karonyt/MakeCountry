@@ -12,67 +12,80 @@ export default {
     //職業レベルの最大値
     jobsLevelMax: 300,
 
+    dailyLimit: {
+        'woodcutter': 50000,
+        'miner': 50000,
+        'farmer': 50000,
+        'dirtdigger': 50000,
+        'fisherman': 50000,
+        'hunter': 50000,
+        'sanddigger': 50000,
+        'netherdigger': 50000,
+        'builder': 50000,
+        'gardener': 50000,
+    },
+    
     //職業一覧
     jobsList: [
         //農家
         {
-            id: `farmer`, //職業ID(就いてるときに mcjobs_ID のtagが付く)
-            name: `farmer`, //formに表示する職業名(翻訳キー(lang)も可能)
-            lv: 75, //文明レベルでの制限
+            id: 'farmer', //職業ID(就いてるときに mcjobs_ID のtagが付く)
+            name: 'farmer', //formに表示する職業名(翻訳キー(lang)も可能)
+            lv: 0, //文明レベルでの制限
         },
         //鉱夫
         {
-            id: `miner`,
-            name: `miner`,
-            lv: 25,
+            id: 'miner',
+            name: 'miner',
+            lv: 0,
         },
         //木こり
         {
-            id: `woodcutter`,
-            name: `woodcutter`,
+            id: 'woodcutter',
+            name: 'woodcutter',
             lv: 0,
         },
         //狩人
-        /*{
-            id: `hunter`,
-            name: `hunter`,
-            lv: 100
-        },*/
+        {
+            id: 'hunter',
+            name: 'hunter',
+            lv: 0
+        },
         //漁師
         {
-            id: `fisherman`,
-            name: `fisherman`,
-            lv: 55
+            id: 'fisherman',
+            name: 'fisherman',
+            lv: 0
         },
         //土掘り士
         {
-            id: `dirtdigger`,
-            name: `dirtdigger`,
-            lv: 5,
+            id: 'dirtdigger',
+            name: 'dirtdigger',
+            lv: 0,
         },
         //砂掘り士
         {
-            id: `sanddigger`,
-            name: `sanddigger`,
-            lv: 15,
+            id: 'sanddigger',
+            name: 'sanddigger',
+            lv: 0,
         },
         //ネザー掘り士
         {
-            id: `netherdigger`,
-            name: `netherdigger`,
-            lv: 45,
+            id: 'netherdigger',
+            name: 'netherdigger',
+            lv: 0,
         },
         //建築士
         {
-            id: `builder`,
-            name: `builder`,
-            lv: 85,
+            id: 'builder',
+            name: 'builder',
+            lv: 0,
         },
         //庭師
         {
-            id: `gardener`,
-            name: `gardener`,
-            lv: 65,
+            id: 'gardener',
+            name: 'gardener',
+            lv: 0,
         },
         //ここに追加可能
     ],

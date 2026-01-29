@@ -21,28 +21,44 @@ function countryHomeExecuter(origin, args) {
         sender.sendMessage({ translate: "teleport.error.invader" });
         return;
     }
-    if (sender.hasTag(`mc_notp`)) {
-        return;
-    };
+    if (sender.hasTag(`mc_notp`)) return;
+
     if (!playerData?.country) {
         sender.sendMessage({ translate: `command.chome.error.notjoin.country` });
         return;
-    };
+    }
+
     const countryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-    if (!countryData?.spawn || !countryData?.publicSpawn) {
+    if (!countryData?.spawn) return;
+
+    // スポーン名取得、指定がなければ "default"
+    const spawnName = args[0]?.trim() || "default";
+    const spawnData = countryData.spawn[spawnName];
+
+    if (!spawnData || !spawnData.enabled) {
+        sender.sendMessage({ translate: `command.chome.error.spawn_disabled` });
         return;
-    };
-    let [x, y, z, rx, ry, dimensionId] = countryData?.spawn.split(`_`);
+    }
+
+    const [x, y, z, rx, ry, dimensionId] = spawnData.pos.split("_");
+
+    // 権限チェック
     if (CheckPermissionFromLocation(sender, Number(x), Number(z), dimensionId, `publicHomeUse`)) {
-        //権限がない！！
         sender.sendMessage({ translate: `no.permission` });
-        return
-    };
-    //tp
-    sender.teleport({ x: Number(x), y: Number(y), z: Number(z) }, { dimension: world.getDimension(`${dimensionId.replace(`minecraft:`, ``)}`), rotation: { x: Number(rx), y: Number(ry) } });
-    sender.sendMessage({ translate: `command.chome.result` })
-    return;
-};
+        return;
+    }
+
+    // テレポート
+    sender.teleport(
+        { x: Number(x), y: Number(y), z: Number(z) },
+        {
+            dimension: world.getDimension(dimensionId.replace(`minecraft:`, ``)),
+            rotation: { x: Number(rx), y: Number(ry) }
+        }
+    );
+
+    sender.sendMessage({ translate: `command.chome.result` });
+}
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(
@@ -50,6 +66,7 @@ system.beforeEvents.startup.subscribe((event) => {
             name: 'makecountry:countryhome',
             description: 'command.help.countryhome.message',
             permissionLevel: CommandPermissionLevel.Any,
+            optionalParameters: [{ name: 'SpawnName', type: CustomCommandParamType.String }]
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
@@ -63,6 +80,7 @@ system.beforeEvents.startup.subscribe((event) => {
             name: 'makecountry:chome',
             description: 'command.help.countryhome.message',
             permissionLevel: CommandPermissionLevel.Any,
+            optionalParameters: [{ name: 'SpawnName', type: CustomCommandParamType.String }]
         },
         ((origin, ...args) => {
             system.runTimeout(() => {
@@ -73,9 +91,10 @@ system.beforeEvents.startup.subscribe((event) => {
 
     event.customCommandRegistry.registerCommand(
         {
-            name: 'makecountry:teleportcountryhome ',
+            name: 'makecountry:teleportcountryhome',
             description: 'command.help.countryhome.message',
             permissionLevel: CommandPermissionLevel.Any,
+            optionalParameters: [{ name: 'SpawnName', type: CustomCommandParamType.String }]
         },
         ((origin, ...args) => {
             system.runTimeout(() => {

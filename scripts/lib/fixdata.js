@@ -316,3 +316,37 @@ export function resetRoleData() {
     };
     world.setDynamicProperty('roleId', `${max}`);
 };
+
+export function resetPlotData() {
+    const countryDataBase = new DynamicProperties("country");
+    const plotgroupDB = new DynamicProperties('plotgroup');
+    const chunkDB = new DynamicProperties('chunk');
+    /**
+     * @type {Array<string>}
+     */
+    const countryIds = countryDataBase.idList;
+    const checkCountryIds = countryIds;
+    let max = 0;
+    for (const id of checkCountryIds) {
+        const countryData = GetAndParsePropertyData(id, countryDataBase);
+
+        if (!countryData) {
+            countryDataBase.delete(id);
+            continue;
+        }
+        countryData.plotgroup = [];
+        countryDataBase.set(`country_${countryData.id}`, countryData);
+        for (let i = 0; i < 100; i++) {
+            plotgroupDB.delete(`plotgroup_${i}`)
+        }
+        for (const chunkID of chunkDB.idList) {
+            const rawChunkData = chunkDB.get(`${chunkID}`);
+            const chunkData = JSON.parse(rawChunkData);
+            if (chunkData?.plot) {
+                chunkData.plot = undefined;
+                chunkDB.set(chunkID, JSON.stringify(chunkData));
+            }
+        };
+    };
+    world.setDynamicProperty('plotgroupId', `1`);
+};

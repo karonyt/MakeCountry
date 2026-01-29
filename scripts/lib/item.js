@@ -41,8 +41,8 @@ world.afterEvents.itemCompleteUse.subscribe((ev) => {
             break;
         };
         case `mc:aoziru`: {
-            source.addEffect(`resistance`, 200, { amplifier: 1 });
-            source.addEffect(`regeneration`, 100, { amplifier: 0 });
+            source.addEffect(`resistance`, 800, { amplifier: 0 });
+            source.addEffect(`regeneration`, 100, { amplifier: 1 });
             break;
         };
         default: {

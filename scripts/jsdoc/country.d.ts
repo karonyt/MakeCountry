@@ -6,6 +6,8 @@ export interface CountryData {
     name: string;
     owner: string;
     lore: string;
+    treasuryBudgetLog: [];
+    resourcePointLog: [];
     currencyUnitId: number;
     days: number;
     banner: string;

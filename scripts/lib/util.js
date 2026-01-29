@@ -94,377 +94,329 @@ export function ConvertChunk(rawX, rawZ) {
  * 権限確認
  * @param {Player|string} player 
  * @param {string} permission 
- * @returns {boolean}
+ * @returns {boolean} true = キャンセル / false = 許可
  */
-//AdminMode 許可
-//ロールのみチェックすれば良い権限の場合 → チェックしてキャンセル or 許可
-//チャンクデータなし → 荒野の権限があれば許可
-//荒野 → 荒野の権限があれば許可
-//特別区 → 特別区のがあれば許可
-//個人所有の土地 → 規制がなければ許可 → 規制があってもallowListにいれば許可 → 自分の国かつownerがあるとき許可 → なければキャンセル
-//自分の国 → ロールに権限があれば許可 → なければキャンセル but ownerやadminの権限あれば許可
-//他国 → それぞれの国の権限があれば許可 → なければキャンセル
 export function CheckPermission(player, permission) {
-    let playerId = '';
-    if (player instanceof Player) {
-        playerId = player.id;
-    } else if (typeof player == 'string') {
-        playerId = player;
-    } else {
-        return true;
+    // ====== playerId 解決 ======
+    let playerId;
+    if (player instanceof Player) playerId = player.id;
+    else if (typeof player === "string") playerId = player;
+    else return true;
+
+    // ====== AdminMode ======
+    if (player instanceof Player && player.hasTag("adminmode")) return false;
+
+    // ====== 関数スコープキャッシュ ======
+    const roleCache = new Map();
+    const countryCache = new Map();
+    const getRole = (id) => {
+        if (!roleCache.has(id)) {
+            roleCache.set(id, GetAndParsePropertyData(`role_${id}`));
+        }
+        return roleCache.get(id);
     };
-    //AdminMode 許可
-    if (player instanceof Player) {
-        if (player.hasTag(`adminmode`)) return false;
-    };
-    const playerData = GetAndParsePropertyData(`player_${playerId}`);
-    let chunkData
-    if (player instanceof Player) {
-        chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(player))
+    const getCountry = (id) => {
+        if (!countryCache.has(id)) {
+            countryCache.set(id, GetAndParsePropertyData(`country_${id}`));
+        }
+        return countryCache.get(id);
     };
 
-    //ロールのみチェックすれば良い権限の場合 → チェックしてキャンセル or 許可
+    // ====== 共通権限判定 ======
+    const hasRolePermission = (playerData, perm) => {
+        for (const roleId of playerData.roles ?? []) {
+            const perms = getRole(roleId)?.permissions ?? [];
+            if (
+                perms.includes(perm) ||
+                perms.includes("admin") ||
+                perms.includes("owner")
+            ) return true;
+        }
+        return false;
+    };
+
+    // ====== データ取得 ======
+    const playerData = GetAndParsePropertyData(`player_${playerId}`);
+    const chunkData = player instanceof Player
+        ? GetAndParsePropertyData(GetPlayerChunkPropertyId(player))
+        : undefined;
+
+    // ====== ロールのみチェック ======
     if (checkOnlyRole.includes(permission)) {
-        const countryData = GetAndParsePropertyData(`country_${playerData?.country}`);
-        if (countryData.owner === playerId) return false;
-        const roleIds = playerData.roles;
-        for (let i = 0; i < roleIds.length; i++) {
-            const role = GetAndParsePropertyData(`role_${roleIds[i]}`);
-            const permissions = role.permissions;
-            if (permissions.includes(permission)) {
+        const countryData = getCountry(playerData?.country);
+        if (countryData?.owner === playerId) return false;
+        return !hasRolePermission(playerData, permission);
+    }
+
+    // ====== チャンクなし / 荒野 ======
+    if (!chunkData || (!chunkData.countryId && !chunkData.owner && !chunkData.special)) {
+        return !config.wildernessAllowPermissions.includes(permission);
+    }
+
+    // ====== 特別区 ======
+    if (chunkData.special) {
+        return !config.specialAllowPermissions.includes(permission);
+    }
+
+    // ====== plot 解決 ======
+    const plot = chunkData.plot?.group
+        ? GetAndParsePropertyData(`plotgroup_${chunkData.plot.group}`)
+        : chunkData.plot;
+
+    // ====== private plot ======
+    if (plot?.enable && plot.type === "private") {
+        if (plot.owner === playerData?.id) return false;
+        if (plot.permissions?.includes(permission)) return false;
+
+        const playerEntry = plot.players?.find(p => p.id === playerData?.id);
+        if (playerEntry?.permissions?.includes(permission)) return false;
+
+        if (playerData?.country === chunkData.countryId) {
+            const countryData = getCountry(chunkData.countryId);
+            if (countryData?.owner === playerData?.id) return false;
+            if (hasRolePermission(playerData, permission)) return false;
+        }
+        return true;
+    }
+
+    // ====== embassy plot ======
+    if (plot?.enable && plot.type === "embassy" && plot.owner) {
+        const ownerData = GetAndParsePropertyData(`player_${plot.owner}`);
+        const plotCountryData = getCountry(ownerData?.country);
+
+        if (playerData?.country === plotCountryData?.id) {
+            if (plot.permissions?.includes(permission)) return false;
+            if (plotCountryData?.owner === playerData?.id) return false;
+            if (hasRolePermission(playerData, permission)) return false;
+            return true;
+        }
+
+        if (chunkData.countryId === playerData?.country) {
+            const countryData = getCountry(chunkData.countryId);
+            if (countryData?.owner === playerData?.id) return false;
+            if (hasRolePermission(playerData, "admin")) return false;
+        }
+
+        if (plot.countries?.some(c => c.id === playerData?.country && c.permissions.includes(permission))) {
+            return false;
+        }
+        return true;
+    }
+
+    // ====== public plot ======
+    if (plot?.enable && plot.type === "public") {
+        if (plot.players?.some(p => p.id === playerData?.id && p.permissions.includes(permission))) {
+            return false;
+        }
+
+        if (playerData?.country === chunkData.countryId) {
+            if (plot.permissions?.includes(permission)) return false;
+            if (plot.roles?.some(r => r.permissions.includes(permission) && playerData.roles.includes(r.id))) {
                 return false;
             }
-            if (permission !== `owner` && permission !== `admin`) {
-                if (permissions.includes(`admin`) || permissions.includes(`owner`)) {
-                    return false;
-                };
-            };
-        };
-        return true;
-    };
-    //チャンクデータなし → 荒野の権限があれば許可
-    if (!chunkData) {
-        if (config.wildernessAllowPermissions.includes(permission)) {
-            return false;
-        } else {
-            return true;
-        };
-    };
-    //荒野 → 荒野の権限があれば許可
-    if (!chunkData?.countryId && !chunkData.owner && !chunkData?.special) {
-        if (config.wildernessAllowPermissions.includes(permission)) {
-            return false;
-        } else {
-            return true;
-        };
-    };
-    //特別区 → 特別区の権限があれば許可
-    if (chunkData?.special) {
-        if (config.specialAllowPermissions.includes(permission)) {
-            return false;
-        } else {
-            return true;
-        };
-    };
-    /**
-     * @type {{group: string|undefined,country: number|undefined,name: string|undefined,owner: string|undefined,permissions: [string],roles: [{id: number,permissions: [string]}],countries: [{id: number,permissions: [string]}],players: [{id: string,permissions: [string]}],type: "public"|"private"|"embassy",price: number|0, } | undefined}
-     */
-    const plot = chunkData?.plot?.group ? GetAndParsePropertyData(`plotgroup_${chunkData?.plot?.group}`) : chunkData?.plot ?? undefined;
-
-    //個人所有の土地 → 規制がなければ許可 → 規制があってもallowListにいれば許可 → 自分の国かつownerがあるとき許可 また、戦争中なら許可 → なければキャンセル
-    if (plot?.enable && plot?.type == "private") {
-        if (plot?.owner === playerData?.id) {
-            return false;
-        } else {
-            if (plot.permissions.includes(permission)) {
-                return false;
-            };
-            if (plot.players.find(p => p.id == playerData.id)) {
-                if (plot.players.find(p => p.id == playerData.id).permissions.includes(permission)) {
-                    return false;
-                };
-            };
-            if (playerData?.country == chunkData?.countryId) {
-                const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-                if (playerCountryData?.owner === playerData?.id) return false;
-                for (const role of playerData.roles) {
-                    const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                    if (perms.includes(permission)) {
-                        return false;
-                    } else if (perms.includes(`admin`) || perms.includes(`owner`)) {
-                        return false;
-                    };
-                };
-            };
-        };
-        return true;
-    };
-    //大使館(外国向けプロット) → その国かどうか確認
-    if (plot?.enable && plot?.type == "embassy") {
-        //その国が存在
-        if (plot?.owner) {
-            const ownerData = GetAndParsePropertyData(`player_${plot.owner}`);
-            const plotCountryData = GetAndParsePropertyData(`country_${ownerData?.country}`);
-            //その国だった場合
-            if (playerData?.country == plotCountryData.id) {
-                if (plot.permissions.includes(permission)) {
-                    return false;
-                };
-                if (plotCountryData?.owner === playerData?.id) return false;
-                for (const role of playerData.roles) {
-                    const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                    if (perms.includes(permission)) {
-                        return false;
-                    } else if (perms.includes(`admin`) || perms.includes(`owner`)) {
-                        return false;
-                    };
-                };
-            } else {
-                if (chunkData?.countryId == playerData?.country) {
-                    const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-                    if (playerCountryData?.owner === playerData?.id) return false;
-                    for (const role of playerData.roles) {
-                        const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                        if (perms.includes(`admin`) || perms.includes(`owner`)) {
-                            return false;
-                        };
-                    };
-                };
-                if (plot.countries.find(c => c.id == playerData?.country && c.permissions.includes(permission))) {
-                    return false;
-                };
-                return true;
-            };
-        };
-    };
-    if (plot?.enable && plot?.type == "public") {
-        if (plot.players.find(p => p.id == playerData?.id && p.permissions.includes(permission))) {
-            return false;
-        };
-        if (playerData?.country == chunkData.countryId) {
-            if (plot.permissions.includes(permission)) {
-                return false;
-            };
-            if (plot?.roles) {
-                if (plot?.roles.find(role => role.permissions.includes(permission) && playerData.roles.includes(role.id))) {
-                    return false;
-                };
-            };
-            const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-            if (playerCountryData?.owner === playerData?.id) return false;
-            for (const role of playerData.roles) {
-                const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                if (perms.includes(`admin`) || perms.includes(`owner`)) {
-                    return false;
-                };
-            };
-            return true;
-        } else {
-            if (plot.countries.find(c => c.id == playerData?.country && c.permissions.includes(permission))) {
-                return false;
-            };
-            return true;
-        };
-    };
-    if (chunkData?.countryId) {
-        const countryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-        if (countryData?.id === playerData.country) {
+            const countryData = getCountry(chunkData.countryId);
             if (countryData?.owner === playerData?.id) return false;
-            for (const role of playerData.roles) {
-                const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                if (perms.includes(`admin`) || perms.includes(`owner`)) {
-                    return false;
-                };
-            };
+            if (hasRolePermission(playerData, "admin")) return false;
             return true;
-        };
-        if (countryData.alliance.includes(playerData.country)) {
-            if (countryData.alliancePermission.includes(permission)) return false;
-            return true;
-        };
-        if (countryData.hostility.includes(playerData.country)) {
-            if (countryData.hostilityPermission.includes(permission)) return false;
-            return true;
-        };
-        if (countryData.friendly.includes(playerData.country)) {
-            if (countryData.friendlyPermission.includes(permission)) return false;
-            return true;
-        };
-        if (countryData.neutralityPermission.includes(permission)) return false;
-        return true;
-    };
-    return false;
-};
+        }
 
-/**
- * 権限確認
- * @param {Player} player 
- * @param {string} permission 
- * @returns {boolean}
- */
-export function CheckPermissionFromLocation(player, x, z, dimensionId, permission) {
-    if (player.hasTag(`adminmode`)) return false;
-    const playerData = GetAndParsePropertyData(`player_${player.id}`);
-    //チャンクデータなし → 荒野の権限があれば許可
-    const chunkData = GetAndParsePropertyData(GetChunkPropertyId(x, z, dimensionId));
-    if (!chunkData) {
-        if (config.wildernessAllowPermissions.includes(permission)) {
+        if (plot.countries?.some(c => c.id === playerData?.country && c.permissions.includes(permission))) {
             return false;
-        } else {
-            return true;
-        };
-    };
-    //荒野 → 荒野の権限があれば許可
-    if (!chunkData?.countryId && !chunkData.owner && !chunkData?.special) {
-        if (config.wildernessAllowPermissions.includes(permission)) {
-            return false;
-        } else {
-            return true;
-        };
-    };
-    //特別区 → 特別区のがあれば許可
-    if (chunkData?.special) {
-        if (config.specialAllowPermissions.includes(permission)) {
-            return false;
-        } else {
-            return true;
-        };
-    };
-    /**
-     * @type {{group: string|undefined,country: number|undefined,name: string|undefined,owner: string|undefined,permissions: [string],roles: [{id: number,permissions: [string]}],countries: [{id: number,permissions: [string]}],players: [{id: string,permissions: [string]}],type: "public"|"private"|"embassy",price: number|0, } | undefined}
-     */
-    const plot = chunkData?.plot?.group ? GetAndParsePropertyData(`plotgroup_${chunkData?.plot?.group}`) : chunkData?.plot ?? undefined;
-
-    //個人所有の土地 → 規制がなければ許可 → 規制があってもallowListにいれば許可 → 自分の国かつownerがあるとき許可 また、戦争中なら許可 → なければキャンセル
-    if (plot?.enable && plot?.type == "private") {
-        if (plot?.owner === playerData?.id) {
-            return false;
-        } else {
-            if (plot.permissions.includes(permission)) {
-                return false;
-            };
-            if (plot.players.find(p => p.id == playerData.id)) {
-                if (plot.players.find(p => p.id == playerData.id).permissions.includes(permission)) {
-                    return false;
-                };
-            };
-            if (playerData?.country == chunkData?.countryId) {
-                const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-                if (playerCountryData?.owner === playerData?.id) return false;
-                for (const role of playerData.roles) {
-                    const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                    if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
-                        return false;
-                    };
-                };
-            };
-        };
+        }
         return true;
-    };
-    //大使館(外国向けプロット) → その国かどうか確認
-    if (plot?.enable && plot?.type == "embassy") {
-        //その国が存在
-        if (plot?.owner) {
-            const ownerData = GetAndParsePropertyData(`player_${plot.owner}`);
-            const plotCountryData = GetAndParsePropertyData(`country_${ownerData?.country}`);
-            //その国だった場合
-            if (playerData?.country == plotCountryData.id) {
-                if (plot.permissions.includes(permission)) {
-                    return false;
-                };
-                if (plotCountryData?.owner === playerData?.id) return false;
-                for (const role of playerData.roles) {
-                    const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                    if (perms.includes(permission)) {
-                        return false;
-                    } else if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
-                        return false;
-                    };
-                };
-            } else {
-                if (chunkData?.countryId == playerData?.country) {
-                    const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-                    if (playerCountryData?.owner === playerData?.id) return false;
-                    for (const role of playerData.roles) {
-                        const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                        if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
-                            return false;
-                        };
-                    };
-                };
-                if (plot.countries.find(c => c.id == playerData?.country && c.permissions.includes(permission))) {
-                    return false;
-                };
-                return true;
-            };
-        };
-    };
-    if (plot?.enable && plot?.type == "public") {
-        if (plot.players.find(p => p.id == playerData?.id && p.permissions.includes(permission))) {
-            return false;
-        };
-        if (playerData?.country == chunkData.countryId) {
-            if (plot.permissions.includes(permission)) {
-                return false;
-            };
-            if (plot?.roles) {
-                if (plot?.roles.find(role => role.permissions.includes(permission) && playerData.roles.includes(role.id))) {
-                    return false;
-                };
-            };
-            const playerCountryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
-            if (playerCountryData?.owner === playerData?.id) return false;
-            for (const role of playerData.roles) {
-                const perms = GetAndParsePropertyData(`role_${role}`).permissions;
-                if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
-                    return false;
-                };
-            };
-            return true;
-        } else {
-            if (plot.countries.find(c => c.id == playerData?.country && c.permissions.includes(permission))) {
-                return false;
-            };
-            return true;
-        };
-    };
-    if (chunkData?.countryId) {
-        const countryData = GetAndParsePropertyData(`country_${chunkData.countryId}`);
+    }
+
+    // ====== 国単位 ======
+    if (chunkData.countryId) {
+        const countryData = getCountry(chunkData.countryId);
+
         if (countryData?.id === playerData?.country) {
             if (countryData?.owner === playerData?.id) return false;
-            for (const role of playerData.roles) {
-                const perms = GetAndParsePropertyData(`role_${role}`)?.permissions ?? [];
-                if (perms.includes(permission)) {
-                    return false;
-                } else if (perms.includes(`admin`) || perms.includes(`owner`) || perms.includes('plotAdmin')) {
-                    return false;
-                };
-            };
+            if (hasRolePermission(playerData, "admin")) return false;
             return true;
-        };
-        if (countryData?.alliance) {
-            if (countryData?.alliance.includes(playerData.country)) {
-                if (countryData.alliancePermission.includes(permission)) return false;
-                return true;
-            };
         }
-        if (countryData?.hostility) {
-            if (countryData?.hostility.includes(playerData.country)) {
-                if (countryData.hostilityPermission.includes(permission)) return false;
-                return true;
-            };
+
+        if (countryData.alliance?.includes(playerData.country)) {
+            return !countryData.alliancePermission.includes(permission);
         }
-        if (countryData?.friendly) {
-            if (countryData?.friendly.includes(playerData.country)) {
-                if (countryData.friendlyPermission.includes(permission)) return false;
-                return true;
-            };
+        if (countryData.hostility?.includes(playerData.country)) {
+            return !countryData.hostilityPermission.includes(permission);
         }
-        if (countryData?.neutralityPermission?.includes(permission)) return false;
-        return true;
-    };
+        if (countryData.friendly?.includes(playerData.country)) {
+            return !countryData.friendlyPermission.includes(permission);
+        }
+
+        return !countryData.neutralityPermission.includes(permission);
+    }
+
     return false;
-};
+}
+
+/**
+ * 権限確認（座標指定）
+ * @param {Player} player
+ * @param {number} x
+ * @param {number} z
+ * @param {string} dimensionId
+ * @param {string} permission
+ * @returns {boolean} true = キャンセル / false = 許可
+ */
+export function CheckPermissionFromLocation(player, x, z, dimensionId, permission) {
+    // ===== AdminMode =====
+    if (player.hasTag("adminmode")) return false;
+
+    // ===== キャッシュ =====
+    const roleCache = new Map();
+    const countryCache = new Map();
+
+    const getRole = (id) => {
+        if (!roleCache.has(id)) {
+            roleCache.set(id, GetAndParsePropertyData(`role_${id}`));
+        }
+        return roleCache.get(id);
+    };
+
+    const getCountry = (id) => {
+        if (!countryCache.has(id)) {
+            countryCache.set(id, GetAndParsePropertyData(`country_${id}`));
+        }
+        return countryCache.get(id);
+    };
+
+    const hasRolePermission = (playerData, perm) => {
+        for (const roleId of playerData.roles ?? []) {
+            const perms = getRole(roleId)?.permissions ?? [];
+            if (
+                perms.includes(perm) ||
+                perms.includes("admin") ||
+                perms.includes("owner") ||
+                perms.includes("plotAdmin")
+            ) return true;
+        }
+        return false;
+    };
+
+    // ===== データ取得 =====
+
+    const playerData = GetAndParsePropertyData(`player_${player.id}`);
+    const chunkData = GetAndParsePropertyData(
+        GetChunkPropertyId(x, z, dimensionId)
+    );
+
+    // ===== チャンクなし(荒野) =====
+    if (!chunkData) {
+        if (config.isNoPiston && permission === "placePiston") return true;
+        return !config.wildernessAllowPermissions.includes(permission);
+    }
+
+    // ===== 荒野 =====
+    if (!chunkData?.countryId && !chunkData.owner && !chunkData.special) {
+        if (config.isNoPiston && permission === "placePiston") return true;
+        return !config.wildernessAllowPermissions.includes(permission);
+    }
+
+    // ===== 特別区 =====
+    if (chunkData?.special) {
+        return !config.specialAllowPermissions.includes(permission);
+    }
+
+    // ===== plot 解決 =====
+    const plotGroupDB = new DynamicProperties('plotgroup');
+
+    const plot = chunkData.plot?.group
+        ? plotGroupDB.get(`plotgroup_${chunkData.plot.group}`) ? JSON.parse(plotGroupDB.get(`plotgroup_${chunkData.plot.group}`)) : chunkData.plot
+        : chunkData.plot;
+
+    // ===== private plot =====
+    if (plot?.enable && plot.type === "private") {
+        if (plot.owner === playerData.id) return false;
+        if (plot.permissions?.includes(permission)) return false;
+
+        const playerEntry = plot.players?.find(p => p.id === playerData.id);
+        if (playerEntry?.permissions?.includes(permission)) return false;
+
+        if (playerData.country === chunkData.countryId) {
+            const countryData = getCountry(chunkData.countryId);
+            if (countryData?.owner === playerData.id) return false;
+            if (hasRolePermission(playerData, permission)) return false;
+        }
+        return true;
+    }
+
+    // ===== embassy plot =====
+    if (plot?.enable && plot.type === "embassy" && plot.owner) {
+        const ownerData = GetAndParsePropertyData(`player_${plot.owner}`);
+        const plotCountryData = getCountry(ownerData?.country);
+
+        if (playerData.country === plotCountryData?.id) {
+            if (plot.permissions?.includes(permission)) return false;
+            if (plotCountryData?.owner === playerData.id) return false;
+            if (hasRolePermission(playerData, permission)) return false;
+            return true;
+        }
+
+        if (chunkData.countryId === playerData.country) {
+            const countryData = getCountry(chunkData.countryId);
+            if (countryData?.owner === playerData.id) return false;
+            if (hasRolePermission(playerData, "admin")) return false;
+        }
+
+        if (plot.countries?.some(c => c.id === playerData.country && c.permissions.includes(permission))) {
+            return false;
+        }
+        return true;
+    }
+
+    // ===== public plot =====
+    if (plot?.enable && plot.type === "public") {
+        if (plot.players?.some(p => p.id === playerData.id && p.permissions.includes(permission))) {
+            return false;
+        }
+
+        if (playerData.country === chunkData.countryId) {
+            if (plot.permissions?.includes(permission)) return false;
+            if (plot.roles?.some(r =>
+                r.permissions.includes(permission) &&
+                playerData.roles.includes(r.id)
+            )) return false;
+
+            const countryData = getCountry(chunkData.countryId);
+            if (countryData?.owner === playerData.id) return false;
+            if (hasRolePermission(playerData, "admin")) return false;
+            return true;
+        }
+
+        if (plot.countries?.some(c => c.id === playerData.country && c.permissions.includes(permission))) {
+            return false;
+        }
+        return true;
+    }
+
+    // ===== 国単位 =====
+    if (chunkData?.countryId) {
+        const countryData = getCountry(chunkData.countryId);
+
+        if (countryData?.id === playerData.country) {
+            if (countryData.owner === playerData.id) return false;
+            if (hasRolePermission(playerData, permission)) return false;
+            return true;
+        }
+
+        if (countryData.alliance?.includes(playerData.country)) {
+            return !countryData.alliancePermission.includes(permission);
+        }
+        if (countryData.hostility?.includes(playerData.country)) {
+            return !countryData.hostilityPermission.includes(permission);
+        }
+        if (countryData.friendly?.includes(playerData.country)) {
+            return !countryData.friendlyPermission.includes(permission);
+        }
+
+        return !countryData.neutralityPermission?.includes(permission);
+    }
+
+    return false;
+}
 
 /**
  * 権限があるか確認

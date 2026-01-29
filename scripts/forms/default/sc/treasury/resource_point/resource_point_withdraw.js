@@ -44,6 +44,21 @@ export function resourcepointWithdrawDefaultForm(player) {
         playerData2.money += needMoney;
         playerData2.money = Math.floor(playerData2.money * 100) / 100;
         countryData.money = Math.floor(countryData.money * 100) / 100;
+
+        countryData.resourcePointLog ||= [];
+
+        if (countryData.resourcePointLog.length > 50) {
+            countryData.resourcePointLog.shift();
+        }
+
+        countryData.resourcePointLog.push({
+            timestamp: Date.now(),
+            actor: player.name,
+            action: 'withdraw',
+            amount: -needMoney,
+            reason: 'treasurybudget.withdraw'
+        });
+
         const countryDataBase = new DynamicProperties('country');
         playerDataBase.set(`player_${player.id}`, playerData2);
         countryDataBase.set(`country_${playerData.country}`, countryData);

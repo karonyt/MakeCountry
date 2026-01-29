@@ -44,6 +44,21 @@ export function resourcepointDepositDefaultForm(player) {
         playerData2.money -= needMoney;
         playerData2.money = Math.floor(playerData2.money * 100) / 100;
         countryData.money = Math.floor(countryData.money * 100) / 100;
+
+        countryData.resourcePointLog ||= [];
+
+        if (countryData.resourcePointLog.length > 50) {
+            countryData.resourcePointLog.shift();
+        }
+
+        countryData.resourcePointLog.push({
+            timestamp: Date.now(),
+            actor: player.name,
+            action: 'deposit',
+            amount: needMoney,
+            reason: 'treasurybudget.deposit'
+        });
+
         const countryDataBase = new DynamicProperties('country');
         playerDataBase.set(`player_${player.id}`, playerData2);
         countryDataBase.set(`country_${playerData2.country}`, countryData);

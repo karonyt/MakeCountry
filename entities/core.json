@@ -34,7 +34,7 @@
       },
       "minecraft:knockback_resistance": 1000,
       "minecraft:boss": {
-        "hud_range": 20,
+        "hud_range": 250,
         "name": "Core"
       },
       "minecraft:damage_sensor": {

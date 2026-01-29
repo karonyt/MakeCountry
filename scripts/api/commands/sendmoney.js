@@ -11,7 +11,13 @@ function sendMoneyExecuter(origin, args) {
     const rawData = playerDataBase.get(`player_${sender.id}`);
     const playerData = JSON.parse(rawData);
 
-    const amount = Number(args[0]);
+    const amount = args[0];
+
+    if (amount <= 0 || 1000000000000 < amount) {
+        sender.sendMessage({ translate: 'command.number.limit.range', with: ['1', '1,000,000,000,000'] });
+        return;
+    };
+
     //const targetName = args[1].name;
     /**
      * @type {Player}

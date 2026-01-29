@@ -123,8 +123,24 @@ export function tax() {
                 continue;
             }
             let taxValue = playerData.money * (countryData.taxPer / 100);
+            if (taxValue == 0) continue;
             playerData.money -= taxValue;
             countryData.money += taxValue;
+
+            countryData.treasuryBudgetLog ||= [];
+
+            if (countryData.treasuryBudgetLog.length > 50) {
+                countryData.treasuryBudgetLog.shift();
+            }
+
+            countryData.treasuryBudgetLog.push({
+                timestamp: Date.now(),
+                actor: 'SYSTEM',
+                action: 'add',
+                amount: taxValue,
+                reason: 'TAX'
+            });
+
             playerDataBase.set(pId, JSON.stringify(playerData));
             countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData))
         } else {
@@ -133,12 +149,47 @@ export function tax() {
                     continue;
                 } else {
                     let addmoney = playerData.money;
+                    if (addmoney == 0) continue;
+
                     playerData.money -= addmoney;
                     countryData.money += addmoney;
+
+                    countryData.treasuryBudgetLog ||= [];
+
+                    if (countryData.treasuryBudgetLog.length > 50) {
+                        countryData.treasuryBudgetLog.shift();
+                    }
+
+                    countryData.treasuryBudgetLog.push({
+                        timestamp: Date.now(),
+                        actor: 'SYSTEM',
+                        action: 'add',
+                        amount: addmoney,
+                        reason: 'TAX'
+                    });
+
                 };
             } else {
                 playerData.money -= countryData.taxPer;
                 countryData.money += countryData.taxPer;
+
+                let addmoney = countryData.taxPer;
+
+                if (addmoney == 0) continue;
+
+                countryData.treasuryBudgetLog ||= [];
+
+                if (countryData.treasuryBudgetLog.length > 50) {
+                    countryData.treasuryBudgetLog.shift();
+                }
+
+                countryData.treasuryBudgetLog.push({
+                    timestamp: Date.now(),
+                    actor: 'SYSTEM',
+                    action: 'add',
+                    amount: addmoney,
+                    reason: 'TAX'
+                });
             };
             playerDataBase.set(pId, JSON.stringify(playerData));
             countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData))
@@ -182,6 +233,23 @@ export function tax() {
                 continue;
             };
             countryData.money -= upkeepCosts;
+
+            if (upkeepCosts == 0) {
+                countryData.treasuryBudgetLog ||= [];
+
+                if (countryData.treasuryBudgetLog.length > 50) {
+                    countryData.treasuryBudgetLog.shift();
+                }
+
+                countryData.treasuryBudgetLog.push({
+                    timestamp: Date.now(),
+                    actor: 'SYSTEM',
+                    action: 'remove',
+                    amount: -upkeepCosts,
+                    reason: 'Maintenance Cost'
+                });
+
+            };
         } else {
             countryData.money = 0;
         };

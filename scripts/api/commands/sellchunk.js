@@ -70,6 +70,21 @@ function sellChunkExecuter(origin, args) {
                 chunkData.countryId = undefined;
                 playerCountryData.resourcePoint += chunkPrice;
                 playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
+
+                playerCountryData.resourcePointLog ||= [];
+
+                if (playerCountryData.resourcePointLog.length > 50) {
+                    playerCountryData.resourcePointLog.shift();
+                }
+
+                playerCountryData.resourcePointLog.push({
+                    timestamp: Date.now(),
+                    actor: sender.name,
+                    action: 'add',
+                    amount: chunkPrice,
+                    reason: 'SELL CHUNK'
+                });
+
                 StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
                 StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
                 sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });
@@ -112,6 +127,21 @@ function sellChunkExecuter(origin, args) {
     chunkData.countryId = undefined;
     playerCountryData.resourcePoint += chunkPrice;
     playerCountryData.territories.splice(playerCountryData.territories.indexOf(chunkData.id), 1);
+
+    playerCountryData.resourcePointLog ||= [];
+
+    if (playerCountryData.resourcePointLog.length > 50) {
+        playerCountryData.resourcePointLog.shift();
+    }
+
+    playerCountryData.resourcePointLog.push({
+        timestamp: Date.now(),
+        actor: sender.name,
+        action: 'add',
+        amount: chunkPrice,
+        reason: 'SELL CHUNK'
+    });
+
     StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
     StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
     sender.sendMessage({ translate: `command.sellchunk.result`, with: [`${playerCountryData.resourcePoint}`] });

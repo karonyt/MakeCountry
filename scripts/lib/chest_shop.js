@@ -263,21 +263,34 @@ function getShopLocation(signBlock) {
     const direction = signBlock.permutation.getState('facing_direction');
 
     switch (directions[direction]) {
-        case Direction.Down:
-            return signBlock.above().location;
-        case Direction.Up:
-            return signBlock.below().location;
-        case Direction.South:
-            return signBlock.south().location;
-        case Direction.North:
-            return signBlock.north().location;
-        case Direction.West:
-            return signBlock.west().location;
-        case Direction.East:
-            return signBlock.east().location;
+        case Direction.Down: {
+            const block = signBlock.above();
+            return { x: block.x, y: block.y, z: block.z };
+        }
+        case Direction.Up: {
+            const block = signBlock.below();
+            return { x: block.x, y: block.y, z: block.z };
+        }
+        case Direction.South: {
+            const block = signBlock.south();
+            return { x: block.x, y: block.y, z: block.z };
+        }
+        case Direction.North: {
+            const block = signBlock.north();
+            return { x: block.x, y: block.y, z: block.z };
+        }
+        case Direction.West: {
+            const block = signBlock.west();
+            return { x: block.x, y: block.y, z: block.z };
+        }
+        case Direction.East: {
+            const block = signBlock.east();
+            return { x: block.x, y: block.y, z: block.z };
+        }
 
         default:
-            return signBlock.location;
+            return { x: signBlock.x, y: signBlock.y, z: signBlock.z };
+            ;
     }
 }
 

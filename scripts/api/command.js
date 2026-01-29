@@ -35,8 +35,14 @@ import "./commands/al";
 import "./commands/fl";
 import "./commands/friendlychat";
 import "./commands/price";
+import "./commands/clearprice";
 
 import "./commands/itemid";
+import "./commands/playtime";
+import "./commands/checkuserid";
+import "./commands/xptobottle";
+import "./commands/jobrank";
+
 import "./commands/spawn";
 
 import "./commands/taxtime";
@@ -45,5 +51,9 @@ import "./commands/playercount";
 import "./commands/fixcountrydata";
 import "./commands/updaterank";
 import "./commands/nationaltierlevel";
+import "./commands/addcompefromitemstack";
+import "./commands/addcompefromitemstackselector";
+import "./commands/compensation";
+import "./commands/ping";
 
 import "./commands/knw";

@@ -1,12 +1,12 @@
 {
     "format_version": 2,
     "header": {
-        "name": "MakeCountryBehavior v.2.3.1-beta",
+        "name": "MakeCountryBehavior v.2.3.2-beta",
         "description": "建国鯖に必要な要素が大量に詰まっているアドオン\nMade by かろん",
         "version": [
             2,
             3,
-            1
+            2
         ],
         "uuid": "95738e96-76ca-47f1-8c50-8929b4bf447d",
         "min_engine_version": [
@@ -21,7 +21,7 @@
             "version": [
                 2,
                 3,
-                1
+                2
             ],
             "uuid": "10c44dcf-7f48-4040-9c50-8923464d74bc",
             "language": "javascript",

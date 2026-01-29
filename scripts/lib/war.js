@@ -142,6 +142,7 @@ export async function Invade(player) {
     eventData.cancel = undefined;
     playerCountryData.invadeCooltime = date + (config.invadeCooltime * 1000);
     playerCountryData.peaceChangeCooltime = config.invadePeaceChangeCooltime;
+    targetCountryData.peaceChangeCooltime = date + (config.invadeCooltime * 1000);
 
     const coreEntity = player.dimension.spawnEntity(`mc:core`, player.getHeadLocation(), { initialPersistence: true });
     warCountry.set(`${playerCountryData.id}`, { country: targetCountryData.id, core: coreEntity.id, time: date + 1000 * config.invadeTimelimit, key: key });
@@ -152,6 +153,7 @@ export async function Invade(player) {
     world.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n§f` }, { translate: `invade.success`, with: [`${player.name}§r(${playerCountryData.name}§r)`, `${msg}§r(${targetCountryData.name})§r`] }] });
     country.afterEvents.startInvade.emit(eventData);
     StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData);
+    StringifyAndSavePropertyData(`country_${targetCountryData.id}`, targetCountryData);
 };
 
 world.afterEvents.entityLoad.subscribe((ev) => {

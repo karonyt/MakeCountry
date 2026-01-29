@@ -58,21 +58,25 @@ class ChatHandler {
             if (now - lastChat < GENERAL_CHAT_COOLDOWN) {
                 this.event.cancel = true;
                 this.sender.sendMessage({
-                    text: `§cジェネラルチャットは${GENERAL_CHAT_COOLDOWN / 1000}秒に1回までです`
+                    translate: 'generalchat.rate.limit', with: [`${GENERAL_CHAT_COOLDOWN / 1000}`]
                 });
                 return;
             }
 
             this.sender.setDynamicProperty('lastGeneralChatTime', now);
         }
-        
+
         eventData.cancel = undefined;
         playerHandler.afterEvents.chat.emit(eventData);
         const playerDataBase = new DynamicProperties("player");
 
         switch (chatType) {
             case `general`: {
-                world.sendMessage([{ text: `[§${this.playerCountryData?.color ?? `a`}` }, { translate: land }, { text: `${penname}§r] §7${this.sender.name}§f: ${this.message}` }]);
+                for (const p of world.getPlayers()) {
+                    if (p.getDynamicProperty('isMuteGeneralChat') != 'true') {
+                        p.sendMessage([{ text: `[§${this.playerCountryData?.color ?? `a`}` }, { translate: land }, { text: `${penname}§r] §7${this.sender.name}§f: ${this.message}` }]);
+                    };
+                };
                 break;
             };
             case `country`: {
@@ -82,9 +86,11 @@ class ChatHandler {
                 };
                 const players = world.getPlayers();
                 for (const player of players) {
-                    const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
-                    if (pData?.country == this.playerData?.country) {
-                        player.sendMessage([{ text: `[§aCC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                    if (player.getDynamicProperty('isMuteCountryChat') != 'true') {
+                        const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+                        if (pData?.country == this.playerData?.country) {
+                            player.sendMessage([{ text: `[§aCC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                        };
                     };
                 };
                 break;
@@ -96,10 +102,12 @@ class ChatHandler {
                 };
                 const players = world.getPlayers();
                 for (const player of players) {
-                    const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
-                    const alliance = this.playerCountryData.alliance ?? [];
-                    if (alliance.includes(pData?.country ?? 0) || pData?.country == this.playerData.country) {
-                        player.sendMessage([{ text: `[§2AC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                    if (player.getDynamicProperty('isMuteAllianceChat') != 'true') {
+                        const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+                        const alliance = this.playerCountryData.alliance ?? [];
+                        if (alliance.includes(pData?.country ?? 0) || pData?.country == this.playerData.country) {
+                            player.sendMessage([{ text: `[§2AC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                        };
                     };
                 };
                 break;
@@ -111,10 +119,12 @@ class ChatHandler {
                 };
                 const players = world.getPlayers();
                 for (const player of players) {
-                    const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
-                    const friendly = this.playerCountryData.friendly ?? [];
-                    if (friendly.includes(pData?.country ?? 0) || pData?.country == this.playerData.country) {
-                        player.sendMessage([{ text: `[§6FC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                    if (player.getDynamicProperty('isMuteFriendlyChat') != 'true') {
+                        const pData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+                        const friendly = this.playerCountryData.friendly ?? [];
+                        if (friendly.includes(pData?.country ?? 0) || pData?.country == this.playerData.country) {
+                            player.sendMessage([{ text: `[§6FC§r] §7${this.sender.name}§f: §a${this.message}` }]);
+                        };
                     };
                 };
                 break;
@@ -122,7 +132,9 @@ class ChatHandler {
             case `local`: {
                 const players = this.sender.dimension.getPlayers({ location: this.sender.location, maxDistance: 100 });
                 for (const player of players) {
-                    player.sendMessage([{ text: `[§sLC§r] §7${this.sender.name}§f: ${this.message}` }]);
+                    if (player.getDynamicProperty('isMuteLocalChat') != 'true') {
+                        player.sendMessage([{ text: `[§sLC§r] §7${this.sender.name}§f: ${this.message}` }]);
+                    };
                 };
                 break;
             };

@@ -18,10 +18,6 @@ export function updateRanking() {
     const countries = countryDataBase.idList.map(key => GetAndParsePropertyData(key));
     const fishManager = new FishManager();
     for (const text of texts) {
-        const tag = text.getTags().find(t => t.startsWith("text:fish_size_"));
-        if (!tag) break;
-
-        const fishTypeId = tag.substring("text:fish_size_".length);
         switch (true) {
             case text.hasTag(`text:baltop`): {
                 let allMoney = 0;
@@ -74,7 +70,10 @@ export function updateRanking() {
                 text.nameTag = rankText;
                 break;
             };
-            case tag.startsWith('text:fish_size_'): {
+            default: {
+                const tag = text.getTags().find(t => t.startsWith("text:fish_size_"));
+                if (!tag) break;
+
                 const fishTypeId = tag.substring("text:fish_size_".length);
 
                 const rank = fishManager.getServerFishRanking(fishTypeId);

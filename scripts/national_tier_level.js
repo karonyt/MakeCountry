@@ -3,230 +3,188 @@ export default {
     enabled: true,
 
     //AdminShopを何レベから解放するか
-    releaseAdminShop: 30,
+    releaseAdminShop: 0,
 
     //特殊釣りを何レベから解放するか
     releaseSpeciallFishing: 130,
 
+    //何レベルのときにホームを解放するか
+    unlockPublicSpawnLevels: [0, 40],
+
     needs: {
         1: {
             item: [
-                { typeId: 'minecraft:oak_fence', amount: 21 }
+                { typeId: 'minecraft:oak_log', amount: 10 }
             ],
             //必要なリソースポイント
-            point: 1000
+            point: 100
         },
         2: {
             item: [
-                { typeId: 'minecraft:oak_boat', amount: 5 }
+                { typeId: 'minecraft:cobblestone', amount: 10 }
             ],
-            point: 1000
+            point: 100
         },
         3: {
             item: [
-                { typeId: 'minecraft:wooden_door', amount: 18 }
+                { typeId: 'minecraft:oak_sapling', amount: 10 }
             ],
-            point: 1000
+            point: 100
         },
         4: {
             item: [
-                { typeId: 'minecraft:wooden_pressure_plate', amount: 32 },
-                { typeId: 'minecraft:oak_sapling', amount: 32 }
-
+                { typeId: 'minecraft:fence_gate', amount: 15 }
             ],
-            point: 1000
+            point: 100
         },
         5: {
             item: [
-                { typeId: 'minecraft:apple', amount: 10 }
-
+                { typeId: 'minecraft:apple', amount: 10 },
             ],
-            point: 5000
+            point: 500
         },
         6: {
             item: [
-                { typeId: 'minecraft:oak_sapling', amount: 64 },
-                { typeId: 'minecraft:oak_log', amount: 64 }
+                { typeId: 'minecraft:dirt', amount: 64 },
             ],
-            point: 2000
+            point: 200
         },
         7: {
             item: [
-                { typeId: 'minecraft:oak_sapling', amount: 96 },
-                { typeId: 'minecraft:oak_log', amount: 96 }
+                { typeId: 'minecraft:cobblestone', amount: 64 },
             ],
-            point: 2000
+            point: 200
         },
         8: {
             item: [
-                { typeId: 'minecraft:oak_sapling', amount: 128 },
-                { typeId: 'minecraft:oak_log', amount: 128 }
+                { typeId: 'minecraft:chest', amount: 10 },
             ],
-            point: 2000
-        },
-        7: {
-            item: [
-                { typeId: 'minecraft:chest', amount: 8 },
-                { typeId: 'minecraft:oak_fence', amount: 16 },
-                { typeId: 'minecraft:oak_log', amount: 64 }
-            ],
-            point: 2000
-        },
-        8: {
-            item: [
-                { typeId: 'minecraft:chest', amount: 16 },
-                { typeId: 'minecraft:oak_fence', amount: 32 },
-                { typeId: 'minecraft:oak_log', amount: 64 }
-            ],
-            point: 2000
+            point: 200
         },
         9: {
             item: [
-                { typeId: 'minecraft:chest', amount: 32 },
-                { typeId: 'minecraft:oak_fence', amount: 48 },
-                { typeId: 'minecraft:oak_log', amount: 64 }
+                { typeId: 'minecraft:wooden_door', amount: 15 }
             ],
-            point: 2000
+            point: 200
         },
         10: {
             item: [
-                { typeId: 'minecraft:chest', amount: 64 },
-                { typeId: 'minecraft:oak_fence', amount: 64 },
-                { typeId: 'minecraft:oak_log', amount: 64 },
-                { typeId: 'minecraft:coal', amount: 64 }
+                { typeId: 'minecraft:oak_log', amount: 32 },
+                { typeId: 'minecraft:coal', amount: 15 }
             ],
-            point: 10000
+            point: 1000
         },
         11: {
             item: [
-                { typeId: 'minecraft:leaf_litter', amount: 64 * 2 },
-                { typeId: 'minecraft:oak_fence', amount: 64 },
-                { typeId: 'minecraft:oak_log', amount: 64 },
-                { typeId: 'minecraft:coal', amount: 64 }
+                { typeId: 'minecraft:leaf_litter', amount: 32 },
+                { typeId: 'minecraft:oak_sapling', amount: 5 }
             ],
-            point: 3000
+            point: 300
         },
         12: {
             item: [
-                { typeId: 'minecraft:leaf_litter', amount: 64 * 2 },
-                { typeId: 'minecraft:gravel', amount: 64 },
-                { typeId: 'minecraft:oak_log', amount: 64 },
-                { typeId: 'minecraft:coal', amount: 64 }
+                { typeId: 'minecraft:gravel', amount: 16 },
+                { typeId: 'minecraft:coal', amount: 20 }
             ],
-            point: 3000
+            point: 300
         },
         13: {
             item: [
-                { typeId: 'minecraft:leaf_litter', amount: 64 * 3 },
-                { typeId: 'minecraft:gravel', amount: 64 },
-                { typeId: 'minecraft:charcoal', amount: 64 },
-                { typeId: 'minecraft:coal', amount: 64 }
+                { typeId: 'minecraft:raw_iron', amount: 10 }
             ],
-            point: 3000
+            point: 300
         },
         14: {
             item: [
-                { typeId: 'minecraft:leaf_litter', amount: 64 * 4 },
-                { typeId: 'minecraft:gravel', amount: 96 },
-                { typeId: 'minecraft:charcoal', amount: 64 },
-                { typeId: 'minecraft:coal', amount: 64 }
+                { typeId: 'minecraft:oak_leaves', amount: 16 },
+                { typeId: 'minecraft:campfire', amount: 16 }
             ],
-            point: 3000
+            point: 300
         },
         15: {
             item: [
-                { typeId: 'minecraft:gravel', amount: 128 },
-                { typeId: 'minecraft:charcoal', amount: 128 },
-                { typeId: 'minecraft:coal', amount: 128 }
+                { typeId: 'minecraft:oak_log', amount: 64 },
+                { typeId: 'minecraft:coal', amount: 20 }
             ],
-            point: 15000
+            point: 1500
         },
         16: {
             item: [
-                { typeId: 'minecraft:flint', amount: 32 },
-                { typeId: 'minecraft:coal_block', amount: 16 }
+                { typeId: 'minecraft:sand', amount: 128 },
             ],
-            point: 4000
+            point: 400
         },
         17: {
             item: [
-                { typeId: 'minecraft:flint', amount: 48 },
-                { typeId: 'minecraft:coal_block', amount: 24 }
+                { typeId: 'minecraft:flint', amount: 6 },
+                { typeId: 'minecraft:iron_ingot', amount: 18 }
             ],
-            point: 4000
+            point: 400
         },
         18: {
             item: [
-                { typeId: 'minecraft:flint', amount: 64 },
-                { typeId: 'minecraft:coal_block', amount: 32 },
-                { typeId: 'minecraft:tnt', amount: 16 }
+                { typeId: 'minecraft:furnace', amount: 8 },
+                { typeId: 'mc:pork_boned_rib', amount: 5 },
+                { typeId: 'mc:pork_loin', amount: 5 },
             ],
-            point: 4000
+            point: 400
         },
         19: {
             item: [
-                { typeId: 'minecraft:flint', amount: 96 },
-                { typeId: 'minecraft:coal_block', amount: 40 },
-                { typeId: 'minecraft:tnt', amount: 24 },
-                { typeId: 'minecraft:polished_basalt', amount: 64 * 2 },
+                { typeId: 'minecraft:smoker', amount: 8 },
+                { typeId: 'mc:beef_loin', amount: 5 },
+                { typeId: 'mc:beef_leg', amount: 5 },
             ],
-            point: 4000
+            point: 400
         },
         20: {
             item: [
-                { typeId: 'minecraft:flint', amount: 128 },
-                { typeId: 'minecraft:raw_iron_block', amount: 32 },
-                { typeId: 'minecraft:seagrass', amount: 128 },
-                { typeId: 'minecraft:saddle', amount: 5 },
+                { typeId: 'minecraft:iron_ingot', amount: 32 },
+                { typeId: 'minecraft:cooked_beef', amount: 8 },
+                { typeId: 'mc:fermentation_machine', amount: 1 },
             ],
-            point: 20000
+            point: 2000
         },
         21: {
             item: [
-                { typeId: 'minecraft:raw_iron_block', amount: 32 },
-                { typeId: 'minecraft:slime_ball', amount: 64 },
-                { typeId: 'minecraft:redstone_block', amount: 64 },
+                { typeId: 'mc:beer', amount: 24 },
             ],
-            point: 5000
+            point: 500
         },
         22: {
             item: [
-                { typeId: 'minecraft:raw_iron_block', amount: 64 },
-                { typeId: 'minecraft:slime_ball', amount: 64 * 2 },
-                { typeId: 'minecraft:redstone_block', amount: 64 * 2 },
+                { typeId: 'minecraft:raw_iron_block', amount: 16 },
+                { typeId: 'minecraft:slime_ball', amount: 16 },
             ],
-            point: 5000
+            point: 500
         },
         23: {
             item: [
-                { typeId: 'minecraft:raw_iron_block', amount: 64 },
+                { typeId: 'minecraft:raw_iron_block', amount: 32 },
                 { typeId: 'minecraft:gravel', amount: 64 },
-                { typeId: 'minecraft:slime_ball', amount: 64 * 3 },
-                { typeId: 'minecraft:redstone_block', amount: 64 * 3 },
-                { typeId: 'minecraft:egg', amount: 64 },
+                { typeId: 'minecraft:slime_ball', amount: 48 },
+                { typeId: 'minecraft:redstone_block', amount: 32 },
+                { typeId: 'minecraft:egg', amount: 16 },
             ],
-            point: 5000
+            point: 500
         },
         24: {
             item: [
-                { typeId: 'minecraft:charcoal', amount: 64 * 3 },
-                { typeId: 'minecraft:coal', amount: 128 },
-                { typeId: 'minecraft:slime_ball', amount: 64 * 3 },
-                { typeId: 'minecraft:redstone_block', amount: 64 * 3 },
-                { typeId: 'minecraft:ender_pearl', amount: 64 },
+                { typeId: 'minecraft:charcoal', amount: 64 },
+                { typeId: 'minecraft:slime_ball', amount: 33 },
+                { typeId: 'minecraft:redstone_block', amount: 16 },
+                { typeId: 'minecraft:ender_pearl', amount: 16 },
 
             ],
-            point: 5000
+            point: 500
         },
         25: {
             item: [
-                { typeId: 'minecraft:raw_iron_block', amount: 96 },
+                { typeId: 'minecraft:raw_iron_block', amount: 48 },
                 { typeId: 'minecraft:gravel', amount: 64 },
-                { typeId: 'minecraft:flint', amount: 64 },
-                { typeId: 'minecraft:charcoal', amount: 32 },
-                { typeId: 'minecraft:coal', amount: 32 }
+                { typeId: 'minecraft:flint', amount: 32 },
             ],
-            point: 25000
+            point: 2500
         },
         26: {
             item: [
@@ -234,127 +192,119 @@ export default {
                 { typeId: 'minecraft:coal_block', amount: 16 },
                 { typeId: 'minecraft:andesite', amount: 64 }
             ],
-            point: 6000
+            point: 600
         },
         27: {
             item: [
-                { typeId: 'minecraft:raw_copper_block', amount: 128 },
+                { typeId: 'minecraft:raw_copper_block', amount: 64 },
                 { typeId: 'minecraft:coal_block', amount: 64 },
-                { typeId: 'minecraft:raw_iron_block', amount: 32 },
                 { typeId: 'minecraft:smooth_stone', amount: 64 },
             ],
-            point: 6000
+            point: 600
         },
         28: {
             item: [
                 { typeId: 'minecraft:coal_block', amount: 64 },
-                { typeId: 'minecraft:raw_iron_block', amount: 64 },
-                { typeId: 'minecraft:apple', amount: 64 },
+                { typeId: 'minecraft:raw_iron_block', amount: 16 },
+                { typeId: 'minecraft:apple', amount: 32 },
             ],
-            point: 6000
+            point: 600
         },
         29: {
             item: [
                 { typeId: 'minecraft:sand', amount: 128 },
-                { typeId: 'minecraft:stone', amount: 128 },
-                { typeId: 'minecraft:gravel', amount: 128 },
+                { typeId: 'minecraft:cobblestone', amount: 256 },
+                { typeId: 'minecraft:gravel', amount: 64 },
             ],
-            point: 6000
+            point: 600
         },
         30: {
             item: [
-                { typeId: 'minecraft:acacia_log', amount: 64 },
-                { typeId: 'minecraft:birch_log', amount: 64 },
-                { typeId: 'minecraft:cherry_log', amount: 64 },
-                { typeId: 'minecraft:dark_oak_log', amount: 64 },
+                { typeId: 'minecraft:acacia_log', amount: 32 },
+                { typeId: 'minecraft:birch_log', amount: 32 },
+                { typeId: 'minecraft:cherry_log', amount: 32 },
                 { typeId: 'minecraft:jungle_log', amount: 64 },
             ],
-            point: 30000
+            point: 3000
         },
         31: {
             item: [
-                { typeId: 'minecraft:clay_ball', amount: 64 * 4 },
-                { typeId: 'minecraft:rotten_flesh', amount: 64 * 2 },
-                { typeId: 'minecraft:carrot', amount: 64 * 4 },
+                { typeId: 'minecraft:clay_ball', amount: 48 },
+                { typeId: 'minecraft:rotten_flesh', amount: 32 },
+                { typeId: 'minecraft:carrot', amount: 64 },
             ],
-            point: 7000
+            point: 700
         },
         32: {
             item: [
-                { typeId: 'minecraft:clay_ball', amount: 64 * 4 },
-                { typeId: 'minecraft:rotten_flesh', amount: 64 * 2 },
-                { typeId: 'minecraft:potato', amount: 64 * 4 },
+                { typeId: 'minecraft:clay_ball', amount: 48 },
+                { typeId: 'minecraft:rotten_flesh', amount: 48 },
+                { typeId: 'minecraft:potato', amount: 64 },
             ],
-            point: 7000
+            point: 700
         },
         33: {
             item: [
-                { typeId: 'minecraft:clay_ball', amount: 64 * 4 },
-                { typeId: 'minecraft:rotten_flesh', amount: 64 * 2 },
-                { typeId: 'minecraft:bone', amount: 64 * 2 },
+                { typeId: 'minecraft:clay_ball', amount: 64 },
+                { typeId: 'minecraft:rotten_flesh', amount: 64 },
+                { typeId: 'minecraft:bone', amount: 64 },
             ],
-            point: 7000
+            point: 700
         },
         34: {
             item: [
-                { typeId: 'minecraft:clay_ball', amount: 64 * 4 },
-                { typeId: 'minecraft:rotten_flesh', amount: 64 * 2 },
-                { typeId: 'minecraft:fermented_spider_eye', amount: 64 * 2 },
+                { typeId: 'minecraft:clay_ball', amount: 96 },
+                { typeId: 'minecraft:rotten_flesh', amount: 96 },
             ],
-            point: 7000
+            point: 700
         },
         35: {
             item: [
-                { typeId: 'minecraft:clay_ball', amount: 64 * 4 },
-                { typeId: 'minecraft:rotten_flesh', amount: 64 * 2 },
-                { typeId: 'minecraft:gunpowder', amount: 64 * 2 },
-                { typeId: 'minecraft:allium', amount: 32 },
+                { typeId: 'minecraft:clay_ball', amount: 128 },
+                { typeId: 'minecraft:rotten_flesh', amount: 128 },
                 { typeId: 'minecraft:poppy', amount: 32 },
-                { typeId: 'minecraft:dandelion', amount: 32 },
             ],
-            point: 35000
+            point: 3500
         },
         36: {
             item: [
-                { typeId: 'minecraft:cherry_sapling', amount: 64 * 4 },
+                { typeId: 'minecraft:cherry_sapling', amount: 32 },
                 { typeId: 'minecraft:white_wool', amount: 64 },
-                { typeId: 'minecraft:beef', amount: 64 * 2 },
             ],
-            point: 8000
+            point: 800
         },
         37: {
             item: [
-                { typeId: 'minecraft:dark_oak_sapling', amount: 64 * 4 },
+                { typeId: 'minecraft:spruce_sapling', amount: 32 },
                 { typeId: 'minecraft:orange_wool', amount: 64 },
-                { typeId: 'minecraft:porkchop', amount: 64 * 2 },
+                { typeId: 'minecraft:porkchop', amount: 32 },
             ],
-            point: 8000
+            point: 800
         },
         38: {
             item: [
-                { typeId: 'minecraft:spruce_sapling', amount: 64 * 4 },
+                { typeId: 'minecraft:spruce_sapling', amount: 64 },
                 { typeId: 'minecraft:cyan_wool', amount: 64 },
-                { typeId: 'minecraft:string', amount: 64 * 2 },
+                { typeId: 'minecraft:string', amount: 64 },
             ],
-            point: 8000
+            point: 800
         },
         39: {
             item: [
-                { typeId: 'minecraft:pale_oak_sapling', amount: 64 * 4 },
+                { typeId: 'minecraft:dark_oak_sapling', amount: 32 },
                 { typeId: 'minecraft:lime_wool', amount: 64 },
-                { typeId: 'minecraft:black_dye', amount: 64 * 2 },
+                { typeId: 'minecraft:black_dye', amount: 32 },
             ],
-            point: 8000
+            point: 800
         },
         40: {
             item: [
                 { typeId: 'minecraft:apple', amount: 64 },
-                { typeId: 'minecraft:lime_stained_glass', amount: 128 },
-                { typeId: 'minecraft:amethyst_shard', amount: 128 },
-                { typeId: 'minecraft:tall_grass', amount: 64 * 3 },
+                { typeId: 'minecraft:lime_stained_glass', amount: 64 },
+                { typeId: 'minecraft:amethyst_shard', amount: 16 },
                 { typeId: 'minecraft:glow_ink_sac', amount: 64 },
             ],
-            point: 40000
+            point: 4000
         },
     }
 };

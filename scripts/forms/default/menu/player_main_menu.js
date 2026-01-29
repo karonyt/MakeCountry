@@ -30,7 +30,7 @@ export function playerMainMenuDefaultForm(player) {
         body += buffLore;
     };
 
-    const timeManager = new TimeManager(2000);
+    const timeManager = new TimeManager(1000);
     const date = timeManager.getCalendar();
     form.body(body);
     form.divider();
