@@ -36,7 +36,11 @@ import "./lib/smartphone";
 
 import "./api/fishing/index";
 
-const version = "ver.2.3.1-beta"
+import "./api/player/playtime";
+
+import "./api/chat/index";
+
+const version = "ver.KaroEarth"
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: `world.message.addon`, with: [version] });
