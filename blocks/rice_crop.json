@@ -27,7 +27,7 @@
               "up"
             ],
             "block_filter": [
-              "farmland"
+              "farmland", "dirt", "grass_block"
             ]
           }
         ]
