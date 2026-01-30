@@ -33,7 +33,7 @@ export function ShopCommonsMenu(player, page = 0) {
         const common = commons[i];
         form.setButton(i + 9, { name: common.name, iconPath: itemIdToPath[common.icon] ?? common.icon, lore: [`${common.lore}`], editedName: true });
     };
-    form.setButton(0, { name: "§l§4Close", iconPath: "minecraft:barrier", lore: ["Push here"], editedName: true });
+    form.setButton(0, { name: "§l§4Close", iconPath: itemIdToPath["minecraft:barrier"], lore: ["Push here"], editedName: true });
     if ((page + 1) * 45 < commonsAll.length) form.setButton(5, { name: ">>", iconPath: "textures/ui/arrow_right", lore: ["Next Page"], editedName: true });
     if (0 < page) form.setButton(3, { name: "<<", iconPath: "textures/ui/arrow_left", lore: ["Previous Page"], editedName: true });
 
@@ -100,7 +100,7 @@ export function ShopCommonsMenuCategory(player, categoryCommons, page = 0, keywo
         const common = commons[i];
         form.setButton(i + 9, { name: common.id, iconPath: itemIdToPath[common.id] ?? common.id, lore: [`${config.MoneyName}${common.price}`] });
     };
-    form.setButton(0, { name: "§l§4Close", iconPath: "minecraft:barrier", lore: ["Push here"], editedName: true });
+    form.setButton(0, { name: "§l§4Close", iconPath: itemIdToPath["minecraft:barrier"], lore: ["Push here"], editedName: true });
     if ((page + 1) * 45 < commonsAll.length) form.setButton(5, { name: ">>", iconPath: "textures/ui/arrow_right", lore: ["Next Page"], editedName: true });
     if (0 < page) form.setButton(3, { name: "<<", iconPath: "textures/ui/arrow_left", lore: ["Previous Page"], editedName: true });
 
