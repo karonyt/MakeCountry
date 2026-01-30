@@ -5,6 +5,7 @@ import { ChestFormData } from './chest-ui.js';
 import { itemIdToPath } from '../texture_config.js';
 import config from '../config.js';
 import { PlayerManager } from '../api/player/player.js';
+import { enchantIdToLang } from './util.js';
 
 system.beforeEvents.startup.subscribe((ev) => {
     ev.blockComponentRegistry.registerCustomComponent('mc:shop_block', {
@@ -461,6 +462,11 @@ function buyMainForm(player, barrel, dbKey) {
         const item = container.getItem(i);
         if (item) {
             const loreArray = item.getRawLore();
+
+            for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
+                loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+            };
+
             const price = loreArray.find(v => v?.translate === 'item.lore.price');
             if (price) {
                 form.setButton(i, {
@@ -509,6 +515,11 @@ function buyCheckForm(player, barrel, dbKey, index) {
 
     const form = new ChestFormData('single');
     const loreArray = item.getRawLore();
+
+    for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
+        loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+    };
+
     const price = loreArray.find(v => v?.translate === 'item.lore.price');
     if (price) {
         form.setTitle(`${price.with[0]} x ${item.amount} = ${price.with[0] * item.amount}${config.MoneyName}`);
