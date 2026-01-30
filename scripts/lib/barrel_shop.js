@@ -16,6 +16,16 @@ system.beforeEvents.startup.subscribe((ev) => {
             const dimId = dimension.id;
 
             const barrelShopDB = new DynamicProperties('barrelShop');
+            const playerDB = new DynamicProperties('player');
+
+            const raw = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
+            if (raw) {
+                const barrelShopData = JSON.parse(raw);
+                const rawPlayerData = playerDB.get(`player_${barrelShopData.owner}`);
+                const playerData = JSON.parse(rawPlayerData);
+                playerData.money = (playerData.money || 0) + (barrelShopData.money || 0);
+                playerDB.set(`player_${barrelShopData.owner}`, JSON.stringify(playerData));
+            };
 
             barrelShopDB.delete(`shop_${dimId}_${x}_${y}_${z}`);
         }
