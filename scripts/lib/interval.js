@@ -234,7 +234,7 @@ export function tax() {
             };
             countryData.money -= upkeepCosts;
 
-            if (upkeepCosts == 0) {
+            if (upkeepCosts != 0) {
                 countryData.treasuryBudgetLog ||= [];
 
                 if (countryData.treasuryBudgetLog.length > 50) {
