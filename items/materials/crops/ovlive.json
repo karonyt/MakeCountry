@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "ovlive"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:olive_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }

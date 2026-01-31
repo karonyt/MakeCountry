@@ -23,11 +23,12 @@ system.beforeEvents.startup.subscribe((ev) => {
             if (raw) {
                 const barrelShopData = JSON.parse(raw);
                 const rawPlayerData = playerDB.get(`player_${barrelShopData.owner}`);
-                const playerData = JSON.parse(rawPlayerData);
-                playerData.money = (playerData.money || 0) + (barrelShopData.money || 0);
-                playerDB.set(`player_${barrelShopData.owner}`, JSON.stringify(playerData));
+                if (rawPlayerData) {
+                    const playerData = JSON.parse(rawPlayerData);
+                    playerData.money = (playerData.money || 0) + (barrelShopData.money || 0);
+                    playerDB.set(`player_${barrelShopData.owner}`, JSON.stringify(playerData));
+                };
             };
-
             barrelShopDB.delete(`shop_${dimId}_${x}_${y}_${z}`);
         }
     })

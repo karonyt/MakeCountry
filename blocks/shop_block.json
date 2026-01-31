@@ -1,5 +1,5 @@
 {
-    "format_version": "1.21.10",
+    "format_version": "1.21.110",
     "minecraft:block": {
         "description": {
             "identifier": "mc:shop_block",
@@ -35,7 +35,10 @@
             },
             "minecraft:custom_components": [
                 "mc:shop_block"
-            ]
+            ],
+            "minecraft:movable": {
+                "movement_type": "immovable"
+            }
         },
         "permutations": [
             {

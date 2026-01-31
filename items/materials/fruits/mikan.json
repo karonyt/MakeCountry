@@ -13,7 +13,13 @@
                 "nutrition": 3,
                 "can_always_eat": true
             },
-            "minecraft:use_animation": "eat"
+            "minecraft:use_animation": "eat",
+            "minecraft:block_placer": {
+                "block": "mc:orange_crop",
+                "use_on": [
+                    "farmland"
+                ]
+            }
         }
     }
 }
