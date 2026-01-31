@@ -1,0 +1,23 @@
+{
+    "pools": [
+        {
+            "rolls": 1,
+            "entries": [
+                {
+                    "type": "item",
+                    "name": "mc:garlic",
+                    "functions": [
+                        {
+                            "function": "set_count",
+                            "count": {
+                                "min": 2,
+                                "max": 6
+                            }
+                        }
+                    ],
+                    "weight": 1
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "pools": [
+        {
+            "rolls": 1,
+            "entries": [
+                {
+                    "type": "item",
+                    "name": "mc:pineapple",
+                    "quantity": 1,
+                    "weight": 1
+                }
+            ]
+        }
+    ]
+}

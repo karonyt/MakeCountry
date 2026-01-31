@@ -1,0 +1,149 @@
+{
+  "format_version": "1.21.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:corn_crop",
+      "menu_category": {
+        "category": "none"
+      },
+      "states": {
+        "mc:growth_stage": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "components": {
+      "minecraft:flammable": true,
+      "minecraft:collision_box": false,
+      "minecraft:geometry": "geometry.crop_common",
+      "minecraft:light_dampening": 0,
+      "minecraft:placement_filter": {
+        "conditions": [
+          {
+            "allowed_faces": [
+              "up"
+            ],
+            "block_filter": [
+              "farmland",
+              "dirt",
+              "grass_block"
+            ]
+          }
+        ]
+      },
+      "minecraft:loot": "loot_tables/empty.json",
+      "minecraft:custom_components": [
+        "mc:grow"
+      ]
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('mc:growth_stage') == 0",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "corn_stage_1",
+              "render_method": "blend",
+              "face_dimming": false,
+              "ambient_occlusion": false
+            }
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              2,
+              16
+            ]
+          },
+          "minecraft:loot": "loot_tables/blocks/corn_seed.json"
+        }
+      },
+      {
+        "condition": "q.block_state('mc:growth_stage') == 1",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "corn_stage_2",
+              "render_method": "blend",
+              "face_dimming": false,
+              "ambient_occlusion": false
+            }
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              10,
+              16
+            ]
+          },
+          "minecraft:loot": "loot_tables/blocks/corn_seed.json"
+        }
+      },
+      {
+        "condition": "q.block_state('mc:growth_stage') == 2",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "corn_stage_3",
+              "render_method": "blend",
+              "face_dimming": false,
+              "ambient_occlusion": false
+            }
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              13,
+              16
+            ]
+          },
+          "minecraft:loot": "loot_tables/blocks/corn_seed.json"
+        }
+      },
+      {
+        "condition": "q.block_state('mc:growth_stage') == 3",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "corn_stage_4",
+              "render_method": "blend",
+              "face_dimming": false,
+              "ambient_occlusion": false
+            }
+          },
+          "minecraft:selection_box": {
+            "origin": [
+              -8,
+              0,
+              -8
+            ],
+            "size": [
+              16,
+              15,
+              16
+            ]
+          },
+          "minecraft:loot": "loot_tables/blocks/corn_plant.json"
+        }
+      }
+    ]
+  }
+}
