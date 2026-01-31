@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "garlic"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:garlic_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }

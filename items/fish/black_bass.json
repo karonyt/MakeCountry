@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:black_bass"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "fish_black_bass"
+            }
+        }
+    }
+}

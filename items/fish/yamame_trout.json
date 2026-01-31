@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:yamame_trout"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "fish_yamame_trout"
+            }
+        }
+    }
+}

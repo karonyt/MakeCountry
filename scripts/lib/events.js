@@ -412,6 +412,10 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const permission2 = 'openContainer'; // コンテナの開放権限
     const permission = 'blockUse'; // ブロックの使用権限
     const { player, block } = ev;
+
+    const isShopBlock = block.typeId.includes('shop_block'); // ショップブロックかどうか
+    if (isShopBlock) return;
+
     const now = Date.now();
     const x = block.x;
     const y = block.y;

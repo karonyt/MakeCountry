@@ -13,7 +13,13 @@
                 "nutrition": 6,
                 "can_always_eat": true
             },
-            "minecraft:use_animation": "eat"
+            "minecraft:use_animation": "eat",
+            "minecraft:block_placer": {
+                "block": "mc:tomato_crop",
+                "use_on": [
+                    "farmland"
+                ]
+            }
         }
     }
 }

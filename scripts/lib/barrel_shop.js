@@ -122,15 +122,14 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 
         const shopData = JSON.parse(rawShopData);
 
-        if (shopData.owner == player.id) {
+        if (shopData.owner == player.id && !player.isSneaking) {
             system.runTimeout(() => {
                 editMainForm(player, `shop_${dimId}_${x}_${y}_${z}`, true);
             });
             return;
         };
-        if (shopData.admins.includes(player.id)) {
+        if (shopData.admins.includes(player.id) && !player.isSneaking) {
             system.runTimeout(() => {
-
                 editMainForm(player, `shop_${dimId}_${x}_${y}_${z}`, false);
             });
             return;
@@ -463,8 +462,10 @@ function buyMainForm(player, barrel, dbKey) {
         if (item) {
             const loreArray = item.getRawLore();
 
-            for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
-                loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+            if (item.getComponent('enchantable')?.isValid) {
+                for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
+                    loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+                };
             };
 
             const price = loreArray.find(v => v?.translate === 'item.lore.price');
@@ -516,8 +517,10 @@ function buyCheckForm(player, barrel, dbKey, index) {
     const form = new ChestFormData('single');
     const loreArray = item.getRawLore();
 
-    for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
-        loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+    if (item.getComponent('enchantable')?.isValid) {
+        for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
+            loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+        };
     };
 
     const price = loreArray.find(v => v?.translate === 'item.lore.price');

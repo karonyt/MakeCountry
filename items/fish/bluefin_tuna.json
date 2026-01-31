@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:bluefin_tuna"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "fish_bluefin_tuna"
+            }
+        }
+    }
+}

@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "basil"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:basil_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }

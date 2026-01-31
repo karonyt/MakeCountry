@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "onion"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:onion_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }

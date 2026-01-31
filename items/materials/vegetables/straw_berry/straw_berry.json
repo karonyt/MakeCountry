@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "straw_berry"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:strawberry_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }

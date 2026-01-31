@@ -1,0 +1,20 @@
+{
+    "format_version": "1.13.0",
+    "minecraft:single_block_feature": {
+        "description": {
+            "identifier": "mc:soybean_plant_feature"
+        },
+        "places_block": {
+            "name": "mc:soybeans_crop",
+            "states": {
+                "mc:growth_stage": 0
+            }
+        },
+        "enforce_placement_rules": true,
+        "enforce_survivability_rules": true,
+        "may_attach_to": {
+            "min_sides_must_attach": 1,
+            "bottom": "minecraft:grass_block"
+        }
+    }
+}

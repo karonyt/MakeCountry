@@ -7,6 +7,12 @@
         "components": {
             "minecraft:icon": {
                 "texture": "sweet_corn"
+            },
+            "minecraft:block_placer": {
+                "block": "mc:corn_crop",
+                "use_on": [
+                    "farmland"
+                ]
             }
         }
     }
