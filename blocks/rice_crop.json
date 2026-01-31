@@ -27,7 +27,9 @@
               "up"
             ],
             "block_filter": [
-              "farmland", "dirt", "grass_block"
+              "farmland",
+              "dirt",
+              "grass_block"
             ]
           }
         ]
@@ -60,7 +62,8 @@
               2,
               16
             ]
-          }
+          },
+          "minecraft:loot": "loot_tables/blocks/rice_seed.json"
         }
       },
       {
@@ -85,7 +88,8 @@
               10,
               16
             ]
-          }
+          },
+          "minecraft:loot": "loot_tables/blocks/rice_seed.json"
         }
       },
       {
@@ -110,7 +114,8 @@
               13,
               16
             ]
-          }
+          },
+          "minecraft:loot": "loot_tables/blocks/rice_seed.json"
         }
       },
       {

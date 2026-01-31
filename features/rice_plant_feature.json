@@ -12,8 +12,9 @@
         },
         "enforce_placement_rules": true,
         "enforce_survivability_rules": true,
-        "may_place_on": {
-            "name": "minecraft:grass_block"
+        "may_attach_to": {
+            "min_sides_must_attach": 1,
+            "bottom": "minecraft:grass_block"
         }
     }
 }
