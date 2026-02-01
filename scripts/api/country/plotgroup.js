@@ -71,7 +71,7 @@ export class PlotGroupManager {
             return;
         };
         if (!countryData?.plotgroup) countryData.plotgroup = [];
-        countryData?.plotgroup.filter(id => id != plotGroupId);
+        countryData.plotgroup = countryData?.plotgroup.filter(id => id != plotGroupId);
         this.countryDataBase.set(`country_${countryId}`, countryData);
         this.plotGroupDataBase.delete(`plotgroup_${plotGroupId}`);
     };

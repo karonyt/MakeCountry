@@ -17,7 +17,7 @@ export function plotGroupEditSettingPlotAdminDefaultForm(player, plotGroupId) {
     /**
      * @type {PlayerData}
      */
-    const playerData = JSON.parse(playerDataBase.get('player_${player.id}'));
+    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
     if (!playerData?.country) return;
     const form = new ModalFormData();
     form.title({ rawtext: [{ translate: 'plot.edit.menu.button.settings' }] });
@@ -60,7 +60,7 @@ export function plotGroupEditSettingPlotAdminDefaultForm(player, plotGroupId) {
         plotGroupData.type = type[rs.formValues[1]];
         plotGroupData.is_selling = rs.formValues[3];
         plotGroupData.enable = rs.formValues[4];
-        plotGroupManager.set(plotGroupId, plotGroupData);
+        plotGroupManager.set(plotGroupId, JSON.stringify(plotGroupData));
         plotGroupEditMainPlotAdminDefaultForm(player, plotGroupId);
         return;
     });

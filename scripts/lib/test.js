@@ -662,10 +662,11 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
         };
         case 'karo:fixallplayerdata': {
             const countryDB = new DynamicProperties('country');
+            const plotgroupDB = new DynamicProperties('plotgroup');
             const playerDB = new DynamicProperties('player');
             const roleDB = new DynamicProperties('role');
             const idList = countryDB.idList;
-            /*for (const id of idList) {
+            for (const id of idList) {
                 if (id.startsWith('player')) {
                     countryDB.delete(id);
                     continue;
@@ -674,26 +675,35 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
                 if (!rawCountryData) continue;
                 const countryData = JSON.parse(rawCountryData);
                 let aliveMembers = [];
-                for (const member of countryData.members) {
+                let alivePlotGroups = [];
+
+                for (const group of countryData.plotgroup) {
+                    const data = plotgroupDB.get(`plotgroup_${group}`);
+                    if (data) {
+                        alivePlotGroups.push(group);
+                    };
+                };
+                /*for (const member of countryData.members) {
                     const memberRawData = playerDB.get(`player_${member}`);
                     if (memberRawData) {
                         aliveMembers = aliveMembers.filter(m => m != member);
                         aliveMembers.push(member);
                     };
-                };
-                const peopleRoleRawData = roleDB.get(`role_${countryData.peopleRole}`);
+                };*/
+                /*const peopleRoleRawData = roleDB.get(`role_${countryData.peopleRole}`);
                 if (peopleRoleRawData) {
                     const peopleRoleData = JSON.parse(peopleRoleRawData);
                     peopleRoleData.members = aliveMembers;
                     roleDB.set(`role_${countryData?.peopleRole}`, JSON.stringify(peopleRoleData));
-                };
+                };*/
 
                 countryData.members = aliveMembers;
+                countryData.plotgroup = alivePlotGroups;
                 if (!playerDB.get(`player_${countryData.owner}`)) {
                     countryData.owner = '';
                 };
                 countryDB.set(id, JSON.stringify(countryData));
-            };*/
+            };
 
             const playerIdList = playerDB.idList;
             for (const id of playerIdList) {
