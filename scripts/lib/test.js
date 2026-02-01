@@ -660,6 +660,64 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             };
             break;
         };
+        case 'karo:fixallplayerdata': {
+            const countryDB = new DynamicProperties('country');
+            const playerDB = new DynamicProperties('player');
+            const roleDB = new DynamicProperties('role');
+            const idList = countryDB.idList;
+            for (const id of idList) {
+                const rawCountryData = countryDB.get(id);
+                if (!rawCountryData) continue;
+                const countryData = JSON.parse(rawCountryData);
+                let aliveMembers = [];
+                for (const member of countryData.members) {
+                    const memberRawData = playerDB.get(`player_${member}`);
+                    if (memberRawData) {
+                        aliveMembers = aliveMembers.filter(m => m != member);
+                        aliveMembers.push(member);
+                    };
+                };
+                const peopleRoleRawData = roleDB.get(`role_${countryData.peopleRole}`);
+                if (peopleRoleRawData) {
+                    const peopleRoleData = JSON.parse(peopleRoleRawData);
+                    peopleRoleData.members = aliveMembers;
+                    roleDB.set(`role_${countryData?.peopleRole}`, JSON.stringify(peopleRoleData));
+                };
+
+                countryData.members = aliveMembers;
+                if (!playerDB.get(`player_${countryData.owner}`)) {
+                    countryData.owner = '';
+                };
+                countryDB.set(id, JSON.stringify(countryData));
+            };
+
+            const playerIdList = playerDB.idList;
+            for (const id of playerIdList) {
+                const rawPlayerData = playerDB.get(id);
+                if (!rawPlayerData) continue;
+                const playerData = JSON.parse(rawPlayerData);
+                if (playerData?.country) {
+                    if (playerData.country > 0) {
+                        const rawCountryData = countryDB.get(`country_${playerData.country}`);
+                        if (rawCountryData) {
+                            const countryData = JSON.parse(rawCountryData);
+                            countryData.members = countryData.members.filter(m => m != playerData.id);
+                            countryData.members.push(playerData.id);
+
+
+                            const peopleRoleRawData = roleDB.get(`role_${countryData?.peopleRole}`);
+                            if (peopleRoleRawData) {
+                                const peopleRoleData = JSON.parse(peopleRoleRawData);
+                                peopleRoleData.members = peopleRoleData.members.filter(m => m != playerData.id);
+                                peopleRoleData.members.push(playerData.id);
+                                roleDB.set(`role_${countryData?.peopleRole}`, JSON.stringify(peopleRoleData));
+                            };
+                        };
+                    };
+                };
+            };
+            break;
+        };
         case 'karo:lvreset': {
             const countryDB = new DynamicProperties('country');
             const idList = countryDB.idList;
