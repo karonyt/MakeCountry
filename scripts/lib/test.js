@@ -666,6 +666,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             const roleDB = new DynamicProperties('role');
             const idList = countryDB.idList;
             for (const id of idList) {
+                if (id.startsWith('player')) {
+                    countryDB.delete(id);
+                    continue;
+                };
                 const rawCountryData = countryDB.get(id);
                 if (!rawCountryData) continue;
                 const countryData = JSON.parse(rawCountryData);
@@ -712,10 +716,31 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
                                 peopleRoleData.members.push(playerData.id);
                                 roleDB.set(`role_${countryData?.peopleRole}`, JSON.stringify(peopleRoleData));
                             };
+                            countryDB.set(`country_${playerData.country}`, JSON.stringify(countryData));
                         };
                     };
                 };
             };
+            break;
+        };
+        case 'karo:shownoownercountry': {
+            const countryDB = new DynamicProperties('country');
+            const playerDB = new DynamicProperties('player');
+            const idList = countryDB.idList;
+
+            let noOwnerCountry = [];
+
+            for (const id of idList) {
+                const rawCountryData = countryDB.get(id);
+                if (!rawCountryData) continue;
+                const countryData = JSON.parse(rawCountryData);
+                if (!playerDB.get(`player_${countryData.owner}`)) {
+                    noOwnerCountry.push(`${countryData.id}`);
+                };
+            };
+
+            sourceEntity.sendMessage(noOwnerCountry.join('\n'));
+
             break;
         };
         case 'karo:lvreset': {
