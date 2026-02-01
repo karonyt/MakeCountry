@@ -665,7 +665,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             const playerDB = new DynamicProperties('player');
             const roleDB = new DynamicProperties('role');
             const idList = countryDB.idList;
-            for (const id of idList) {
+            /*for (const id of idList) {
                 if (id.startsWith('player')) {
                     countryDB.delete(id);
                     continue;
@@ -693,7 +693,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
                     countryData.owner = '';
                 };
                 countryDB.set(id, JSON.stringify(countryData));
-            };
+            };*/
 
             const playerIdList = playerDB.idList;
             for (const id of playerIdList) {
