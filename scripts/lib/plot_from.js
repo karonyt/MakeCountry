@@ -1771,7 +1771,7 @@ function plotEditSettingFormPlotAdmin(player, chunkId) {
     plotGroups.push({ rawtext: [{ translate: `none` }] });
     for (const group of countryData?.plotgroup ?? []) {
         const groupData = GetAndParsePropertyData(`plotgroup_${group}`);
-        plotGroups.push(groupData?.name);
+        plotGroups.push({ rawtext: [{ text: `${groupData?.name}` }] });
         plotGroupsDatas.push(groupData);
     };
     const groupIndex = plot?.group ? plotGroupsDatas.findIndex(d => d.id === plot?.group) + 1 : 0;
