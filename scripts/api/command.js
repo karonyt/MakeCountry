@@ -54,6 +54,8 @@ import "./commands/nationaltierlevel";
 import "./commands/addcompefromitemstack";
 import "./commands/addcompefromitemstackselector";
 import "./commands/compensation";
+import "./commands/joblevel";
+
 import "./commands/ping";
 
 import "./commands/knw";

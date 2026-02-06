@@ -210,50 +210,52 @@ export function tax() {
             continue;
         };
         const ownerRawData = playerDataBase.get(`player_${countryData?.owner}`);
-        const ownerData = JSON.parse(ownerRawData)
-        if (ownerData?.lastLogined) {
-            if (Date.now() - ownerData.lastLogined >= config.autoDeleteAfterFinalLogined * 24 * 60 * 60 * 1000) {
-                system.runTimeout(() => {
-                    DeleteCountry(countryData.id);
-                }, deleteCount);
-                deleteCount++;
-                continue;
+        if (ownerRawData) {
+            const ownerData = JSON.parse(ownerRawData)
+            if (ownerData?.lastLogined) {
+                if (Date.now() - ownerData.lastLogined >= config.autoDeleteAfterFinalLogined * 24 * 60 * 60 * 1000) {
+                    system.runTimeout(() => {
+                        DeleteCountry(countryData.id);
+                    }, deleteCount);
+                    deleteCount++;
+                    continue;
+                };
             };
-        };
-        let upkeepCosts = config.MaintenanceFeeNonPeacefulCountries * countryData.territories.length;
-        if (countryData?.peace) upkeepCosts = config.MaintenanceFeePacifistCountries * countryData.territories.length;
-        if (typeof countryData?.money == "number") {
-            if (countryData.money < upkeepCosts) {
+            let upkeepCosts = config.MaintenanceFeeNonPeacefulCountries * countryData.territories.length;
+            if (countryData?.peace) upkeepCosts = config.MaintenanceFeePacifistCountries * countryData.territories.length;
+            if (typeof countryData?.money == "number") {
+                if (countryData.money < upkeepCosts) {
+                    countryData.money = 0;
+                    countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData));
+                    system.runTimeout(() => {
+                        DeleteCountry(countryData.id);
+                    }, deleteCount);
+                    deleteCount++;
+                    continue;
+                };
+                countryData.money -= upkeepCosts;
+
+                if (upkeepCosts != 0) {
+                    countryData.treasuryBudgetLog ||= [];
+
+                    if (countryData.treasuryBudgetLog.length > 50) {
+                        countryData.treasuryBudgetLog.shift();
+                    }
+
+                    countryData.treasuryBudgetLog.push({
+                        timestamp: Date.now(),
+                        actor: 'SYSTEM',
+                        action: 'remove',
+                        amount: -upkeepCosts,
+                        reason: 'Maintenance Cost'
+                    });
+
+                };
+            } else {
                 countryData.money = 0;
-                countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData));
-                system.runTimeout(() => {
-                    DeleteCountry(countryData.id);
-                }, deleteCount);
-                deleteCount++;
-                continue;
             };
-            countryData.money -= upkeepCosts;
-
-            if (upkeepCosts != 0) {
-                countryData.treasuryBudgetLog ||= [];
-
-                if (countryData.treasuryBudgetLog.length > 50) {
-                    countryData.treasuryBudgetLog.shift();
-                }
-
-                countryData.treasuryBudgetLog.push({
-                    timestamp: Date.now(),
-                    actor: 'SYSTEM',
-                    action: 'remove',
-                    amount: -upkeepCosts,
-                    reason: 'Maintenance Cost'
-                });
-
-            };
-        } else {
-            countryData.money = 0;
+            countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData));
         };
-        countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData));
     };
 };
 

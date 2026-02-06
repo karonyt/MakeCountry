@@ -40,6 +40,8 @@ import "./api/player/playtime";
 
 import "./api/chat/index";
 
+import "./api/cooking/index";
+
 const version = "ver.2.3.2-beta"
 
 world.afterEvents.worldLoad.subscribe(() => {

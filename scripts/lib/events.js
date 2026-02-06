@@ -211,7 +211,7 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
 
     if (chestLockData) {
         const chestDataBase = new DynamicProperties("chest");
-        if (isChest && chestLockData.player === player.id) {
+        if (isChest && (chestLockData.player === player.id || (chestLockData?.admin ? chestLockData.admin.includes(player.id) : false))) {
             system.runTimeout(() => chestDataBase.delete(chestId));
             return;
         } else if (isChest) {
@@ -440,7 +440,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
         if (!cannot2) {
             const chestLockData = GetAndParsePropertyData(chestId);
             if (chestLockData) {
-                const isOwner = chestLockData.player === playerId; // 所有者かどうか
+                const isOwner = (chestLockData.player === playerId || (chestLockData?.admin ? chestLockData.admin.includes(player.id) : false)); // 所有者かどうか
                 const chestDataBase = new DynamicProperties("chest");
                 if (isChest) {
                     if (isOwner && !isSneaking) return;

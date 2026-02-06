@@ -25,7 +25,9 @@ function getTodayByUTCOffset(offsetHours) {
     return new Date(now + offsetMs).toISOString().slice(0, 10);
 }
 
-function applyDailyLimit(playerData, jobName, reward, dailyLimit) {
+export function applyDailyLimit(playerData, jobName, reward, dailyLimit) {
+    reward = Math.floor(reward * 100) / 100
+
     const today = getTodayByUTCOffset(config.timeDifference);
 
     playerData.dailyEarnings ??= {};
@@ -43,7 +45,7 @@ function applyDailyLimit(playerData, jobName, reward, dailyLimit) {
     if (remaining <= 0) return 0;
 
     const finalReward = Math.min(reward, remaining);
-    data.amount += finalReward;
+    data.amount = Math.floor((data.amount + finalReward) * 100) / 100;
 
     playerData.dailyEarnings[jobName] = data;
     playerDB.set(`player_${playerData.id}`, playerData);
