@@ -20,12 +20,15 @@ export function ReceivedMergeRequestDefaultForm(player) {
     const playerCountryManager = new CountryManager(playerData.country);
     const playerCountryData = playerCountryManager.countryData;
     let receivedMergeRequests = playerCountryData.mergeRequestReceive ?? [];
+    if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        return;
+    };
     const form = new ActionFormData();
     form.title({ translate: `received.merge.request` });
     form.button({ translate: `mc.button.close` });
     for (const countryId of receivedMergeRequests) {
         const countryManager = new CountryManager(countryId);
-        if(!countryManager.isVaildProperty) continue;
+        if (!countryManager.isVaildProperty) continue;
         const countryData = countryManager.countryData;
         form.button(`${countryData.name}\nID: ${countryData.id}`);
     };

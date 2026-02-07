@@ -142,7 +142,8 @@ export async function Invade(player) {
     eventData.cancel = undefined;
     playerCountryData.invadeCooltime = date + (config.invadeCooltime * 1000);
     playerCountryData.peaceChangeCooltime = config.invadePeaceChangeCooltime;
-    targetCountryData.peaceChangeCooltime = date + (config.invadeCooltime * 1000);
+    targetCountryData.peaceChangeCooltime = Math.floor(config.invadePeaceChangeCooltime / 2);
+    playerCountryData.lastInvated = Date.now();
 
     const coreEntity = player.dimension.spawnEntity(`mc:core`, player.getHeadLocation(), { initialPersistence: true });
     warCountry.set(`${playerCountryData.id}`, { country: targetCountryData.id, core: coreEntity.id, time: date + 1000 * config.invadeTimelimit, key: key });

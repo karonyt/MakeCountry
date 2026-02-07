@@ -102,7 +102,7 @@ export default {
 
     buildReward: { min: 0.04, max: 0.1, xp: 0.1 }, //ブロックを置いたときにもらえる報酬の変域
     
-    chefReward: { min: 0.5, max: 1, xp: 0.5 }, //料理を作ったときにもらえる報酬の変域
+    chefReward: { min: 0.5, max: 1, xp: 3 }, //料理を作ったときにもらえる報酬の変域
 
     gardeningReward: { min: 0.6, max: 1, xp: 0.15 }, //葉っぱブロックを素手で壊したときにもらえる報酬の変域
 

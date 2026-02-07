@@ -17,6 +17,10 @@ export function sendMergeRequestFromListDefaultForm(player, countryId) {
         const countryManager = new CountryManager(countryId);
         const countryData = countryManager.countryData;
 
+        if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+            return;
+        };
+
         const showBody = countryManager.getCountryInfoRawText();
 
         const form = new ActionFormData();

@@ -22,6 +22,9 @@ export function sendMergeRequestListDefaultForm(player) {
     const playerCountryManager = new CountryManager(playerData.country);
     const playerCountryData = playerCountryManager.countryData;
     if (playerCountryData.days < config.mergeProtectionDuration) return;
+    if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        return;
+    };
     let mergeRequestSend = playerCountryData?.mergeRequestSend ?? [];
     const form = new ActionFormData();
     form.title({ translate: `form.merge.send.title` });
@@ -34,7 +37,7 @@ export function sendMergeRequestListDefaultForm(player) {
     let lands = [];
     for (const countryId of filtered1) {
         const countryManager = new CountryManager(countryId.split('_')[1]);
-        if(!countryManager.isVaildProperty) continue;
+        if (!countryManager.isVaildProperty) continue;
         const countryData = countryManager.countryData;
         lands.push(countryData.id);
         form.button(`${countryData.name}\nID: ${countryData.id}`);

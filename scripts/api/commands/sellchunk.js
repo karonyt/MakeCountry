@@ -62,6 +62,9 @@ function sellChunkExecuter(origin, args) {
                     return;
                 };
                 const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+                if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+                    return;
+                };
                 if (playerCountryData.territories.length < 2) {
                     sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
                     return;
@@ -119,6 +122,9 @@ function sellChunkExecuter(origin, args) {
         return;
     };
     const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+    if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        return;
+    };
     if (playerCountryData.territories.length < 2) {
         sender.sendMessage({ translate: `command.sellchunk.error.morechunk`, with: [`${chunkPrice}`] });
         return;

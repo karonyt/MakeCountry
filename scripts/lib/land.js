@@ -1089,6 +1089,12 @@ export function MergeCountry(fromId, toId, player) {
     } catch {
         return;
     }
+    if (Date.now() - (from?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        return;
+    };
+    if (Date.now() - (to?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        return;
+    };
 
     // ===== ロック =====
     if (from.merging || to.merging) return;

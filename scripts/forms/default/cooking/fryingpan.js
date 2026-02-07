@@ -133,10 +133,10 @@ function heatVariance(player, recipe) {
 }
 
 function seasoningSuccessRate(pan, recipe) {
-    let rate = 9;
+    let rate = 1;
 
-    //if (pan.heat < recipe.needHeat[0]) rate -= 0.1;
-    //if (pan.heat > recipe.needHeat[1]) rate -= 0.1;
+    if (pan.heat < recipe.needHeat[0]) rate -= 0.1;
+    if (pan.heat > recipe.needHeat[1]) rate -= 0.1;
     if (pan.progress < 50) rate -= 0.1;
 
     rate -= pan.usedSeasonings.length * 0.15; // 使うほど成功率低下
@@ -623,14 +623,14 @@ function calcTurnBonus(pan, recipe) {
     const heatScore = calcHeatScore(pan.heat, recipe.needHeat, 5);
 
     // 焼き最大じゃないなら評価しない
-    if (heatScore < 5) return 0;
+    if (heatScore < 12) return 0;
 
     const used = pan.actions;
     const max = pan.maxActions;
 
-    if (used <= max * 0.4) return 3;
-    if (used <= max * 0.6) return 2;
-    if (used <= max * 0.8) return 1;
+    if (used <= max * 0.4) return 8;
+    if (used <= max * 0.6) return 6;
+    if (used <= max * 0.8) return 4;
     return 0;
 }
 
@@ -638,10 +638,10 @@ function calcRank(pan, recipe) {
     let score = pan.score;
 
     // progress
-    score += Math.min(4, Math.floor(pan.progress / 25));
+    score += Math.min(5, Math.floor(pan.progress / 25));
 
     // heat
-    score += calcHeatScore(pan.heat, recipe.needHeat, 5);
+    score += calcHeatScore(pan.heat, recipe.needHeat, 12);
 
     // turn bonus
     score += calcTurnBonus(pan, recipe);
@@ -654,17 +654,17 @@ function calcRank(pan, recipe) {
         return { rank: "F", mul: 0.4 };
     }
 
-    if (score >= 30) return { rank: "KARON", mul: 10 };
-    if (score >= 20) return { rank: "IMPOSSIBLE", mul: 5 };
-    if (score >= 17) return { rank: "EXTRA", mul: 3 };
-    if (score >= 12) return { rank: "LEGEND", mul: 2.0 };
-    if (score >= 11) return { rank: "SSS", mul: 1.8 };
-    if (score >= 10) return { rank: "SS", mul: 1.7 };
-    if (score >= 9) return { rank: "S", mul: 1.6 };
-    if (score >= 8) return { rank: "A", mul: 1.5 };
-    if (score >= 7) return { rank: "B", mul: 1.4 };
-    if (score >= 6) return { rank: "C", mul: 1.3 };
-    if (score >= 5) return { rank: "D", mul: 1.2 };
+    if (score >= 55) return { rank: "KARON", mul: 10 };
+    if (score >= 45) return { rank: "IMPOSSIBLE", mul: 5 };
+    if (score >= 30) return { rank: "EXTRA", mul: 3 };
+    if (score >= 27) return { rank: "LEGEND", mul: 2.0 };
+    if (score >= 24) return { rank: "SSS", mul: 1.8 };
+    if (score >= 21) return { rank: "SS", mul: 1.7 };
+    if (score >= 18) return { rank: "S", mul: 1.6 };
+    if (score >= 15) return { rank: "A", mul: 1.5 };
+    if (score >= 13) return { rank: "B", mul: 1.4 };
+    if (score >= 10) return { rank: "C", mul: 1.3 };
+    if (score >= 7) return { rank: "D", mul: 1.2 };
     if (score >= 4) return { rank: "E", mul: 1.0 };
     return { rank: "F", mul: 0.4 };
 }

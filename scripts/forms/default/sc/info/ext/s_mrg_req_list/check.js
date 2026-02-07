@@ -37,6 +37,10 @@ export function checkSendMergeDefaultForm(player, countryId) {
                  */
                 const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
                 const playerCountryManager = new CountryManager(playerData.country);
+                if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+                    return;
+                };
+
                 playerCountryManager.sendMergeRequest(countryId, player);
                 return;
             };
