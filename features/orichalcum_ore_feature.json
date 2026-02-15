@@ -1,0 +1,19 @@
+{
+    "format_version": "1.13.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:orichalcum_ore_feature"
+        },
+        "count": 5,
+        "replace_rules": [
+            {
+                "places_block": "mc:orichalcum_ore",
+                "may_replace": [
+                    "minecraft:stone",
+                    "minecraft:end_stone",
+                    "minecraft:granite"
+                ]
+            }
+        ]
+    }
+}

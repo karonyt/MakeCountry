@@ -7,7 +7,7 @@ world.afterEvents.worldLoad.subscribe(() => {
 world.afterEvents.entityDie.subscribe((ev) => {
     const { damageSource, deadEntity } = ev;
     const cause = damageSource.cause;
-    const players = world.getPlayers().filter(p => p.getDynamicProperty('isMuteKillLog') != 'true' )
+    const players = world.getPlayers().filter(p => p.getDynamicProperty('isMuteKillLog') != 'true')
     if (deadEntity instanceof Player) {
         const playerName = deadEntity.name;
         switch (cause) {
@@ -295,6 +295,11 @@ world.afterEvents.entityDie.subscribe((ev) => {
                 };
                 break;
             };
+            default: {
+                for (const p of players) {
+                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                };
+            }
         };
     };
 });

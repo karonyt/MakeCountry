@@ -1,0 +1,19 @@
+{
+    "format_version": "1.20.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:titanium_ore_feature"
+        },
+        "count": 12,
+        "replace_rules": [
+            {
+                "places_block": "mc:titanium_ore",
+                "may_replace": [
+                    "minecraft:deepslate",
+                    "minecraft:stone",
+                    "minecraft:granite"
+                ]
+            }
+        ]
+    }
+}

@@ -77,9 +77,9 @@ export default {
     //建国時に国庫を非公開にするか
     hideCountryMoney: true,
     //特別区域で許可する権限
-    specialAllowPermissions: [`entityUse`, `setHome`, `openContainer`],
+    specialAllowPermissions: [`entityUse`, `setHome`, `openContainer`, 'itemUse', 'projectileUse', 'entityAttack', 'playerAttack'],
     //荒野で許可する権限
-    wildernessAllowPermissions: [`entityUse`, `blockUse`, `makeCountry`, `buyChunk`, `place`, `break`, `setHome`, `openContainer`],
+    wildernessAllowPermissions: [`entityUse`, `blockUse`, `makeCountry`, `buyChunk`, `place`, `break`, `setHome`, `openContainer`, 'itemUse', 'projectileUse', 'entityAttack', 'playerAttack'],
     //1ヵ国におけるロールの最大数(デフォルトのロールも考慮) (3以上)
     maxRoleAmount: 15,
 

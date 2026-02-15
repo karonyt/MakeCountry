@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:mithril"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "mithril"
+            }
+        }
+    }
+}

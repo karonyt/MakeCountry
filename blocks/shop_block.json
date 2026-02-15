@@ -16,6 +16,9 @@
         },
         "components": {
             "tag:shop_block": {},
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 1
+            },
             "minecraft:loot": "loot_tables/blocks/shop_block.json",
             "minecraft:map_color": "#000000",
             "minecraft:collision_box": true,
@@ -33,9 +36,7 @@
                 ],
                 "table_name": "tile.mc:shop_block.name"
             },
-            "minecraft:custom_components": [
-                "mc:shop_block"
-            ],
+            "mc:shop_block": {},
             "minecraft:movable": {
                 "movement_type": "immovable"
             }

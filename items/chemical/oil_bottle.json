@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:oil_bottle"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "oil_bottle"
+            }
+        }
+    }
+}

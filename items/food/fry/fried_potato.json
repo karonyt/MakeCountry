@@ -1,0 +1,19 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:fried_potato"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "fried_potato"
+            },
+            "minecraft:use_duration": 3,
+            "minecraft:food": {
+                "nutrition": 7,
+                "can_always_eat": true
+            },
+            "minecraft:use_animation": "eat"
+        }
+    }
+}

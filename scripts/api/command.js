@@ -42,6 +42,7 @@ import "./commands/playtime";
 import "./commands/checkuserid";
 import "./commands/xptobottle";
 import "./commands/jobrank";
+import "./commands/checkbiome";
 
 import "./commands/spawn";
 

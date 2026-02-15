@@ -144,6 +144,47 @@ function seasoningSuccessRate(pan, recipe) {
     return Math.max(0.1, rate);
 }
 
+const RANK_QUALITY_TABLE = {
+    "KARON": 15,
+    "IMPOSSIBLE": 12,
+    "EXTRA": 10,
+    "LEGENDARY": 8,
+    "SSS": 7,
+    "SS": 6,
+    "S": 5,
+    "A": 4,
+    "B": 3,
+    "C": 2,
+    "D": 1,
+    "E": 0,
+    "F": 0,
+};
+
+/**
+ * 
+ * @param {ItemStack} item 
+ * @returns 
+ */
+function getItemQuality(item) {
+    if (item?.getRawLore().length == 0) return 0;
+
+    const lore = item.getRawLore() ?? [];
+
+    for (const line of lore) {
+        if (!line.rawtext) continue;
+
+        for (const part of line.rawtext) {
+            if (part.with && part.with.length > 0) {
+                const rank = part.with[0]
+                if (rank in RANK_QUALITY_TABLE) {
+                    return RANK_QUALITY_TABLE[rank];
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 /* ===============================
    Actions (完全統合)
 ================================ */
@@ -469,14 +510,41 @@ export function openRecipeSelect(player, page = 0) {
 }
 
 function openQuantitySelect(player, recipeId) {
+    const recipe = FryingPanRecipes[recipeId];
+
     const form = new ModalFormData()
         .title({ translate: 'cooking.title.amount' })
-        .slider({ translate: 'cooking.status.amount' }, 1, 64, { valueStep: 1, defaultValue: 1 });
+        .slider({ translate: 'cooking.status.amount' }, 1, new ItemStack(recipe.result).maxAmount, { valueStep: 1, defaultValue: 1 });
 
     form.show(player).then(r => {
         if (r.canceled) return;
         startCooking(player, recipeId, r.formValues[0]);
     });
+}
+
+function calcAverageMaterialQuality(player, req) {
+    const inv = player.getComponent("inventory").container;
+
+    let totalQ = 0;
+    let totalCount = 0;
+
+    for (const [id, need] of Object.entries(req)) {
+        let remain = need;
+
+        for (let i = 0; i < inv.size && remain > 0; i++) {
+            const it = inv.getItem(i);
+            if (!it || it.typeId !== id) continue;
+
+            const take = Math.min(it.amount, remain);
+            const q = getItemQuality(it);
+
+            totalQ += q * take;
+            totalCount += take;
+            remain -= take;
+        }
+    }
+
+    return totalCount === 0 ? 0 : Math.floor(totalQ / totalCount);
 }
 
 function startCooking(player, recipeId, quantity) {
@@ -489,10 +557,15 @@ function startCooking(player, recipeId, quantity) {
 
     if (!checkIngredients(player, scaledIngredients)) return;
 
+    const materialQuality = calcAverageMaterialQuality(player, scaledIngredients);
+
     panSessions.set(player.id, {
         recipeId,
         quantity,
         scaledIngredients,
+        seasoningQuality: 0,
+        seasoningCount: 0,
+        materialQuality,
         heat: 0,
         progress: 0,
         actions: 0,
@@ -527,11 +600,11 @@ function openPan(player) {
         name: "cooking.status.title",
         lore: [
             { rawtext: [{ text: '§9' }, { translate: "cooking.status.title" }, { translate: `: ${pan.phase}\n` }] },
-            { rawtext: [{ text: '§c' }, { translate: "cooking.status.heat" }, { text: `: ${pan.heat}\n` }] },
+            { rawtext: [{ text: '§c' }, { translate: "cooking.status.heat" }, { text: `: ${pan.heat}(${Math.floor((recipe.needHeat[0] + recipe.needHeat[1]) / 2)})\n` }] },
             { rawtext: [{ text: '§a' }, { translate: "cooking.status.progress" }, { text: `: ${pan.progress}%\n` }] },
             { rawtext: [{ text: '§b' }, { translate: "cooking.status.actions" }, { text: `: ${pan.actions}/${pan.maxActions}\n` }] },
             { rawtext: [{ text: '§e' }, { translate: "cooking.status.amount" }, { text: `: ${pan.quantity}\n` }] },
-            { rawtext: [{ text: '§d' }, { translate: "cooking.lore.completion" }, { text: `: ${calcRank(pan, recipe).rank}` }] }
+            { rawtext: [{ text: '§d' }, { translate: "cooking.lore.quality", with: [`${calcRank(pan, recipe).rank}`] }] }
         ],
         editedName: true
     });
@@ -649,6 +722,16 @@ function calcRank(pan, recipe) {
     // luck
     score += Math.min(3, Math.floor(pan.luck));
 
+    // material quality
+    score += pan.materialQuality * 2;
+
+    // seasoning quality (平均)
+    if (pan.seasoningCount > 0) {
+        score += Math.floor(
+            pan.seasoningQuality / pan.seasoningCount * 1.5
+        );
+    }
+
     // burned は即死
     if (pan.phase === "burned") {
         return { rank: "F", mul: 0.4 };
@@ -699,7 +782,7 @@ function finish(player) {
 
     item.setLore([
         { rawtext: [{ text: '§r§a==============' }] },
-        { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.completion" }, { text: `: ${rank}` }] },
+        { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
         { rawtext: [{ text: '§r§a==============' }] },
     ]);
 

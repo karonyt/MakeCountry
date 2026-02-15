@@ -1,0 +1,28 @@
+{
+    "format_version": "1.21.120",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:orichalcum_pickaxe"
+        },
+        "components": {
+            "minecraft:icon": "orichalcum_pickaxe",
+            "minecraft:durability": {
+                "max_durability": 9000
+            },
+            "minecraft:max_stack_size": 1,
+            "minecraft:hand_equipped": true,
+            "minecraft:digger": {
+                "use_efficiency": true,
+                "destroy_speeds": [
+                    {
+                        "block": {
+                            "tags": "q.any_tag('minecraft:is_pickaxe_item_destructible')"
+                        },
+                        "speed": 60
+                    }
+                ]
+            },
+            "mc:ranktool": {}
+        }
+    }
+}

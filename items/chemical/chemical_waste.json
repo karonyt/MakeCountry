@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:chemical_waste"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "chemical_waste"
+            }
+        }
+    }
+}

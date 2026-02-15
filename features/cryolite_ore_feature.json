@@ -1,0 +1,18 @@
+{
+    "format_version": "1.13.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:cryolite_ore_feature"
+        },
+        "count": 8,
+        "replace_rules": [
+            {
+                "places_block": "mc:cryolite_ore",
+                "may_replace": [
+                    "minecraft:stone",
+                    "minecraft:granite"
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "format_version": "1.21.120",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:aluminum_pickaxe"
+        },
+        "components": {
+            "minecraft:icon": "aluminum_pickaxe",
+            "minecraft:durability": {
+                "max_durability": 2400
+            },
+            "minecraft:max_stack_size": 1,
+            "minecraft:hand_equipped": true,
+            "minecraft:digger": {
+                "use_efficiency": true,
+                "destroy_speeds": [
+                    {
+                        "block": {
+                            "tags": "q.any_tag('minecraft:is_pickaxe_item_destructible')"
+                        },
+                        "speed": 10
+                    },
+                    {
+                        "block": "minecraft:obsidian",
+                        "speed": 200
+                    }
+                ]
+            },
+            "mc:ranktool": {}
+        }
+    }
+}

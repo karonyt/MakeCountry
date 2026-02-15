@@ -36,7 +36,7 @@ export function HostilityCountryFromListDefaultForm(player, countryId) {
                     return;
                 };
                 case 1: {
-                    checkApplicationForPeaceSendDefaultForm(player, countryId);
+                    checkApplicationForPeaceSendDefaultForm(player, Number(countryId));
                     return;
                 };
             };

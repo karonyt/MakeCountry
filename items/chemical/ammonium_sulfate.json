@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:ammonium_sulfate"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "ammonium_sulfate"
+            }
+        }
+    }
+}

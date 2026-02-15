@@ -28,7 +28,7 @@ export const recipe_config = [
     { id: 'mc:apple_juice_recipe', lv: 23 },
     { id: 'mc:glow_berry_juice_recipe', lv: 24 },
     { id: 'mc:salt_recipe', lv: 26 },
-
+    { id: 'mc:pepper_recipe', lv: 25 },
 
     { id: 'mc:roasted_pork_fillet_recipe', lv: 100 },
 
@@ -91,7 +91,6 @@ export const recipe_config = [
     { id: 'mc:meatsauce_recipe', lv: 100 },
     { id: 'mc:flour_recipe', lv: 100 },
     { id: 'mc:miso_recipe', lv: 100 },
-    { id: 'mc:pepper_recipe', lv: 100 },
     { id: 'mc:rice_powder_recipe', lv: 100 },
     { id: 'mc:syoyu_recipe', lv: 100 },
     { id: 'mc:yeast_recipe', lv: 100 },

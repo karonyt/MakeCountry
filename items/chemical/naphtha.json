@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:naphtha"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "naphtha"
+            }
+        }
+    }
+}

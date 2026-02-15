@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:water_beaker"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "water_beaker"
+            }
+        }
+    }
+}

@@ -13,7 +13,7 @@ import { addHostilityCountryFromListDefaultForm } from "./add_list";
  */
 export function AddHostilityListDefaultForm(player) {
     const playerDataBase = new DynamicProperties('player');
-    const countryDataBase = new DynamicProperties('player');
+    const countryDataBase = new DynamicProperties('country');
     /**
      * @type {PlayerData}
      */
@@ -25,13 +25,13 @@ export function AddHostilityListDefaultForm(player) {
     const form = new ActionFormData();
     form.title({ translate: `form.hostility.add.title` });
     let countryIds = countryDataBase.idList.filter(id => id.startsWith(`country_`)).filter(id => id != `country_${playerData.country}`);
-    let filtered1 = countryIds.filter(id => !hostilityCountryIds.includes(id));
-    let filtered2 = filtered1.filter(id => !allianceCountryIds.includes(id));
+    let filtered1 = countryIds.filter(id => !hostilityCountryIds.includes(Number(id.split('_')[1])));
+    let filtered2 = filtered1.filter(id => !allianceCountryIds.includes(Number(id.split('_')[1])));
     let lands = [];
     form.button({ translate: `mc.button.close` });
     for (const countryId of filtered2) {
-        const targetCountryManager = new CountryManager(countryId)
-        if(!targetCountryManager.isVaildProperty) continue;
+        const targetCountryManager = new CountryManager(countryId.split('_')[1])
+        if (!targetCountryManager.isVaildProperty) continue;
         const countryData = targetCountryManager.countryData;
         lands.push(countryData.id);
         form.button(`${countryData.name}\nID: ${countryData.id}`);

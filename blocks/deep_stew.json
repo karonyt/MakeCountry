@@ -16,6 +16,9 @@
         },
         "components": {
             "tag:deep_stew": {},
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 1
+            },
             "minecraft:loot": "loot_tables/blocks/deep_stew.json",
             "minecraft:map_color": "#000000",
             "minecraft:collision_box": true,

@@ -1,3 +1,4 @@
+import { ModalFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "../../../../../../api/country/plotgroup";
 import { DynamicProperties } from "../../../../../../api/dyp";
 import { landPermissions } from "../../../../../../data/permission";
@@ -22,16 +23,16 @@ export function plotGroupEditPermissionsDefaultForm(player, plotGroupId, isPlotA
     };
     if (!plotGroupData?.permissions) plotGroupData.permissions = [];
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, plotGroupData?.permissions.includes(permission));
+        form.toggle({ translate: `permission.${permission}` }, { defaultValue: plotGroupData?.permissions.includes(permission) });
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then(rs => {
         if (rs.canceled) {
             if (isPlotAdmin) {
-                plotGroupEditMainPlotAdminDefaultForm(player, plotGroupData, plotGroupId);
+                plotGroupEditMainPlotAdminDefaultForm(player, plotGroupId);
                 return;
             };
-            plotGroupEditMainFormPlotOwner(player, plotGroupData, plotGroupId);
+            plotGroupEditMainPlotAdminDefaultForm(player, plotGroupId);
             return;
         };
         const values = rs.formValues;

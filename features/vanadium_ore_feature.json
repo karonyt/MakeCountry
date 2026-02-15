@@ -1,0 +1,19 @@
+{
+    "format_version": "1.20.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:vanadium_ore_feature"
+        },
+        "count": 6,
+        "replace_rules": [
+            {
+                "places_block": "mc:vanadium_ore",
+                "may_replace": [
+                    "minecraft:stone",
+                    "minecraft:gravel",
+                    "minecraft:granite"
+                ]
+            }
+        ]
+    }
+}

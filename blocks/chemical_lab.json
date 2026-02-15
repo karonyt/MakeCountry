@@ -1,0 +1,114 @@
+{
+    "format_version": "1.21.110",
+    "minecraft:block": {
+        "description": {
+            "identifier": "mc:chemical_lab",
+            "menu_category": {
+                "category": "items"
+            },
+            "traits": {
+                "minecraft:placement_direction": {
+                    "enabled_states": [
+                        "minecraft:cardinal_direction"
+                    ]
+                }
+            }
+        },
+        "components": {
+            "tag:blacksmith": {},
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 1
+            },
+            "minecraft:loot": "loot_tables/blocks/blacksmith.json",
+            "minecraft:map_color": "#000000",
+            "minecraft:collision_box": true,
+            "minecraft:geometry": "minecraft:geometry.full_block",
+            "minecraft:material_instances": {
+                "up": {
+                    "texture": "lab_table_top",
+                    "render_method": "opaque"
+                },
+                "down": {
+                    "texture": "lab_table_bottom",
+                    "render_method": "opaque"
+                },
+                "north": {
+                    "texture": "lab_table_front",
+                    "render_method": "opaque"
+                },
+                "east": {
+                    "texture": "lab_table_side_a",
+                    "render_method": "opaque"
+                },
+                "south": {
+                    "texture": "lab_table_side_b",
+                    "render_method": "opaque"
+                },
+                "west": {
+                    "texture": "lab_table_side_c",
+                    "render_method": "opaque"
+                }
+            },
+            "minecraft:crafting_table": {
+                "grid_size": 3,
+                "crafting_tags": [
+                    "chemical_lab"
+                ],
+                "table_name": "tile.mc:chemical_lab.name"
+            },
+            "minecraft:movable": {
+                "movement_type": "immovable"
+            }
+        },
+        "permutations": [
+            {
+                "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
+                "components": {
+                    "minecraft:transformation": {
+                        "rotation": [
+                            0,
+                            180,
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
+                "components": {
+                    "minecraft:transformation": {
+                        "rotation": [
+                            0,
+                            90,
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
+                "components": {
+                    "minecraft:transformation": {
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
+                "components": {
+                    "minecraft:transformation": {
+                        "rotation": [
+                            0,
+                            270,
+                            0
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}

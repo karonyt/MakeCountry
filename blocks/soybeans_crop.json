@@ -16,6 +16,9 @@
       }
     },
     "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 1
+      },
       "minecraft:flammable": true,
       "minecraft:collision_box": false,
       "minecraft:geometry": "geometry.soybeans_crop",

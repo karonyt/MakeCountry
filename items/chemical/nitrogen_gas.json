@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:nitrogen_gas"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "nitrogen_gas"
+            }
+        }
+    }
+}

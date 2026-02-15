@@ -1,0 +1,119 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "mc:vanadium_ore_feature_rule",
+      "places_feature": "mc:vanadium_ore_feature"
+    },
+    "conditions": {
+      "placement_pass": "underground_pass",
+      "minecraft:biome_filter": {
+        "any_of": [
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "extreme_hills"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "mesa"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "mesa_plateau"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "mesa_plateau_stone"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "savanna_plateau"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "extreme_hills_mutated"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "dripstone_caves"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "warm_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "lukewarm_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "cold_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "deep_warm_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "deep_cold_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "deep_frozen_ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "ocean"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "caves"
+          }
+        ]
+      }
+    },
+    "distribution": {
+      "iterations": 12,
+      "scatter_chance": {
+        "numerator": 2,
+        "denominator": 5
+      },
+      "x": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      },
+      "y": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          50
+        ]
+      },
+      "z": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      }
+    }
+  }
+}

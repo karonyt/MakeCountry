@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:tar"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "tar"
+            }
+        }
+    }
+}

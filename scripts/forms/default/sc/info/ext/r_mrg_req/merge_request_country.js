@@ -15,7 +15,11 @@ export function MergeRequestCountryDefaultForm(player, countryId) {
     try {
         const countryManager = new CountryManager(countryId);
         const countryData = countryManager.countryData;
-        if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+        const playerDataBase = new DynamicProperties('player');
+        const playerDataFirst = JSON.parse(playerDataBase.get(`player_${player.id}`));
+        const playerCountryManagerFirst = new CountryManager(playerDataFirst.country);
+
+        if (Date.now() - (playerCountryManagerFirst.countryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
             return;
         };
 
@@ -36,7 +40,6 @@ export function MergeRequestCountryDefaultForm(player, countryId) {
                 ReceivedMergeRequestDefaultForm(player);
                 return;
             };
-            const playerDataBase = new DynamicProperties('player');
             /**
              * @type {PlayerData}
              */
@@ -48,6 +51,9 @@ export function MergeRequestCountryDefaultForm(player, countryId) {
                     break;
                 };
                 case 1: {
+                    if (Date.now() - (playerCountryManager.countryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
+                        return;
+                    };
                     playerCountryManager.acceptMergeRequest(countryId, player);
                     break;
                 };

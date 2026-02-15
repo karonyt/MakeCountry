@@ -35,6 +35,28 @@ world.beforeEvents.itemUse.subscribe((ev) => {
     };
 });
 
+world.beforeEvents.entityHurt.subscribe((ev) => {
+    const { hurtEntity, damageSource } = ev;
+    const { x, z } = hurtEntity.location;
+    if (damageSource.damagingEntity && (damageSource.damagingEntity instanceof Player)) {
+        if (hurtEntity instanceof Player) {
+            if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
+                return;
+            };
+
+            ev.cancel = CheckPermissionFromLocation(damageSource.damagingEntity, x, z, hurtEntity.dimension.id, 'playerAttack');
+            return;
+        } else {
+            if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
+                return;
+            };
+
+            ev.cancel = CheckPermissionFromLocation(damageSource.damagingEntity, x, z, hurtEntity.dimension.id, 'entityAttack');
+            return;
+        };
+    };
+});
+
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
         const permission = 'break';

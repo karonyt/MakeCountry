@@ -1,0 +1,70 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "mc:cryolite_ore_feature_rule",
+      "places_feature": "mc:cryolite_ore_feature"
+    },
+    "conditions": {
+      "placement_pass": "underground_pass",
+      "minecraft:biome_filter": {
+        "any_of": [
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "ice_mountains"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "ice_plains_spikes"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "eroded_badlands"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "ice_plains"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "snowy_slopes"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "frozen"
+          }
+        ]
+      }
+    },
+    "distribution": {
+      "iterations": 8,
+      "x": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      },
+      "y": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          80
+        ]
+      },
+      "z": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      }
+    }
+  }
+}

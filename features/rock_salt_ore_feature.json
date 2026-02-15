@@ -1,0 +1,17 @@
+{
+    "format_version": "1.20.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:rock_salt_ore_feature"
+        },
+        "count": 8,
+        "replace_rules": [
+            {
+                "places_block": "mc:rock_salt_ore",
+                "may_replace": [
+                    "minecraft:stone"
+                ]
+            }
+        ]
+    }
+}

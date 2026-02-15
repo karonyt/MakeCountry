@@ -114,13 +114,13 @@ export function sendApplicationRequestFunction(countryId, countryData, id, isVai
      * @type {CountryData}
      */
     const targetCountryData = JSON.parse(rawTargetCountryData);
-    countryData.applicationPeaceRequestReceive = countryData.applicationPeaceRequestReceive.filter(r => r != countryId);
-    targetCountryData.applicationPeaceRequestSend = targetCountryData.applicationPeaceRequestSend.filter(r => r != id);
-    countryData.applicationPeaceRequestReceive.push(countryId);
-    targetCountryData.applicationPeaceRequestSend.push(id);
+    targetCountryData.applicationPeaceRequestReceive = targetCountryData.applicationPeaceRequestReceive.filter(r => r != id);
+    countryData.applicationPeaceRequestSend = countryData.applicationPeaceRequestSend.filter(r => r != countryId);
+    targetCountryData.applicationPeaceRequestReceive.push(id);
+    countryData.applicationPeaceRequestSend.push(countryId);
 
-    countryDataBase.set(`country_${id}`, countryData);
-    countryDataBase.set(`country_${countryId}`, targetCountryData);
+    countryDataBase.set(`country_${id}`, JSON.stringify(countryData));
+    countryDataBase.set(`country_${countryId}`, JSON.stringify(targetCountryData));
 
     if (player) {
         player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `sent.application.request`, with: [`${targetCountryData.name}`] }] })

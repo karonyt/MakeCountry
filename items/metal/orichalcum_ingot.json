@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:orichalcum_ingot"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "orichalcum_ingot"
+            }
+        }
+    }
+}

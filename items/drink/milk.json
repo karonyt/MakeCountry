@@ -1,0 +1,20 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:milk"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "milk"
+            },
+            "minecraft:use_duration": 3,
+            "minecraft:food": {
+                "nutrition": 2,
+                "using_converts_to": "mc:flask",
+                "can_always_eat": true
+            },
+            "minecraft:use_animation": "eat"
+        }
+    }
+}

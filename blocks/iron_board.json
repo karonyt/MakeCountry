@@ -16,6 +16,9 @@
         },
         "components": {
             "tag:iron_board": {},
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 1
+            },
             "minecraft:loot": "loot_tables/blocks/iron_board.json",
             "minecraft:map_color": "#000000",
             "minecraft:collision_box": true,

@@ -13,7 +13,7 @@
             "minecraft:food": {
                 "nutrition": 2,
                 "can_always_eat": true,
-                "using_converts_to": "minecraft:glass_bottle"
+                "using_converts_to": "mc:cup"
             },
             "minecraft:use_animation": "eat"
         }

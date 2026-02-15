@@ -1,0 +1,18 @@
+{
+    "format_version": "1.13.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:lime_stone_feature"
+        },
+        "count": 12,
+        "replace_rules": [
+            {
+                "places_block": "mc:lime_stone",
+                "may_replace": [
+                    "minecraft:stone",
+                    "minecraft:andesite"
+                ]
+            }
+        ]
+    }
+}

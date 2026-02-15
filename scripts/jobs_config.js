@@ -24,6 +24,8 @@ export default {
         'builder': 50000,
         'gardener': 50000,
         'chef': 50000,
+        'blacksmith': 50000,
+        'chemist': 50000,
     },
 
     //職業一覧
@@ -94,15 +96,31 @@ export default {
             name: 'chef',
             lv: 0,
         },
+        //鍛冶職人
+        {
+            id: 'blacksmith',
+            name: 'blacksmith',
+            lv: 0,
+        },
+        //化学者
+        {
+            id: 'chemist',
+            name: 'chemist',
+            lv: 0
+        }
         //ここに追加可能
     ],
 
     //職業報酬の全体倍率
-    jobRewardMagnification: 1,
+    jobRewardMagnification: 2,
 
     buildReward: { min: 0.04, max: 0.1, xp: 0.1 }, //ブロックを置いたときにもらえる報酬の変域
-    
+
     chefReward: { min: 0.5, max: 1, xp: 3 }, //料理を作ったときにもらえる報酬の変域
+
+    blacksmithReward: { min: 0.5, max: 1, xp: 3 }, //鍛冶をしたときにもらえる報酬の変域
+
+    chemistReward: { min: 0.5, max: 1, xp: 3 }, //鍛冶をしたときにもらえる報酬の変域
 
     gardeningReward: { min: 0.6, max: 1, xp: 0.15 }, //葉っぱブロックを素手で壊したときにもらえる報酬の変域
 

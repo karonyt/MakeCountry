@@ -1,0 +1,54 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "mc:orichalcum_ore_feature_rule",
+      "places_feature": "mc:orichalcum_ore_feature"
+    },
+    "conditions": {
+      "placement_pass": "underground_pass",
+      "minecraft:biome_filter": {
+        "any_of": [
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "the_end"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "pale_garden"
+          }
+        ]
+      }
+    },
+    "distribution": {
+      "iterations": 3,
+      "scatter_chance": {
+        "numerator": 1,
+        "denominator": 10
+      },
+      "x": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      },
+      "y": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          40
+        ]
+      },
+      "z": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      }
+    }
+  }
+}

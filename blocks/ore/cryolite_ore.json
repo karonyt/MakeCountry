@@ -1,0 +1,30 @@
+{
+    "format_version": "1.21.90",
+    "minecraft:block": {
+        "description": {
+            "identifier": "mc:cryolite_ore"
+        },
+        "components": {
+            "minecraft:light_dampening": 0,
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 15.0
+            },
+            "minecraft:destructible_by_explosion": {
+                "explosion_resistance": 6.0
+            },
+            "tag:minecraft:is_pickaxe_item_destructible": {},
+            "minecraft:map_color": "#e8e2d8",
+            "minecraft:loot": "loot_tables/empty.json",
+            "minecraft:geometry": {
+                "identifier": "geometry.custom_glass",
+                "culling": "mc:culling.custom_glass"
+            },
+            "minecraft:material_instances": {
+                "*": {
+                    "texture": "cryolite_ore",
+                    "render_method": "blend"
+                }
+            }
+        }
+    }
+}

@@ -26,6 +26,11 @@ system.beforeEvents.startup.subscribe((ev) => {
                 if (rawPlayerData) {
                     const playerData = JSON.parse(rawPlayerData);
                     playerData.money = (playerData.money || 0) + (barrelShopData.money || 0);
+
+                    if (barrelShopData.mode === 'buyback' && barrelShopData.prepaidMoney) {
+                        playerData.money = (playerData.money || 0) + (barrelShopData.prepaidMoney || 0);
+                    }
+
                     playerDB.set(`player_${barrelShopData.owner}`, JSON.stringify(playerData));
                 };
             };
@@ -55,7 +60,15 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
         location: { x: block.x, y: block.y, z: block.z },
         dimension: dimId,
         money: 0,
-        name: `${player.name}'s shop`
+        name: `${player.name}'s shop`,
+        mode: 'sell',
+        buybackConfig: {
+            fundingSource: 'owner',
+            prepaidMoney: 0,
+            minTreasuryAmount: 0,
+            buybackItems: []
+        },
+        transactionLog: []
     };
 
     barrelShopDB.set(`shop_${dimId}_${x}_${y}_${z}`, JSON.stringify(initialData));
@@ -92,7 +105,12 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                 return;
             };
             ev.cancel = true;
-            buyMainForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
+
+            if (shopData.mode === 'buyback') {
+                sellItemsToShopForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
+            } else {
+                buyMainForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
+            }
             return;
         };
     };
@@ -136,18 +154,41 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
             return;
         };
         system.runTimeout(() => {
-            buyMainForm(player, barrel, `shop_${dimId}_${x}_${y}_${z}`);
+            if (shopData.mode === 'buyback') {
+                sellItemsToShopForm(player, barrel, `shop_${dimId}_${x}_${y}_${z}`);
+            } else {
+                buyMainForm(player, barrel, `shop_${dimId}_${x}_${y}_${z}`);
+            }
         });
         return;
     };
 });
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
+function addTransactionLog(dbKey, playerId, playerName, action, itemName, amount, price) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+    shopData.transactionLog = shopData.transactionLog || [];
+
+    shopData.transactionLog.push({
+        timestamp: Date.now(),
+        playerId: playerId,
+        playerName: playerName,
+        action: action,
+        itemName: itemName,
+        amount: amount,
+        price: price
+    });
+
+    if (shopData.transactionLog.length > 50) {
+        shopData.transactionLog.shift();
+    }
+
+    barrelShopDB.set(dbKey, JSON.stringify(shopData));
+}
+
 function editMainForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -166,45 +207,774 @@ function editMainForm(player, dbKey, isOwner) {
 
     const form = new ActionFormData();
     form.title({ translate: 'form.title.barrelshop.editmain' });
-    form.body({
-        rawtext: [
-            { translate: 'barrelshop.name', with: [shopData.name] }, { text: '\n' },
-            { translate: 'barrelshop.sales', with: [`${shopData.money} ${config.MoneyName}`] }, { text: '\n' },
-            { translate: 'barrelshop.owner', with: [`${JSON.parse(playerDB.get(`player_${shopData.owner}`)).name}`] }, { text: '\n' },
-            { translate: 'barrelshop.admins', with: [`${adminNames.join(' , ')}`] }, { text: '\n' },
-        ]
-    });
+
+    let bodyText = [
+        { translate: 'barrelshop.name', with: [shopData.name] }, { text: '\n' },
+        { text: '§7' }, { translate: 'barrelshop.mode' }, { text: ': §f' },
+        { translate: shopData.mode === 'buyback' ? 'barrelshop.mode.buyback' : 'barrelshop.mode.sell' },
+        { text: '§r\n' },
+        { translate: 'barrelshop.sales', with: [`${shopData.money} ${config.MoneyName}`] }, { text: '\n' }
+    ];
+
+    if (shopData.mode === 'buyback') {
+        const fundingSourceKey = shopData.buybackConfig.fundingSource === 'owner' ? 'barrelshop.fundingsource.owner' :
+            shopData.buybackConfig.fundingSource === 'prepaid' ? 'barrelshop.fundingsource.prepaid' : 'barrelshop.fundingsource.treasury';
+        bodyText.push(
+            { text: '§7' }, { translate: 'barrelshop.fundingsource' }, { text: ': §f' }, { translate: fundingSourceKey }, { text: '§r\n' }
+        );
+        if (shopData.buybackConfig.fundingSource === 'prepaid') {
+            bodyText.push(
+                { text: '§7' }, { translate: 'barrelshop.prepaidmoney' }, { text: `: §f${shopData.buybackConfig.prepaidMoney || 0} ${config.MoneyName}§r\n` }
+            );
+        }
+    }
+
+    bodyText.push(
+        { translate: 'barrelshop.owner', with: [`${JSON.parse(playerDB.get(`player_${shopData.owner}`)).name}`] }, { text: '\n' },
+        { translate: 'barrelshop.admins', with: [`${adminNames.join(' , ')}`] }, { text: '\n' }
+    );
+
+    form.body({ rawtext: bodyText });
+
     form.button({ translate: 'form.button.barrelshop.editname' });
     form.button({ translate: 'form.button.barrelshop.sales' });
+    form.button({ translate: 'form.button.barrelshop.togglemode' });
+    form.button({ translate: 'form.button.barrelshop.transactionlog' });
+    if (shopData.mode === 'buyback') {
+        form.button({ translate: 'form.button.barrelshop.buybackconfig' });
+    }
     if (isOwner) form.button({ translate: 'form.button.barrelshop.admins' });
 
     form.show(player).then(rs => {
         if (rs.canceled) {
             return;
         };
-        switch (rs.selection) {
-            case 0: {
-                editNameForm(player, dbKey, isOwner);
-                break;
-            };
-            case 1: {
-                salesForm(player, dbKey, isOwner);
-                break;
-            };
-            case 2: {
-                adminsForm(player, dbKey, isOwner);
-                break;
-            };
-        };
+
+        let buttonIndex = 0;
+
+        if (rs.selection === buttonIndex++) {
+            editNameForm(player, dbKey, isOwner);
+            return;
+        }
+
+        if (rs.selection === buttonIndex++) {
+            salesForm(player, dbKey, isOwner);
+            return;
+        }
+
+        if (rs.selection === buttonIndex++) {
+            toggleShopModeForm(player, dbKey, isOwner);
+            return;
+        }
+
+        if (rs.selection === buttonIndex++) {
+            viewTransactionLogForm(player, dbKey, isOwner);
+            return;
+        }
+
+        if (shopData.mode === 'buyback') {
+            if (rs.selection === buttonIndex++) {
+                buybackConfigForm(player, dbKey, isOwner);
+                return;
+            }
+        }
+
+        if (isOwner && rs.selection === buttonIndex++) {
+            adminsForm(player, dbKey, isOwner);
+            return;
+        }
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
+function toggleShopModeForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.modeselect' });
+    form.body({
+        rawtext: [
+            { translate: 'barrelshop.currentmode' },
+            { text: ': ' },
+            { translate: shopData.mode === 'buyback' ? 'barrelshop.mode.buyback' : 'barrelshop.mode.sell' },
+            { text: '\n\n' },
+            { translate: 'barrelshop.selectnewmode' }
+        ]
+    });
+    form.button({
+        rawtext: [
+            { text: '§a' },
+            { translate: 'barrelshop.mode.sell' },
+            { text: '§r\n§7' },
+            { translate: 'barrelshop.mode.sell.desc' },
+            { text: '§r' }
+        ]
+    });
+    form.button({
+        rawtext: [
+            { text: '§e' },
+            { translate: 'barrelshop.mode.buyback' },
+            { text: '§r\n§7' },
+            { translate: 'barrelshop.mode.buyback.desc' },
+            { text: '§r' }
+        ]
+    });
+    form.button({ translate: 'mc.button.back' });
+
+    form.show(player).then(rs => {
+        if (rs.canceled || rs.selection === 2) {
+            editMainForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const newRawShopData = barrelShopDB.get(dbKey);
+        if (!newRawShopData) return;
+
+        const newShopData = JSON.parse(newRawShopData);
+
+        if (rs.selection === 0) {
+            newShopData.mode = 'sell';
+        } else if (rs.selection === 1) {
+            newShopData.mode = 'buyback';
+            if (!newShopData.buybackConfig) {
+                newShopData.buybackConfig = {
+                    fundingSource: 'owner',
+                    prepaidMoney: 0,
+                    minTreasuryAmount: 0,
+                    buybackItems: []
+                };
+            }
+        }
+
+        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
+        editMainForm(player, dbKey, isOwner);
+    });
+}
+
+function buybackConfigForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.buybackconfig' });
+
+    const fundingSourceKey = shopData.buybackConfig.fundingSource === 'owner' ? 'barrelshop.fundingsource.owner' :
+        shopData.buybackConfig.fundingSource === 'prepaid' ? 'barrelshop.fundingsource.prepaid' : 'barrelshop.fundingsource.treasury';
+
+    form.body({
+        rawtext: [
+            { text: '§7' }, { translate: 'barrelshop.fundingsource' }, { text: ': §f' }, { translate: fundingSourceKey }, { text: '§r\n§7' },
+            { translate: 'barrelshop.prepaidmoney' }, { text: `: §f${shopData.buybackConfig.prepaidMoney || 0} ${config.MoneyName}§r\n§7` },
+            { translate: 'barrelshop.buybackitems.count' }, { text: `: §f${shopData.buybackConfig.buybackItems?.length || 0}§r` }
+        ]
+    });
+
+    form.button({ translate: 'form.button.barrelshop.changefundingsource' });
+    form.button({ translate: 'form.button.barrelshop.depositprepaid' });
+    form.button({ translate: 'form.button.barrelshop.configurebuyback' });
+    form.button({ translate: 'mc.button.back' });
+
+    form.show(player).then(rs => {
+        if (rs.canceled || rs.selection === 3) {
+            editMainForm(player, dbKey, isOwner);
+            return;
+        }
+
+        switch (rs.selection) {
+            case 0:
+                changeFundingSourceForm(player, dbKey, isOwner);
+                break;
+            case 1:
+                depositPrepaidMoneyForm(player, dbKey, isOwner);
+                break;
+            case 2:
+                configureBuybackItemsForm(player, dbKey, isOwner);
+                break;
+        }
+    });
+}
+
+function changeFundingSourceForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.selectfundingsource' });
+    form.body({ translate: 'barrelshop.selectfundingsource.desc' });
+    form.button({
+        rawtext: [
+            { text: '§a' },
+            { translate: 'barrelshop.fundingsource.owner' },
+            { text: '§r\n§7' },
+            { translate: 'barrelshop.fundingsource.owner.desc' },
+            { text: '§r' }
+        ]
+    });
+    form.button({
+        rawtext: [
+            { text: '§e' },
+            { translate: 'barrelshop.fundingsource.prepaid' },
+            { text: '§r\n§7' },
+            { translate: 'barrelshop.fundingsource.prepaid.desc' },
+            { text: '§r' }
+        ]
+    });
+    form.button({
+        rawtext: [
+            { text: '§b' },
+            { translate: 'barrelshop.fundingsource.treasury' },
+            { text: '§r\n§7' },
+            { translate: 'barrelshop.fundingsource.treasury.desc' },
+            { text: '§r' }
+        ]
+    });
+    form.button({ translate: 'mc.button.back' });
+
+    form.show(player).then(rs => {
+        if (rs.canceled || rs.selection === 3) {
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const newRawShopData = barrelShopDB.get(dbKey);
+        if (!newRawShopData) return;
+
+        const newShopData = JSON.parse(newRawShopData);
+
+        if (rs.selection === 0) {
+            newShopData.buybackConfig.fundingSource = 'owner';
+        } else if (rs.selection === 1) {
+            newShopData.buybackConfig.fundingSource = 'prepaid';
+        } else if (rs.selection === 2) {
+            newShopData.buybackConfig.fundingSource = 'treasury';
+        }
+
+        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
+
+        if (rs.selection === 2) {
+            setMinTreasuryAmountForm(player, dbKey, isOwner);
+        } else {
+            buybackConfigForm(player, dbKey, isOwner);
+        }
+    });
+}
+
+function setMinTreasuryAmountForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+
+    const form = new ModalFormData();
+    form.title({ translate: 'form.title.barrelshop.treasuryconfig' });
+    form.textField(
+        {
+            rawtext: [
+                { text: '§7' },
+                { translate: 'barrelshop.mintreasury' },
+                { text: '\n§r' },
+                { translate: 'barrelshop.mintreasury.desc' }
+            ]
+        },
+        { translate: 'barrelshop.mintreasury.placeholder' },
+        `${shopData.buybackConfig.minTreasuryAmount || 0}`
+    );
+
+    form.show(player).then(rs => {
+        if (rs.canceled) {
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const newRawShopData = barrelShopDB.get(dbKey);
+        if (!newRawShopData) return;
+
+        const newShopData = JSON.parse(newRawShopData);
+        const minAmount = parseInt(rs.formValues[0]) || 0;
+        newShopData.buybackConfig.minTreasuryAmount = minAmount;
+
+        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
+        buybackConfigForm(player, dbKey, isOwner);
+    });
+}
+
+function depositPrepaidMoneyForm(player, dbKey, isOwner) {
+    const playerDB = new DynamicProperties('player');
+    const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
+
+    const form = new ModalFormData();
+    form.title({ translate: 'form.title.barrelshop.depositprepaid' });
+    form.textField(
+        {
+            rawtext: [
+                { text: '§7' },
+                { translate: 'barrelshop.currentmoney' },
+                { text: `: §f${playerData.money} ${config.MoneyName}§r\n\n` },
+                { translate: 'barrelshop.depositamount' }
+            ]
+        },
+        { translate: 'barrelshop.depositamount.placeholder' },
+        ''
+    );
+
+    form.show(player).then(rs => {
+        if (rs.canceled) {
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const depositAmount = parseInt(rs.formValues[0]) || 0;
+
+        if (depositAmount <= 0) {
+            player.sendMessage({ translate: 'error.barrelshop.invalidamount' });
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const newPlayerData = JSON.parse(playerDB.get(`player_${player.id}`));
+
+        if (newPlayerData.money < depositAmount) {
+            player.sendMessage({ translate: 'error.notenough.money' });
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const barrelShopDB = new DynamicProperties('barrelShop');
+        const newRawShopData = barrelShopDB.get(dbKey);
+        if (!newRawShopData) return;
+
+        const newShopData = JSON.parse(newRawShopData);
+
+        newPlayerData.money -= depositAmount;
+        newShopData.buybackConfig.prepaidMoney = (newShopData.buybackConfig.prepaidMoney || 0) + depositAmount;
+
+        playerDB.set(`player_${player.id}`, JSON.stringify(newPlayerData));
+        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
+
+        player.sendMessage({ translate: 'success.barrelshop.deposited', with: [`${depositAmount} ${config.MoneyName}`] });
+        buybackConfigForm(player, dbKey, isOwner);
+    });
+}
+
+function configureBuybackItemsForm(player, dbKey, isOwner) {
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.configurebuyback' });
+    form.body({ translate: 'barrelshop.configurebuyback.desc' });
+    form.button({ translate: 'form.button.barrelshop.registeritem' });
+    form.button({ translate: 'form.button.barrelshop.viewitems' });
+    form.button({ translate: 'mc.button.back' });
+
+    form.show(player).then(rs => {
+        if (rs.canceled || rs.selection === 2) {
+            buybackConfigForm(player, dbKey, isOwner);
+            return;
+        }
+
+        if (rs.selection === 0) {
+            registerBuybackItemForm(player, dbKey, isOwner);
+        } else if (rs.selection === 1) {
+            viewBuybackItemsForm(player, dbKey, isOwner);
+        }
+    });
+}
+
+function registerBuybackItemForm(player, dbKey, isOwner) {
+    const equipment = player.getComponent('equippable');
+    const mainhand = equipment.getEquipment('Mainhand');
+
+    if (!mainhand) {
+        player.sendMessage({ translate: 'error.barrelshop.noitem' });
+        return;
+    }
+
+    const form = new ModalFormData();
+    form.title({ translate: 'form.title.barrelshop.registeritem' });
+    form.textField(
+        {
+            rawtext: [
+                { text: '§7' },
+                { translate: 'barrelshop.item' },
+                { text: `: §f${mainhand.typeId}§r\n§7` },
+                { translate: 'barrelshop.amount' },
+                { text: `: §f${mainhand.amount}§r\n\n` },
+                { translate: 'barrelshop.setprice.desc' }
+            ]
+        },
+        { translate: 'barrelshop.setprice.placeholder' },
+        { defaultValue: '' }
+    );
+
+    form.show(player).then(rs => {
+        if (rs.canceled) {
+            configureBuybackItemsForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const price = parseInt(rs.formValues[0]) || 0;
+
+        if (price <= 0) {
+            player.sendMessage({ translate: 'error.barrelshop.invalidprice' });
+            configureBuybackItemsForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const barrelShopDB = new DynamicProperties('barrelShop');
+        const rawShopData = barrelShopDB.get(dbKey);
+        if (!rawShopData) return;
+
+        const shopData = JSON.parse(rawShopData);
+        shopData.buybackConfig.buybackItems = shopData.buybackConfig.buybackItems || [];
+
+        const enchantments = [];
+        if (mainhand.getComponent('enchantable')?.isValid) {
+            for (const enchant of mainhand.getComponent('enchantable').getEnchantments()) {
+                enchantments.push({
+                    id: enchant.type.id,
+                    level: enchant.level
+                });
+            }
+        }
+
+        const lore = mainhand.getLore();
+
+        shopData.buybackConfig.buybackItems.push({
+            typeId: mainhand.typeId,
+            amount: mainhand.amount,
+            price: price,
+            enchantments: enchantments,
+            nameTag: mainhand.nameTag || null,
+            lore: lore
+        });
+
+        barrelShopDB.set(dbKey, JSON.stringify(shopData));
+
+        player.sendMessage({ translate: 'success.barrelshop.registered' });
+    });
+}
+
+function viewBuybackItemsForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+    const items = shopData.buybackConfig.buybackItems || [];
+
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.viewitems' });
+
+    if (items.length === 0) {
+        form.body({ translate: 'barrelshop.noitems' });
+        form.button({ translate: 'mc.button.back' });
+    } else {
+        form.body({ translate: 'barrelshop.selectitemtodelete' });
+        form.button({ translate: 'mc.button.back' });
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const enchantText = item.enchantments && item.enchantments.length > 0;
+            const loreText = item.lore && item.lore.length > 0;
+            const nameText = item.nameTag ? ` §7"${item.nameTag}"§r` : '';
+
+            let buttonText = [
+                { text: `§f${item.typeId.replace('minecraft:', '')}§r${nameText} x${item.amount}\n§e${item.price} ${config.MoneyName}§r` }
+            ];
+
+            if (enchantText) {
+                buttonText.push({ text: ' §7(' }, { translate: 'barrelshop.hasenchant' }, { text: ')§r' });
+            }
+            if (loreText) {
+                buttonText.push({ text: ' §7(' }, { translate: 'barrelshop.haslore' }, { text: ')§r' });
+            }
+
+            form.button({ rawtext: buttonText });
+        }
+    }
+
+    form.show(player).then(rs => {
+        if (rs.canceled || rs.selection === 0) {
+            configureBuybackItemsForm(player, dbKey, isOwner);
+            return;
+        }
+
+        const itemIndex = rs.selection - 1;
+        const newRawShopData = barrelShopDB.get(dbKey);
+        if (!newRawShopData) return;
+
+        const newShopData = JSON.parse(newRawShopData);
+        newShopData.buybackConfig.buybackItems.splice(itemIndex, 1);
+
+        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
+
+        player.sendMessage({ translate: 'success.barrelshop.deleted' });
+        viewBuybackItemsForm(player, dbKey, isOwner);
+    });
+}
+
+function sellItemsToShopForm(player, barrel, dbKey) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+    const buybackItems = shopData.buybackConfig?.buybackItems || [];
+
+    if (buybackItems.length === 0) {
+        player.sendMessage({ translate: 'error.barrelshop.noitemsset' });
+        return;
+    }
+
+    const form = new ActionFormData();
+    form.title({ text: `${shopData.name}` });
+    form.body({ translate: 'barrelshop.selectitemtosell' });
+
+    for (const item of buybackItems) {
+        const enchantText = item.enchantments && item.enchantments.length > 0;
+        const loreText = item.lore && item.lore.length > 0;
+        const nameText = item.nameTag ? ` §7"${item.nameTag}"§r` : '';
+
+        let buttonText = [
+            { text: `§f${item.typeId.replace('minecraft:', '')}§r${nameText} x${item.amount}\n§e${item.price} ${config.MoneyName}§r` }
+        ];
+
+        if (enchantText) {
+            buttonText.push({ text: ' §7(' }, { translate: 'barrelshop.hasenchant' }, { text: ')§r' });
+        }
+        if (loreText) {
+            buttonText.push({ text: ' §7(' }, { translate: 'barrelshop.haslore' }, { text: ')§r' });
+        }
+
+        form.button({ rawtext: buttonText });
+    }
+
+    form.show(player).then(rs => {
+        if (rs.canceled) return;
+
+        const selectedItem = buybackItems[rs.selection];
+        processSellToShop(player, barrel, dbKey, selectedItem);
+    });
+}
+
+function processSellToShop(player, barrel, dbKey, buybackItem) {
+    const playerContainer = player.getComponent('inventory').container;
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+
+    let foundItems = [];
+    for (let i = 0; i < playerContainer.size; i++) {
+        const item = playerContainer.getItem(i);
+        if (!item) continue;
+
+        if (item.typeId !== buybackItem.typeId) continue;
+
+        if (buybackItem.nameTag) {
+            if (item.nameTag !== buybackItem.nameTag) continue;
+        }
+
+        if (buybackItem.lore && buybackItem.lore.length > 0) {
+            const itemLore = item.getLore();
+            if (JSON.stringify(itemLore) !== JSON.stringify(buybackItem.lore)) continue;
+        }
+
+        if (buybackItem.enchantments && buybackItem.enchantments.length > 0) {
+            if (!item.getComponent('enchantable')?.isValid) continue;
+
+            const itemEnchants = item.getComponent('enchantable').getEnchantments();
+            let enchantsMatch = true;
+
+            for (const reqEnchant of buybackItem.enchantments) {
+                const hasEnchant = itemEnchants.find(e => e.type.id === reqEnchant.id && e.level === reqEnchant.level);
+                if (!hasEnchant) {
+                    enchantsMatch = false;
+                    break;
+                }
+            }
+
+            if (!enchantsMatch) continue;
+        }
+
+        foundItems.push({ slot: i, item: item });
+    }
+
+    if (foundItems.length === 0) {
+        player.sendMessage({ translate: 'error.barrelshop.itemnotfound' });
+        return;
+    }
+
+    let totalFound = 0;
+    for (const found of foundItems) {
+        totalFound += found.item.amount;
+    }
+
+    const setsAvailable = Math.floor(totalFound / buybackItem.amount);
+
+    if (setsAvailable === 0) {
+        player.sendMessage({ translate: 'error.barrelshop.notenoughitems', with: [`${buybackItem.amount}`] });
+        return;
+    }
+
+    const totalPrice = buybackItem.price * setsAvailable;
+    const playerDB = new DynamicProperties('player');
+    const ownerData = JSON.parse(playerDB.get(`player_${shopData.owner}`));
+
+    let canAfford = false;
+    let fundSourceKey = '';
+
+    if (shopData.buybackConfig.fundingSource === 'owner') {
+        canAfford = ownerData.money >= totalPrice;
+        fundSourceKey = 'barrelshop.fundingsource.owner';
+    } else if (shopData.buybackConfig.fundingSource === 'prepaid') {
+        canAfford = (shopData.buybackConfig.prepaidMoney || 0) >= totalPrice;
+        fundSourceKey = 'barrelshop.fundingsource.prepaid';
+    } else if (shopData.buybackConfig.fundingSource === 'treasury') {
+        const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
+        const chunkDB = new DynamicProperties('chunk');
+        const countryDB = new DynamicProperties('country');
+        const rawChunkData = chunkDB.get(`chunk_${Math.floor(block.x / 16)}_${Math.floor(block.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`);
+
+        if (rawChunkData) {
+            const chunkData = JSON.parse(rawChunkData);
+            if (chunkData?.countryId && chunkData?.countryId > 0) {
+                const rawCountryData = countryDB.get(`country_${chunkData?.countryId}`);
+                if (rawCountryData) {
+                    const countryData = JSON.parse(rawCountryData);
+                    const minAmount = shopData.buybackConfig.minTreasuryAmount || 0;
+                    canAfford = (countryData.money - totalPrice) >= minAmount;
+                    fundSourceKey = 'barrelshop.fundingsource.treasury';
+                }
+            }
+        }
+    }
+
+    if (!canAfford) {
+        player.sendMessage({ translate: 'error.barrelshop.insufficientfunds', with: [{ rawtext: [{ translate: fundSourceKey }] }] });
+        return;
+    }
+
+    let itemsToRemove = buybackItem.amount * setsAvailable;
+    for (const found of foundItems) {
+        if (itemsToRemove <= 0) break;
+
+        if (found.item.amount <= itemsToRemove) {
+            itemsToRemove -= found.item.amount;
+            playerContainer.setItem(found.slot);
+        } else {
+            found.item.amount -= itemsToRemove;
+            playerContainer.setItem(found.slot, found.item);
+            itemsToRemove = 0;
+        }
+    }
+
+    const buyerData = JSON.parse(playerDB.get(`player_${player.id}`));
+    buyerData.money = (buyerData.money || 0) + totalPrice;
+
+    if (shopData.buybackConfig.fundingSource === 'owner') {
+        ownerData.money -= totalPrice;
+        playerDB.set(`player_${shopData.owner}`, JSON.stringify(ownerData));
+    } else if (shopData.buybackConfig.fundingSource === 'prepaid') {
+        shopData.buybackConfig.prepaidMoney -= totalPrice;
+    } else if (shopData.buybackConfig.fundingSource === 'treasury') {
+        const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
+        const chunkDB = new DynamicProperties('chunk');
+        const countryDB = new DynamicProperties('country');
+        const rawChunkData = chunkDB.get(`chunk_${Math.floor(block.x / 16)}_${Math.floor(block.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`);
+
+        if (rawChunkData) {
+            const chunkData = JSON.parse(rawChunkData);
+            if (chunkData?.countryId) {
+                const rawCountryData = countryDB.get(`country_${chunkData?.countryId}`);
+                if (rawCountryData) {
+                    const countryData = JSON.parse(rawCountryData);
+                    countryData.money -= totalPrice;
+
+                    countryData.treasuryBudgetLog = countryData.treasuryBudgetLog || [];
+                    if (countryData.treasuryBudgetLog.length > 50) {
+                        countryData.treasuryBudgetLog.shift();
+                    }
+                    countryData.treasuryBudgetLog.push({
+                        timestamp: Date.now(),
+                        actor: shopData.name,
+                        action: 'subtract',
+                        amount: totalPrice,
+                        reason: 'Shop Buyback'
+                    });
+
+                    countryDB.set(`country_${chunkData?.countryId}`, JSON.stringify(countryData));
+                }
+            }
+        }
+    }
+
+    playerDB.set(`player_${player.id}`, JSON.stringify(buyerData));
+
+    addTransactionLog(dbKey, player.id, player.name, 'sell', buybackItem.typeId, buybackItem.amount * setsAvailable, totalPrice);
+
+    barrelShopDB.set(dbKey, JSON.stringify(shopData));
+
+    player.sendMessage({
+        translate: 'success.barrelshop.sold',
+        with: [
+            `${buybackItem.typeId.replace('minecraft:', '')} x${buybackItem.amount * setsAvailable}`,
+            `${totalPrice} ${config.MoneyName}`
+        ]
+    });
+}
+
+function viewTransactionLogForm(player, dbKey, isOwner) {
+    const barrelShopDB = new DynamicProperties('barrelShop');
+    const rawShopData = barrelShopDB.get(dbKey);
+    if (!rawShopData) return;
+
+    const shopData = JSON.parse(rawShopData);
+    const logs = shopData.transactionLog || [];
+
+    const form = new ActionFormData();
+    form.title({ translate: 'form.title.barrelshop.transactionlog' });
+
+    if (logs.length === 0) {
+        form.body({ translate: 'barrelshop.notransactions' });
+    } else {
+        let bodyText = [{ text: '§7' }, { translate: 'barrelshop.recenttransactions' }, { text: '§r\n\n' }];
+
+        const recentLogs = logs.slice(-20).reverse();
+
+        for (const log of recentLogs) {
+            const date = new Date(log.timestamp);
+            const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+            const actionKey = log.action === 'buy' ? 'barrelshop.action.buy' : 'barrelshop.action.sell';
+            const itemName = log.itemName.replace('minecraft:', '');
+
+            bodyText.push(
+                { text: `§f${dateStr}§r ` },
+                { text: log.action === 'buy' ? '§a' : '§e' },
+                { translate: actionKey },
+                { text: `§r\n§7${log.playerName}§r\n§f${itemName} x${log.amount}§r - §e${log.price} ${config.MoneyName}§r\n\n` }
+            );
+        }
+
+        form.body({ rawtext: bodyText });
+    }
+
+    form.button({ translate: 'mc.button.back' });
+
+    form.show(player).then(rs => {
+        editMainForm(player, dbKey, isOwner);
+    });
+}
+
 function editNameForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -235,12 +1005,6 @@ function editNameForm(player, dbKey, isOwner) {
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
 function salesForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -251,16 +1015,14 @@ function salesForm(player, dbKey, isOwner) {
 
     const money = shopData.money;
 
-
     const playerDB = new DynamicProperties('player');
-
     const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
 
     shopData.money = 0;
     playerData.money = Math.floor(playerData.money + money);
 
-    playerDB.set(`player_${player.id}`, playerData)
-    barrelShopDB.set(dbKey, shopData);
+    playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+    barrelShopDB.set(dbKey, JSON.stringify(shopData));
 
     const form = new ActionFormData();
     form.title({ translate: 'form.button.barrelshop.sales' });
@@ -276,12 +1038,6 @@ function salesForm(player, dbKey, isOwner) {
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
 function adminsForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -323,12 +1079,6 @@ function adminsForm(player, dbKey, isOwner) {
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
 function adminRemoveForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -382,12 +1132,6 @@ function adminRemoveForm(player, dbKey, isOwner) {
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {string} dbKey 
- * @param {boolean} isOwner 
- */
 function adminAddForm(player, dbKey, isOwner) {
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
@@ -438,12 +1182,6 @@ function adminAddForm(player, dbKey, isOwner) {
     });
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {Block} barrel 
- * @param {string} dbKey 
- */
 function buyMainForm(player, barrel, dbKey) {
     const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
@@ -498,14 +1236,6 @@ function buyMainForm(player, barrel, dbKey) {
     })
 };
 
-/**
- * 
- * @param {Player} player 
- * @param {Block} barrel 
- * @param {string} dbKey 
- * @param {number} index 
- * @returns 
- */
 function buyCheckForm(player, barrel, dbKey, index) {
     const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
@@ -604,7 +1334,7 @@ function buyCheckForm(player, barrel, dbKey, index) {
                                     reason: 'Consumption TAX'
                                 });
 
-                                countryDB.set(`country_${chunkData?.countryId}`, countryData);
+                                countryDB.set(`country_${chunkData?.countryId}`, JSON.stringify(countryData));
                             }
                         };
                     };
@@ -612,6 +1342,9 @@ function buyCheckForm(player, barrel, dbKey, index) {
                 shopData.money = shopData.money + (result - tax);
 
                 playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+
+                addTransactionLog(dbKey, player.id, player.name, 'buy', item.typeId, item.amount, result);
+
                 barrelShopDB.set(dbKey, JSON.stringify(shopData));
 
                 newContainer.setItem(index);

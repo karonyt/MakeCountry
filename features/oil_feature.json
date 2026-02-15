@@ -1,0 +1,18 @@
+{
+    "format_version": "1.13.0",
+    "minecraft:ore_feature": {
+        "description": {
+            "identifier": "mc:oil_feature"
+        },
+        "count": 40,
+        "replace_rules": [
+            {
+                "places_block": "mc:oil_block",
+                "may_replace": [
+                    "minecraft:sand",
+                    "minecraft:red_sand"
+                ]
+            }
+        ]
+    }
+}

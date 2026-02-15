@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:coal_residue"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "coal_residue"
+            }
+        }
+    }
+}

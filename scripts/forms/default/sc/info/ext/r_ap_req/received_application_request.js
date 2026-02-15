@@ -19,7 +19,7 @@ export function ReceivedApplicationRequestDefaultForm(player) {
     const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
     const playerCountryManager = new CountryManager(playerData.country);
     const playerCountryData = playerCountryManager.countryData;
-    let receivedApplicationRequests = playerCountryData.applicationPeaceRequestReceive
+    let receivedApplicationRequests = playerCountryData.applicationPeaceRequestReceive || [];
     const form = new ActionFormData();
     form.title({ translate: `received.application.request` });
     form.button({ translate: `mc.button.close` });

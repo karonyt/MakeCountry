@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:carbon_dioxide"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "carbon_dioxide"
+            }
+        }
+    }
+}

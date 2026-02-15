@@ -11,7 +11,7 @@
             "minecraft:use_duration": 3,
             "minecraft:food": {
                 "nutrition": 2,
-                "using_converts_to": "minecraft:glass_bottle",
+                "using_converts_to": "mc:cup",
                 "can_always_eat": true
 
             },

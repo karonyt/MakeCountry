@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:hydrogen_gas"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "hydrogen_gas"
+            }
+        }
+    }
+}

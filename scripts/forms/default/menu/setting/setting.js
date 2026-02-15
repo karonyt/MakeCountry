@@ -21,11 +21,11 @@ export function playerSettingDefaultForm(player) {
             dypKey: 'isSpecialFishing',
             lv: national_tier_level.releaseSpeciallFishing
         },
-        {
+        /*{
             translate: 'cooking.setting.old.system',
             dypKey: 'isUseOldCookingSystem',
             lv: 0
-        },
+        },*/
         {
             translate: 'streamer.settings',
             dypKey: 'isStreamerSettings',

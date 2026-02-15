@@ -42,6 +42,12 @@ import "./api/chat/index";
 
 import "./api/cooking/index";
 
+import "./api/smelting/index";
+
+import "./api/chemical/index";
+
+import "./lib/backpack";
+
 const version = "ver.2.3.2-beta"
 
 world.afterEvents.worldLoad.subscribe(() => {

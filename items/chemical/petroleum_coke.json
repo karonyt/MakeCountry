@@ -1,0 +1,13 @@
+{
+    "format_version": "1.20.30",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:petroleum_coke"
+        },
+        "components": {
+            "minecraft:icon": {
+                "texture": "petroleum_coke"
+            }
+        }
+    }
+}

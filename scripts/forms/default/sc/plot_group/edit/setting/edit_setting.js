@@ -49,7 +49,7 @@ export function plotGroupEditSettingPlotAdminDefaultForm(player, plotGroupId) {
         };
         //値段チェック
         let price = rs.formValues[2];
-        if (isDecimalNumberZeroOK(price)) {
+        if (!isDecimalNumberZeroOK(price) && Number(price) > 100000000000) {
             price = '0';
         };
         if (Number(price) < 0) {

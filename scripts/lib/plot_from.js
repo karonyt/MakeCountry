@@ -1803,7 +1803,7 @@ function plotEditSettingFormPlotAdmin(player, chunkId) {
             newPlotName = `new Plot`;
         };
         let price = rs.formValues[3];
-        if (isDecimalNumberZeroOK(price)) {
+        if (!isDecimalNumberZeroOK(price) && Number(price) > 100000000000) {
             price = `0`;
         };
         if (Number(price) < 0) {

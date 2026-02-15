@@ -1,0 +1,59 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "mc:mithril_ore_feature_rule",
+      "places_feature": "mc:mithril_ore_feature"
+    },
+    "conditions": {
+      "placement_pass": "underground_pass",
+      "minecraft:biome_filter": {
+        "any_of": [
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "soulsand_valley"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "basalt_deltas"
+          },
+          {
+            "test": "has_biome_tag",
+            "operator": "==",
+            "value": "nether"
+          }
+        ]
+      }
+    },
+    "distribution": {
+      "iterations": 4,
+      "scatter_chance": {
+        "numerator": 2,
+        "denominator": 5
+      },
+      "x": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      },
+      "y": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          40
+        ]
+      },
+      "z": {
+        "distribution": "uniform",
+        "extent": [
+          0,
+          16
+        ]
+      }
+    }
+  }
+}
