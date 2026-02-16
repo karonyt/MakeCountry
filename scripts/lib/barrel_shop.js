@@ -76,7 +76,8 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
-    const { player, block } = ev;
+    const { player, block, isFirstEvent } = ev;
+    if (!isFirstEvent) return;
     const dimId = block.dimension.id;
 
     if (block.typeId == 'minecraft:barrel') {
@@ -291,18 +292,18 @@ function toggleShopModeForm(player, dbKey, isOwner) {
     });
     form.button({
         rawtext: [
-            { text: '§a' },
+            { text: '§2' },
             { translate: 'barrelshop.mode.sell' },
-            { text: '§r\n§7' },
+            { text: '§r\n' },
             { translate: 'barrelshop.mode.sell.desc' },
             { text: '§r' }
         ]
     });
     form.button({
         rawtext: [
-            { text: '§e' },
+            { text: '§4' },
             { translate: 'barrelshop.mode.buyback' },
-            { text: '§r\n§7' },
+            { text: '§r\n' },
             { translate: 'barrelshop.mode.buyback.desc' },
             { text: '§r' }
         ]
@@ -397,27 +398,27 @@ function changeFundingSourceForm(player, dbKey, isOwner) {
     form.body({ translate: 'barrelshop.selectfundingsource.desc' });
     form.button({
         rawtext: [
-            { text: '§a' },
+            { text: '§2' },
             { translate: 'barrelshop.fundingsource.owner' },
-            { text: '§r\n§7' },
+            { text: '§r\n' },
             { translate: 'barrelshop.fundingsource.owner.desc' },
             { text: '§r' }
         ]
     });
     form.button({
         rawtext: [
-            { text: '§e' },
+            { text: '§6' },
             { translate: 'barrelshop.fundingsource.prepaid' },
-            { text: '§r\n§7' },
+            { text: '§r\n' },
             { translate: 'barrelshop.fundingsource.prepaid.desc' },
             { text: '§r' }
         ]
     });
     form.button({
         rawtext: [
-            { text: '§b' },
+            { text: '§9' },
             { translate: 'barrelshop.fundingsource.treasury' },
-            { text: '§r\n§7' },
+            { text: '§r\n' },
             { translate: 'barrelshop.fundingsource.treasury.desc' },
             { text: '§r' }
         ]
@@ -472,7 +473,7 @@ function setMinTreasuryAmountForm(player, dbKey, isOwner) {
             ]
         },
         { translate: 'barrelshop.mintreasury.placeholder' },
-        `${shopData.buybackConfig.minTreasuryAmount || 0}`
+        { defaultValue: `${shopData.buybackConfig.minTreasuryAmount || 0}` }
     );
 
     form.show(player).then(rs => {
@@ -509,7 +510,7 @@ function depositPrepaidMoneyForm(player, dbKey, isOwner) {
             ]
         },
         { translate: 'barrelshop.depositamount.placeholder' },
-        ''
+        { defaultValue: '0' }
     );
 
     form.show(player).then(rs => {
@@ -573,6 +574,13 @@ function configureBuybackItemsForm(player, dbKey, isOwner) {
     });
 }
 
+/**
+ * 
+ * @param {Player} player 
+ * @param {*} dbKey 
+ * @param {boolean} isOwner 
+ * @returns 
+ */
 function registerBuybackItemForm(player, dbKey, isOwner) {
     const equipment = player.getComponent('equippable');
     const mainhand = equipment.getEquipment('Mainhand');
@@ -630,7 +638,22 @@ function registerBuybackItemForm(player, dbKey, isOwner) {
             }
         }
 
-        const lore = mainhand.getLore();
+        let durability = null;
+
+        if (mainhand.getComponent('durability')?.isValid) {
+            const durabilityComponent = mainhand.getComponent('durability');
+            durability = { max: durabilityComponent.maxDurability, now: durabilityComponent.damage };
+        }
+
+        const lore = mainhand.getRawLore();
+
+        shopData.buybackConfig.buybackItems = shopData.buybackConfig.buybackItems || [];
+
+        if (shopData.buybackConfig.buybackItems.length >= 27) {
+            player.sendMessage({ translate: 'error.barrelshop.limitreached' });
+            configureBuybackItemsForm(player, dbKey, isOwner);
+            return;
+        }
 
         shopData.buybackConfig.buybackItems.push({
             typeId: mainhand.typeId,
@@ -638,6 +661,7 @@ function registerBuybackItemForm(player, dbKey, isOwner) {
             price: price,
             enchantments: enchantments,
             nameTag: mainhand.nameTag || null,
+            durability: durability,
             lore: lore
         });
 
@@ -731,6 +755,15 @@ function buildBuybackLore(item) {
         ]
     });
 
+    if (item.durability) {
+        lines.push({
+            rawtext: [
+                { text: "\n§9" },
+                { text: `Durability: (${item.durability.max - item.durability.now}/${item.durability.max})` }
+            ]
+        })
+    };
+
     if (item.enchantments?.length > 0) {
 
         lines.push({
@@ -765,15 +798,16 @@ function buildBuybackLore(item) {
         lines.push({
             rawtext: [
                 { text: "\n§6" },
-                { translate: "barrelshop.label.lore" },
-                { text: ":" }
+                { translate: "networkWorld.description" },
+                { text: "\n" }
             ]
         });
 
         for (const line of item.lore) {
             lines.push({
                 rawtext: [
-                    { text: `\n§7${line}` }
+                    line,
+                    { text: '\n' }
                 ]
             });
         }
@@ -795,8 +829,8 @@ function sellItemsToShopForm(player, barrel, dbKey) {
         return;
     }
 
-    const form = new ChestFormData('large');
-    form.setTitle([{text: '§4['},{translate: 'barrelshop.action.sell'},{text: `]§r ${shopData.name}`}]);
+    const form = new ChestFormData('small');
+    form.setTitle([{ text: '§4[' }, { translate: 'barrelshop.action.sell' }, { text: `]§r ${shopData.name}` }]);
 
     buybackItems.forEach((item, i) => {
         form.setButton(i, {
@@ -866,36 +900,45 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
         if (buybackItem.nameTag && item.nameTag !== buybackItem.nameTag) continue;
 
         if (buybackItem.lore?.length > 0) {
-            const itemLore = item.getLore();
+            const itemLore = item.getRawLore();
             if (JSON.stringify(itemLore) !== JSON.stringify(buybackItem.lore)) continue;
         }
+
+        if (buybackItem.durability) {
+            if (item.getComponent('durability').damage != buybackItem.durability.now); continue
+        };
 
         if (buybackItem.enchantments?.length > 0) {
             const enchComp = item.getComponent('enchantable');
             if (!enchComp?.isValid) continue;
 
             const itemEnchants = enchComp.getEnchantments();
+            const requiredEnchants = buybackItem.enchantments;
 
-            if (itemEnchants.length !== buybackItem.enchantments.length) continue;
+            if (itemEnchants.length !== requiredEnchants.length) continue;
 
-            let enchantsMatch = true;
-            for (const reqEnchant of buybackItem.enchantments) {
-                const hasEnchant = itemEnchants.find(
-                    e => e.type.id === reqEnchant.id && e.level === reqEnchant.level
-                );
-                if (!hasEnchant) {
-                    enchantsMatch = false;
-                    break;
-                }
-            }
-            if (!enchantsMatch) continue;
+            const reqMatches = requiredEnchants.every(req =>
+                itemEnchants.some(e =>
+                    e.type.id === req.id &&
+                    e.level === req.level
+                )
+            );
+            if (!reqMatches) continue;
+
+            const itemMatches = itemEnchants.every(e =>
+                requiredEnchants.some(req =>
+                    req.id === e.type.id &&
+                    req.level === e.level
+                )
+            );
+            if (!itemMatches) continue;
         }
 
         foundItems.push({ slot: i, item });
     }
 
     if (foundItems.length === 0) {
-        player.sendMessage({ translate: 'error.barrelshop.itemnotfound' });
+        player.sendMessage({ rawtext: [{ text: '§c' }, { translate: 'error.barrelshop.itemnotfound' }] });
         return;
     }
 
@@ -906,8 +949,12 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
 
     if (setsAvailable === 0) {
         player.sendMessage({
-            translate: 'error.barrelshop.notenoughitems',
-            with: [`${buybackItem.amount}`]
+            rawtext: [
+                { text: '§c' },
+                {
+                    translate: 'error.barrelshop.notenoughitems',
+                    with: [`${buybackItem.amount}`]
+                }]
         });
         return;
     }
@@ -919,6 +966,9 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
 
     if (buybackItem.nameTag) sellStack.nameTag = buybackItem.nameTag;
     if (buybackItem.lore) sellStack.setLore(buybackItem.lore);
+    if (buybackItem.durability) {
+        sellStack.getComponent('durability').damage = item.durability.now;
+    };
 
     if (buybackItem.enchantments?.length > 0) {
         const ench = sellStack.getComponent('enchantable');
@@ -943,8 +993,13 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
     const spaceAvailable = calculateAvailableSpace(barrelContainer, sellStack);
     if (spaceAvailable < totalItemsToStore) {
         player.sendMessage({
-            translate: 'error.barrelshop.barrel_full',
-            with: [`${spaceAvailable}`, `${totalItemsToStore}`]
+            rawtext: [
+                { text: '§c' },
+                {
+                    translate: 'error.barrelshop.barrel_full',
+                    with: [`${spaceAvailable}`, `${totalItemsToStore}`]
+                }
+            ]
         });
         return;
     }
@@ -952,6 +1007,7 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
     const playerDB = new DynamicProperties('player');
     const rawOwner = playerDB.get(`player_${shopData.owner}`);
     if (!rawOwner) return;
+    const countryDB = new DynamicProperties('country');
 
     const ownerData = JSON.parse(rawOwner);
 
@@ -967,31 +1023,22 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
         fundSourceKey = 'barrelshop.fundingsource.prepaid';
 
     } else if (shopData.buybackConfig.fundingSource === 'treasury') {
-        const block = player.dimension.getBlock(barrel.location);
-        const chunkDB = new DynamicProperties('chunk');
-        const countryDB = new DynamicProperties('country');
+        const rawCountryData = countryDB.get(`country_${ownerData.country}`);
+        if (rawCountryData) {
+            const countryData = JSON.parse(rawCountryData);
+            const minAmount = shopData.buybackConfig.minTreasuryAmount || 0;
 
-        const rawChunkData = chunkDB.get(
-            `chunk_${Math.floor(block.x / 16)}_${Math.floor(block.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`
-        );
-
-        if (rawChunkData) {
-            const chunkData = JSON.parse(rawChunkData);
-            const rawCountryData = countryDB.get(`country_${chunkData?.countryId}`);
-            if (rawCountryData) {
-                const countryData = JSON.parse(rawCountryData);
-                const minAmount = shopData.buybackConfig.minTreasuryAmount || 0;
-
-                canAfford = (countryData.money - totalPrice) >= minAmount;
-                fundSourceKey = 'barrelshop.fundingsource.treasury';
-            }
+            canAfford = (countryData.money - totalPrice) >= minAmount;
+            fundSourceKey = 'barrelshop.fundingsource.treasury';
         }
     }
 
     if (!canAfford) {
         player.sendMessage({
-            translate: 'error.barrelshop.insufficientfunds',
-            with: [{ rawtext: [{ translate: fundSourceKey }] }]
+            rawtext: [{ text: '§c' }, {
+                translate: 'error.barrelshop.insufficientfunds',
+                with: { rawtext: [{ translate: fundSourceKey }] }
+            }]
         });
         return;
     }
@@ -1048,11 +1095,17 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
     if (shopData.buybackConfig.fundingSource === 'owner') {
         ownerData.money -= totalPrice;
         playerDB.set(`player_${shopData.owner}`, JSON.stringify(ownerData));
-
     } else if (shopData.buybackConfig.fundingSource === 'prepaid') {
         shopData.buybackConfig.prepaidMoney =
             Math.max(0, (shopData.buybackConfig.prepaidMoney || 0) - totalPrice);
-    }
+    } else if (shopData.buybackConfig.fundingSource === 'treasury') {
+        const rawCountryData = countryDB.get(`country_${ownerData.country}`);
+        if (rawCountryData) {
+            const countryData = JSON.parse(rawCountryData);
+            countryData.money -= totalPrice;
+            countryDB.set(`country_${countryData.id}`, JSON.stringify(countryData));
+        };
+    };
 
     playerDB.set(`player_${player.id}`, JSON.stringify(buyerData));
 
@@ -1345,7 +1398,7 @@ function buyMainForm(player, barrel, dbKey) {
     };
     const shopData = JSON.parse(rawShopData);
     const form = new ChestFormData('small');
-    form.setTitle([{text: '§2['},{translate: 'barrelshop.action.buy'},{text: `]§r ${shopData.name}`}]);
+    form.setTitle([{ text: '§2[' }, { translate: 'barrelshop.action.buy' }, { text: `]§r ${shopData.name}` }]);
     const itemExistIndex = [];
     for (let i = 0; i < container.size; i++) {
         const item = container.getItem(i);
@@ -1357,6 +1410,18 @@ function buyMainForm(player, barrel, dbKey) {
                     loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
                 };
             };
+
+            if (item.getComponent('durability')?.isValid) {
+                const durabilityComponent = item.getComponent('durability');
+                loreArray.push({ text: `\n\n§9Durability: (${durabilityComponent.maxDurability - durabilityComponent.damage}/${durabilityComponent.maxDurability})§r` })
+            };
+
+            if (item.getRawLore().filter(v => v?.translate != 'item.lore.price')?.length != 0) {
+                loreArray.push(...[{ text: '\n\n§6' }, { translate: 'networkWorld.description' }])
+                for (const line of item.getRawLore().filter(v => v?.translate != 'item.lore.price')) {
+                    loreArray.push(...[{ text: '§r\n' }, line])
+                };
+            }
 
             const price = loreArray.find(v => v?.translate === 'item.lore.price');
             if (price) {
@@ -1387,6 +1452,14 @@ function buyMainForm(player, barrel, dbKey) {
     })
 };
 
+/**
+ * 
+ * @param {Player} player 
+ * @param {Block} barrel 
+ * @param {*} dbKey 
+ * @param {number} index 
+ * @returns 
+ */
 function buyCheckForm(player, barrel, dbKey, index) {
     const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
@@ -1404,6 +1477,18 @@ function buyCheckForm(player, barrel, dbKey, index) {
             loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
         };
     };
+
+    if (item.getComponent('durability')?.isValid) {
+        const durabilityComponent = item.getComponent('durability');
+        loreArray.push({ text: `\n\n§9Durability: (${durabilityComponent.maxDurability - durabilityComponent.damage}/${durabilityComponent.maxDurability})§r` })
+    };
+
+    if (item.getRawLore().filter(v => v?.translate != 'item.lore.price')?.length != 0) {
+        loreArray.push(...[{ text: '\n\n§6' }, { translate: 'networkWorld.description' }])
+        for (const line of item.getRawLore().filter(v => v?.translate != 'item.lore.price')) {
+            loreArray.push(...[{ text: '§r\n' }, line])
+        };
+    }
 
     const price = loreArray.find(v => v?.translate === 'item.lore.price');
     if (price) {
