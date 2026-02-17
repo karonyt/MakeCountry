@@ -47,6 +47,10 @@ world.beforeEvents.entityHurt.subscribe((ev) => {
             ev.cancel = CheckPermissionFromLocation(damageSource.damagingEntity, x, z, hurtEntity.dimension.id, 'playerAttack');
             return;
         } else {
+            if (hurtEntity.typeId == 'mc:core') {
+                return;
+            };
+
             if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
                 return;
             };

@@ -512,7 +512,7 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
         if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
         return;
     };
-    if (brokenBlockPermutation.type.id === `mc:rice_crop` && player.hasTag(`mcjobs_farmer`) && brokenBlockPermutation.getState(`mc:growth_stage`) === 3) {
+    if (player.hasTag(`mcjobs_farmer`) && brokenBlockPermutation.getState(`mc:growth_stage`) === 3) {
         const jobs = new JobLevel(player, "farmer");
         const jobsLevel = jobs.getLevel();
         const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
