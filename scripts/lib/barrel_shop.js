@@ -5,7 +5,7 @@ import { ChestFormData } from './chest-ui.js';
 import { itemIdToPath } from '../texture_config.js';
 import config from '../config.js';
 import { PlayerManager } from '../api/player/player.js';
-import { enchantIdToLang, langChangeItemName } from './util.js';
+import { CheckPermission, enchantIdToLang, langChangeItemName } from './util.js';
 
 system.beforeEvents.startup.subscribe((ev) => {
     ev.blockComponentRegistry.registerCustomComponent('mc:shop_block', {
@@ -27,7 +27,7 @@ system.beforeEvents.startup.subscribe((ev) => {
                     const playerData = JSON.parse(rawPlayerData);
                     playerData.money = (playerData.money || 0) + (barrelShopData.money || 0);
 
-                    if (barrelShopData.mode === 'buyback' && barrelShopData.prepaidMoney) {
+                    if (barrelShopData.prepaidMoney) {
                         playerData.money = (playerData.money || 0) + (barrelShopData.prepaidMoney || 0);
                     }
 
@@ -441,6 +441,16 @@ function changeFundingSourceForm(player, dbKey, isOwner) {
         } else if (rs.selection === 1) {
             newShopData.buybackConfig.fundingSource = 'prepaid';
         } else if (rs.selection === 2) {
+            const playerDB = new DynamicProperties('player');
+            const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
+            if (!playerData.country || playerData.country == 0) {
+                player.sendMessage({ translate: 'cannnot.use.nojoin.country' });
+                return;
+            };
+            if (CheckPermission(player, 'withDrawTreasurybudget')) {
+                player.sendMessage({ translate: 'no.permission' });
+                return;
+            };
             newShopData.buybackConfig.fundingSource = 'treasury';
         }
 
@@ -486,7 +496,7 @@ function setMinTreasuryAmountForm(player, dbKey, isOwner) {
         if (!newRawShopData) return;
 
         const newShopData = JSON.parse(newRawShopData);
-        const minAmount = parseInt(rs.formValues[0]) || 0;
+        const minAmount = Math.max(parseInt(rs.formValues[0]) || 0, 0);
         newShopData.buybackConfig.minTreasuryAmount = minAmount;
 
         barrelShopDB.set(dbKey, JSON.stringify(newShopData));
@@ -1026,7 +1036,7 @@ function processSellToShop(player, barrel, dbKey, buybackItem) {
         const rawCountryData = countryDB.get(`country_${ownerData.country}`);
         if (rawCountryData) {
             const countryData = JSON.parse(rawCountryData);
-            const minAmount = shopData.buybackConfig.minTreasuryAmount || 0;
+            const minAmount = Math.max(shopData.buybackConfig.minTreasuryAmount || 0, 0);
 
             canAfford = (countryData.money - totalPrice) >= minAmount;
             fundSourceKey = 'barrelshop.fundingsource.treasury';
