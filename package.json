@@ -1,0 +1,22 @@
+{
+  "name": "makecountry",
+  "version": "1.0.0",
+  "scripts": {
+    "clean": "rimraf scripts",
+    "build": "tsdown",
+    "start": "pnpm run clean && pnpm run build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@minecraft/server": "catalog:",
+    "@minecraft/server-ui": "catalog:",
+    "@minecraft/server-gametest": "catalog:",
+    "@minecraft/server-net": "catalog:",
+    "@minecraft/server-admin": "catalog:"
+  }
+}

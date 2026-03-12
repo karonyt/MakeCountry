@@ -22,11 +22,31 @@
             "minecraft:loot": "loot_tables/blocks/blacksmith.json",
             "minecraft:map_color": "#000000",
             "minecraft:collision_box": true,
-            "minecraft:geometry": "geometry.blacksmith",
+            "minecraft:geometry": "minecraft:geometry.full_block",
             "minecraft:material_instances": {
-                "*": {
-                    "texture": "blacksmith",
-                    "render_method": "blend"
+                "up": {
+                    "texture": "blacksmith_top",
+                    "render_method": "opaque"
+                },
+                "down": {
+                    "texture": "blacksmith_bottom",
+                    "render_method": "opaque"
+                },
+                "north": {
+                    "texture": "blacksmith_front",
+                    "render_method": "opaque"
+                },
+                "east": {
+                    "texture": "blacksmith_side",
+                    "render_method": "opaque"
+                },
+                "south": {
+                    "texture": "blacksmith_side",
+                    "render_method": "opaque"
+                },
+                "west": {
+                    "texture": "blacksmith_side",
+                    "render_method": "opaque"
                 }
             },
             "minecraft:crafting_table": {

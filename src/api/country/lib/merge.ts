@@ -1,0 +1,113 @@
+/*
+併合関係のfunction
+*/
+
+import { Player } from "@minecraft/server";
+import { DynamicProperties } from "../../dyp.js";
+import { country } from "../../api.js";
+/**@typedef {import("../country").CountryData} CountryData*/
+
+/**
+ * 併合申請を送信
+ * @param {number} countryId 
+ * @param {CountryData} countryData 
+ * @param {number} id 
+ * @param {boolean} isVaildProperty 
+ * @param {DynamicProperties} countryDataBase 
+ * @param {Player|undefined} player 
+ * @returns {boolean}
+ */
+export function sendMergeRequestFunction(countryId: any, countryData: any, id: any, isVaildProperty: any, countryDataBase: any, player = undefined) {
+    if (!isVaildProperty) {
+        console.log(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        return false;
+    };
+    const isCanceled = country.beforeEvents.sendMergeRequest.emit({
+        countryId: id,
+        targetCountryId: countryId,
+        sender: player || undefined,
+        type: player ? 'player' : 'system',
+        cancel: false
+    });
+    if (isCanceled) return false;
+    /**
+     * @type {CountryData}
+     */
+    const targetCountryData = JSON.parse(countryDataBase.get(`country_${countryId}`));
+    let receive = countryData?.mergeRequestReceive ?? [];
+    receive = receive.splice(receive.indexOf(countryData.id), 1);
+    receive.push(countryData.id);
+    targetCountryData.mergeRequestReceive = receive;
+    let send = countryData?.mergeRequestSend ?? [];
+    send = send.splice(send.indexOf(Number(countryId)), 1);
+    send.push(Number(countryId));
+    countryData.mergeRequestSend = send;
+    countryDataBase.set(`country_${countryData.id}`, countryData);
+    countryDataBase.set(`country_${countryId}`, targetCountryData);
+    if (player) {
+        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
+        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `sent.merge.request`, with: [`${targetCountryData.name}`] }] })
+    }
+    country.afterEvents.sendMergeRequest.emit({
+        countryId: id,
+        targetCountryId: countryId,
+        sender: player || undefined,
+        type: player ? 'player' : 'system'
+    });
+    return true;
+};
+
+/**
+ * 併合申請を受諾
+ * @param {number} countryId 
+ * @param {CountryData} countryData 
+ * @param {number} id 
+ * @param {boolean} isVaildProperty 
+ * @param {DynamicProperties} countryDataBase 
+ * @param {Player|undefined} player 
+ * @returns {boolean}
+ */
+/*export function sendMergeRequestFunction(countryId, countryData, id, isVaildProperty, countryDataBase, player = undefined) {
+};*/
+
+/**
+ * 併合申請を拒否
+ * @param {number} countryId 
+ * @param {CountryData} countryData 
+ * @param {number} id 
+ * @param {boolean} isVaildProperty 
+ * @param {DynamicProperties} countryDataBase 
+ * @param {Player|undefined} player 
+ * @returns {boolean}
+ */
+export function denyMergeRequestFunction(countryId: any, countryData: any, id: any, isVaildProperty: any, countryDataBase: any, player = undefined) {
+    if (!isVaildProperty) {
+        console.error(`[MakeCountry CountryManager] The Country ${id} is not vaild.`);
+        return false;
+    };
+    const rawTargetCountryData = countryDataBase.get(`country_${countryId}`);
+    if (!rawTargetCountryData) {
+        console.error(`[MakeCountry CountryManager] The Country ${countryId} is not vaild.`);
+        return false;
+    };
+
+    /**
+     * @type {CountryData}
+     */
+    const targetCountryData = JSON.parse(rawTargetCountryData);
+    // @ts-ignore TS(2304): Cannot find name 'playerData'.
+    const send = countryData?.mergeRequestSend ? countryData.mergeRequestSend.splice(countryData.mergeRequestSend.indexOf(playerData.country), 1) : [];
+    const receive = countryData?.mergeRequestReceive ? countryData.mergeRequestReceive.splice(countryData.mergeRequestReceive.indexOf(Number(id)), 1) : [];
+    targetCountryData.mergeRequestSend = send;
+    countryData.mergeRequestReceive = receive;
+
+    countryDataBase.set(`country_${id}`, countryData);
+    countryDataBase.set(`country_${countryId}`, targetCountryData);
+
+    if (player) {
+        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
+        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `deny.merge.request`, with: [`${countryData.name}`] }] })
+    };
+
+    return true;
+};

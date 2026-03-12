@@ -1,0 +1,65 @@
+import "./commands/money.js";
+import "./commands/sc.js";
+import "./commands/leavecountry.js";
+import "./commands/menu.js";
+import "./commands/cl.js";
+import "./commands/jc.js";
+import "./commands/mc.js";
+import "./commands/checkchunk.js";
+import "./commands/sendmoney.js";
+import "./commands/sethome.js";
+import "./commands/setup.js";
+import "./commands/home.js";
+import "./commands/homelist.js";
+import "./commands/deletehome.js";
+import "./commands/adminchunk.js";
+import "./commands/resetchunk.js";
+import "./commands/buychunk.js";
+import "./commands/playermarket.js";
+import "./commands/tpa.js";
+import "./commands/sellchunk.js";
+import "./commands/shop.js";
+import "./commands/jobs.js";
+import "./commands/kill.js";
+import "./commands/chome.js";
+import "./commands/fixcamera.js";
+import "./commands/invade.js";
+import "./commands/map.js";
+import "./commands/alliancechat.js";
+import "./commands/localchat.js";
+import "./commands/generalchat.js";
+import "./commands/countrychat.js";
+import "./commands/plot.js";
+import "./commands/cr.js";
+import "./commands/al.js";
+import "./commands/fl.js";
+import "./commands/friendlychat.js";
+import "./commands/price.js";
+import "./commands/clearprice.js";
+
+import "./commands/itemid.js";
+import "./commands/playtime.js";
+import "./commands/checkuserid.js";
+import "./commands/xptobottle.js";
+import "./commands/jobrank.js";
+import "./commands/checkbiome.js";
+
+import "./commands/spawn.js";
+
+import "./commands/taxtime.js";
+import "./commands/deletecountry.js";
+import "./commands/playercount.js";
+import "./commands/fixcountrydata.js";
+import "./commands/updaterank.js";
+import "./commands/nationaltierlevel.js";
+import "./commands/addcompefromitemstack.js";
+import "./commands/addcompefromitemstackselector.js";
+import "./commands/compensation.js";
+import "./commands/joblevel.js";
+
+import "./commands/ping.js";
+
+import "./commands/knw.js";
+import "./commands/marriage.js";
+import "./commands/spousetp.js";
+import "./commands/bounty.js";
