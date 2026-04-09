@@ -345,6 +345,26 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
         if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
         return;
     };
+    if (brokenBlockPermutation.type.id === `minecraft:nether_wart` && player.hasTag(`mcjobs_netherdigger`)) {
+        const jobs = new JobLevel(player, "netherdigger");
+        const jobsLevel = jobs.getLevel();
+        const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
+
+        const finalReward = applyDailyLimit(
+            playerData,
+            "netherdigger",
+            random,
+            jobs_config.dailyLimit.netherdigger
+        );
+
+        if (finalReward <= 0) return;
+
+        jobs.addXp(jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger'));
+        playerData.money += finalReward;
+        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        return;
+    };
 
     //鉱夫
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
