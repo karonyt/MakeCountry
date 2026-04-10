@@ -345,7 +345,7 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
         if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
         return;
     };
-    if (brokenBlockPermutation.type.id === (`minecraft:nether_wart`, {"age": 3 }) && player.hasTag(`mcjobs_netherdigger`)) {
+    if (brokenBlockPermutation.type.id === `minecraft:nether_wart` && player.hasTag(`mcjobs_netherdigger`) && brokenBlockPermutation.getState("age") === 3) {
         const jobs = new JobLevel(player, "netherdigger");
         const jobsLevel = jobs.getLevel();
         const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
