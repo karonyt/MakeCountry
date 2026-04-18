@@ -206,6 +206,24 @@ export const FurnaceRecipes = {
         baseXp: 45
     },
 
+    "cropputter": {
+        name: "mc:cropputter",
+        result: "mc:cropputter",
+        requiredLevel: 16,
+        baseActions: 25,
+        needTemperature: [1200, 1500],
+        ingredients: {
+            "mc:aluminum": 5,
+            "mc:polyethylene_pellet": 2,
+            "minecraft:blaze_powder": 1,
+        },
+        additives: {
+            "minecraft:redstone": 2
+        },
+        maxAdditives: 2,
+        baseMoney: 75,
+        baseXp: 45
+    },
 
     "titanium_alloy": {
         name: "mc:titanium_alloy",
