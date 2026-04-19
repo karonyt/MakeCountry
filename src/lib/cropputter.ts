@@ -62,21 +62,21 @@ world.afterEvents.entityHitBlock.subscribe((ev) => {
     for (let dx = -1; dx <= 1; dx++) {
         for (let dz = -1; dz <= 1; dz++) {
             const target = {
-                px: x + dx,
-                py: y,
-                pz: z + dz
+                x: x + dx,
+                y: y,
+                z: z + dz
             };
-            let soilid = dim.getBlock({x: target.px, y: y, z: target.pz})
+            let soilid = dim.getBlock({x: target.x, y: y, z: target.z})
             if (!soilid || soilid.typeId !== "minecraft:farmland")
             continue;
-            const above = dim.getBlock({x: target.px, y: y+1, z: target.pz});
+            const above = dim.getBlock({x: target.x, y: y+1, z: target.z});
             if (!above || above.typeId !== "minecraft:air") continue;
             if (mainhand.amount <= used)
             continue
         const placeBlock = dim.getBlock({
-            x: target.px,
-            y: target.py + 1,
-            z: target.pz
+            x: target.x,
+            y: target.y + 1,
+            z: target.z
         });
 
         if (placeBlock) {
@@ -87,14 +87,14 @@ world.afterEvents.entityHitBlock.subscribe((ev) => {
     }
     player.runCommandAsync(`clear @s ${mainhand.typeId} 0 ${used}`)
 
-    const durability = mainhand.getComponent("durability");
+    const durability = offhand.getComponent("durability");
 
 if (durability) {
     durability.damage += 1;
 
     if (durability.damage >= durability.maxDurability) {
         const equip = player.getComponent("equippable");
-        equip.setEquipment("mainhand", undefined);
+        equip.setEquipment("offhand", undefined);
     }
 }
 )}
