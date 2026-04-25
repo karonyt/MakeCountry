@@ -2,19 +2,17 @@ import {
     world
 } from "@minecraft/server";
 
-world.afterEvents.entityHitBlock.subscribe((ev) => {
-    const player = ev.damagingEntity;
-    const putblock = ev.hitBlock
+world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
+    const player = ev.player;
+    const putblock = ev.block
     const dim = player.dimension
-    const loc = ev.hitBlock.location
+    const loc = ev.block.location
+    const mainhand = ev.itemStack
     const x = loc.x;
     const y = loc.y;
     const z = loc.z;
-    const equip = player.getComponent("equippable")
-    const mainhand = 
-    equip.getEquipment("mainhand");
-    const offhand = 
-    equip.getEquipment("offhand");
+    const equip = player.getComponent("equippable");
+    const offhand = equip.getEquipment("offhand");
     if (!offhand || offhand.typeId !== "mc:cropputter") return;
     const puttablecrop = [
         "minecraft:wheat_seeds",
@@ -73,15 +71,7 @@ world.afterEvents.entityHitBlock.subscribe((ev) => {
             if (!above || above.typeId !== "minecraft:air") continue;
             if (mainhand.amount <= used)
             continue
-        const placeBlock = dim.getBlock({
-            x: target.x,
-            y: target.y + 1,
-            z: target.z
-        });
-
-        if (placeBlock) {
-            placeBlock.setType(cropset);
-        }
+        player.runCommandAsync(`setblock ${above.location.x} ${above.location.y} ${above.location.z} ${cropset}`)
         used++
         }
     }
