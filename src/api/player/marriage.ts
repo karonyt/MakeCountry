@@ -10,6 +10,7 @@ import { playerMainMenuDefaultForm } from "../../forms/default/menu/player_main_
  */
 
 const marriageBankDB = new DynamicProperties("marriagebank");
+const marriageHomeDB = new DynamicProperties("marriagehome");
 
 function createDefaultMarriageData() {
     return {
@@ -26,6 +27,50 @@ function createDefaultMarriageData() {
  */
 function getMarriageBankKey(playerId: any, spouseId: any) {
     return `wallet_${[playerId, spouseId].sort().join("_")}`;
+}
+
+/**
+ * @param {string} playerId
+ * @param {string} spouseId
+ * @returns {string}
+ */
+function getMarriageHomeKey(playerId: any, spouseId: any) {
+    return `home_${[playerId, spouseId].sort().join("_")}`;
+}
+
+/**
+ * @param {string} playerId
+ * @param {string} spouseId
+ */
+function getMarriageHome(playerId: any, spouseId: any) {
+    const raw = marriageHomeDB.get(getMarriageHomeKey(playerId, spouseId));
+    if (!raw) return undefined;
+    try {
+        const data = JSON.parse(raw);
+        if (!data || typeof data.x !== "number" || typeof data.y !== "number" || typeof data.z !== "number" || typeof data.dimension !== "string") {
+            return undefined;
+        }
+        return data;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * @param {string} playerId
+ * @param {string} spouseId
+ * @param {{ x: number, y: number, z: number, dimension: string, setBy: string, setAt: number }} homeData
+ */
+function setMarriageHome(playerId: any, spouseId: any, homeData: any) {
+    marriageHomeDB.set(getMarriageHomeKey(playerId, spouseId), JSON.stringify(homeData));
+}
+
+/**
+ * @param {string} playerId
+ * @param {string} spouseId
+ */
+function clearMarriageHome(playerId: any, spouseId: any) {
+    marriageHomeDB.delete(getMarriageHomeKey(playerId, spouseId));
 }
 
 /**
@@ -156,6 +201,28 @@ function canTeleportLikeTpa(sender: any, target: any) {
 /**
  * @param {Player} sender
  */
+function canUseMarriageHomeTeleport(sender: any) {
+    if (!config.tpaValidity) {
+        sender.sendMessage({ translate: "command.error.tpa.novalidity" });
+        return false;
+    }
+    if (sender.hasTag("mc_notp")) {
+        return false;
+    }
+    if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
+        sender.sendMessage({ translate: "teleport.error.combattag" });
+        return false;
+    }
+    if (config.invaderNoTeleportValidity && sender.getTags().some((tag: any) => tag.startsWith("war"))) {
+        sender.sendMessage({ translate: "teleport.error.invader" });
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @param {Player} sender
+ */
 export function teleportToSpouse(sender: any) {
     const senderData = getPlayerData(sender);
     const spouseId = senderData?.marriage?.spouseId;
@@ -177,6 +244,65 @@ export function teleportToSpouse(sender: any) {
 
     sender.teleport(spouse.location, { dimension: spouse.dimension });
     sender.sendMessage({ translate: "marriage.teleport.success", with: [spouse.name] });
+    return true;
+}
+
+/**
+ * @param {Player} player
+ */
+export function setMarriageHomeAtCurrentLocation(player: any) {
+    const playerData = getPlayerData(player);
+    const spouseId = playerData?.marriage?.spouseId;
+    if (!playerData || !spouseId) {
+        player.sendMessage({ translate: "marriage.error.not_married" });
+        return false;
+    }
+
+    const homeData = {
+        x: player.location.x,
+        y: player.location.y,
+        z: player.location.z,
+        dimension: player.dimension.id,
+        setBy: player.name,
+        setAt: Date.now(),
+    };
+    setMarriageHome(player.id, spouseId, homeData);
+
+    const dimName = homeData.dimension.replace("minecraft:", "");
+    const posText = `${Math.floor(homeData.x)} ${Math.floor(homeData.y)} ${Math.floor(homeData.z)} (${dimName})`;
+    player.sendMessage({ translate: "marriage.home.set.success.self", with: [posText] });
+
+    const spouseName = getPlayerNameById(spouseId);
+    const spouse = spouseName !== "Unknown" ? world.getPlayers({ name: spouseName })[0] : undefined;
+    spouse?.sendMessage({ translate: "marriage.home.set.success.partner", with: [player.name, posText] });
+    return true;
+}
+
+/**
+ * @param {Player} player
+ */
+export function teleportToMarriageHome(player: any) {
+    const playerData = getPlayerData(player);
+    const spouseId = playerData?.marriage?.spouseId;
+    if (!playerData || !spouseId) {
+        player.sendMessage({ translate: "marriage.error.not_married" });
+        return false;
+    }
+    if (!canUseMarriageHomeTeleport(player)) {
+        return false;
+    }
+
+    const homeData = getMarriageHome(player.id, spouseId);
+    if (!homeData) {
+        player.sendMessage({ translate: "marriage.home.error.not_set" });
+        return false;
+    }
+
+    player.teleport(
+        { x: homeData.x, y: homeData.y, z: homeData.z },
+        { dimension: world.getDimension(homeData.dimension) }
+    );
+    player.sendMessage({ translate: "marriage.home.teleport.success" });
     return true;
 }
 
@@ -328,6 +454,12 @@ export function acceptMarriageRequest(player: any, requesterId: any, silent = fa
 
     const requester = world.getPlayers({ name: requesterData.name })[0];
     requester?.sendMessage({ translate: "marriage.request.accepted.self", with: [player.name] });
+    world.sendMessage({
+        rawtext: [
+            { text: "§a[MakeCountry]\n§r" },
+            { translate: "marriage.notify.world", with: [player.name, requesterData.name] }
+        ]
+    });
     return true;
 }
 
@@ -385,6 +517,7 @@ export function divorce(player: any) {
     }
 
     marriageBankDB.delete(getMarriageBankKey(player.id, spouseId));
+    clearMarriageHome(player.id, spouseId);
 
     player.sendMessage({ translate: "marriage.divorce.self", with: [`${config.MoneyName} ${shareA}`] });
     const spouse = spouseData ? world.getPlayers({ name: spouseData.name })[0] : undefined;
@@ -639,6 +772,52 @@ function showDivorceConfirmForm(player: any) {
 /**
  * @param {Player} player
  */
+function showMarriageHomeForm(player: any) {
+    const playerData = getPlayerData(player);
+    const spouseId = playerData?.marriage?.spouseId;
+    if (!playerData || !spouseId) {
+        player.sendMessage({ translate: "marriage.error.not_married" });
+        return showMarriageMainForm(player);
+    }
+
+    const homeData = getMarriageHome(player.id, spouseId);
+    const form = new ActionFormData()
+        .title({ translate: "marriage.home.title" })
+        .button({ translate: "marriage.home.button.set" })
+        .button({ translate: "marriage.home.button.teleport" })
+        .button({ translate: "mc.button.back" });
+
+    if (homeData) {
+        const dimName = homeData.dimension.replace("minecraft:", "");
+        const posText = `${Math.floor(homeData.x)} ${Math.floor(homeData.y)} ${Math.floor(homeData.z)} (${dimName})`;
+        form.body({ translate: "marriage.home.body.with_home", with: [posText] });
+    } else {
+        form.body({ translate: "marriage.home.body.no_home" });
+    }
+
+    form.show(player).then((rs: any) => {
+        if (rs.canceled) {
+            if (rs.cancelationReason === FormCancelationReason.UserBusy) {
+                return showMarriageHomeForm(player);
+            }
+            return;
+        }
+
+        if (rs.selection === 0) {
+            setMarriageHomeAtCurrentLocation(player);
+            return showMarriageHomeForm(player);
+        }
+        if (rs.selection === 1) {
+            teleportToMarriageHome(player);
+            return showMarriageHomeForm(player);
+        }
+        showMarriageMainForm(player);
+    });
+}
+
+/**
+ * @param {Player} player
+ */
 export function showMarriageMainForm(player: any) {
     const playerData = getPlayerData(player);
     if (!playerData) {
@@ -663,6 +842,7 @@ export function showMarriageMainForm(player: any) {
     if (married) {
         form.button({ translate: "marriage.button.wallet" });
         form.button({ translate: "marriage.button.teleport" });
+        form.button({ translate: "marriage.button.home" });
         form.button({ translate: "marriage.button.divorce" });
     } else {
         form.button({ translate: "marriage.button.send_request" });
@@ -688,6 +868,9 @@ export function showMarriageMainForm(player: any) {
                 return showMarriageMainForm(player);
             }
             if (rs.selection === 2) {
+                return showMarriageHomeForm(player);
+            }
+            if (rs.selection === 3) {
                 return showDivorceConfirmForm(player);
             }
             return playerMainMenuDefaultForm(player);
