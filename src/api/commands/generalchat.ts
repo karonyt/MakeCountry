@@ -39,20 +39,6 @@ system.beforeEvents.startup.subscribe((event) => {
 
     event.customCommandRegistry.registerCommand(
         {
-            name: 'makecountry:gc',
-            description: 'command.help.generalchat.message',
-            permissionLevel: CommandPermissionLevel.Any
-        },
-        // @ts-ignore TS(2345): Argument of type '(origin: CustomCommandOrigin, ..... Remove this comment to see the full error message
-        ((origin, ...args) => {
-            system.runTimeout(() => {
-                generalChatExecuter(origin, args)
-            })
-        })
-    )
-
-    event.customCommandRegistry.registerCommand(
-        {
             name: 'makecountry:generalchatcommand ',
             description: 'command.help.generalchat.message',
             permissionLevel: CommandPermissionLevel.Any
