@@ -40,7 +40,7 @@ export function plotGroupPlayerSelectedShowDefaultForm(player: any, targetData: 
                     return;
                 };
                 if (!plotGroupData?.players) plotGroupData.players = [];
-                plotGroupData.players.filter((d: any) => d.id != targetData.id);
+                plotGroupData.players = plotGroupData.players.filter((d: any) => d.id != targetData.id);
                 plotGroupManager.set(plotGroupId, plotGroupData);
                 plotGroupEditPlayersListDefaultForm(player, plotGroupId, isPlotAdmin);
                 break;

@@ -1,6 +1,7 @@
 import { Player, world } from "@minecraft/server";
 import { DynamicProperties } from "../dyp.js";
 import { CountryManager } from "./country.js";
+import { PlotGroupData } from "@/jsdoc/plot.js";
 /**@typedef {import("../../jsdoc/plot").PlotTypes} PlotTypes*/
 /**@typedef {import("../../jsdoc/plot").PlotGroupData} PlotGroupData*/
 /**@typedef {import("../../jsdoc/player").PlayerData} PlayerData*/
@@ -89,10 +90,10 @@ export class PlotGroupManager {
      * @param {number} plotGroupId 
      * @returns {PlotGroupData|undefined}
      */
-    get(plotGroupId: any) {
+    get(plotGroupId: number) {
         const rawPlotGroupData = this.plotGroupDataBase.get(`plotgroup_${plotGroupId}`);
         if (!rawPlotGroupData) return undefined;
-        const plotGroupData = JSON.parse(rawPlotGroupData);
+        const plotGroupData: PlotGroupData = JSON.parse(rawPlotGroupData);
         return plotGroupData
     }
 
