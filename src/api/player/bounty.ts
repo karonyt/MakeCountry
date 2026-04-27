@@ -242,6 +242,12 @@ export function placeBounty(setter: any, target: any, amount: any) {
 
     setter.sendMessage({ translate: "bounty.place.success.setter", with: [`${config.MoneyName} ${amount}`, target.name] });
     target.sendMessage({ translate: "bounty.place.success.target", with: [`${config.MoneyName} ${amount}`] });
+    world.sendMessage({
+        rawtext: [
+            { text: "§a[MakeCountry]\n§r" },
+            { translate: "bounty.notify.world", with: [setter.name, `${config.MoneyName} ${amount}`, target.name] }
+        ]
+    });
     return true;
 }
 
