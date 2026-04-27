@@ -8,6 +8,7 @@ import { RewardBuff } from "../../../api/rewardbuff.js";
 import { getRandomInteger, langChangeItemName } from "../../../lib/util.js";
 import { DynamicProperties } from "../../../api/dyp.js";
 import { applyDailyLimit } from "../../../lib/jobs.js";
+import { createResultStacks, resolveRecipeResult } from "../../../lib/recipe_result.js";
 import { ModalFormData } from "@minecraft/server-ui";
 import config from "../../../config.js";
 
@@ -697,9 +698,10 @@ export function openDeepStewRecipeSelect(player: any, page = 0) {
 function openQuantitySelect(player: any, recipeId: any) {
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = DeepStewRecipes[recipeId];
+    const result = resolveRecipeResult(recipe.result).id;
     const form = new ModalFormData()
         .title({ translate: 'cooking.title.amount' })
-        .slider({ translate: 'cooking.status.amount' }, 1, new ItemStack(recipe.result).maxAmount, { valueStep: 1, defaultValue: 1 });
+        .slider({ translate: 'cooking.status.amount' }, 1, new ItemStack(result).maxAmount, { valueStep: 1, defaultValue: 1 });
 
     form.show(player).then(r => {
         if (r.canceled) return;
@@ -1018,21 +1020,26 @@ function finish(player: any) {
 
     const { rank, mul } = calcRank(pot, recipe);
 
-    const item = new ItemStack(
-        rank === "F" && pot.phase === "burned"
-            ? "minecraft:charcoal"
-            : recipe.result,
-        pot.quantity
-    );
+    const resolved = resolveRecipeResult(recipe.result);
+    const isFailure = rank === "F" && pot.phase === "burned";
+    const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
+    const totalCount = isFailure ? pot.quantity : pot.quantity * resolved.count;
+    const inv = player.getComponent("inventory").container;
 
-    item.setLore([
-        { rawtext: [{ text: '§r§3==============' }] },
-        { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
-        { rawtext: [{ text: '§r§d' }, { translate: "cooking.deep_pot.specialty" }] },
-        { rawtext: [{ text: '§r§3==============' }] },
-    ]);
+    for (const item of createResultStacks(itemId, totalCount)) {
+        item.setLore([
+            { rawtext: [{ text: '§r§3==============' }] },
+            { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
+            { rawtext: [{ text: '§r§d' }, { translate: "cooking.deep_pot.specialty" }] },
+            { rawtext: [{ text: '§r§3==============' }] },
+        ]);
 
-    player.getComponent("inventory").container.addItem(item);
+        const leftover = inv.addItem(item);
+        if (leftover) {
+            player.dimension.spawnItem(leftover, player.location);
+        }
+    }
+
     deepPotSessions.delete(player.id);
 
     player.stopSound('cooking.deep_idle');

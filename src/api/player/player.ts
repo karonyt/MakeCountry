@@ -70,6 +70,10 @@ export class PlayerManager {
                 spouseId: undefined,
                 since: undefined,
                 requests: [],
+            },
+            groupChat: {
+                currentOwnerId: undefined,
+                ownedGroup: undefined,
             }
         };
     }

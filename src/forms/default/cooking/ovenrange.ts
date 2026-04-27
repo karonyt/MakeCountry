@@ -8,6 +8,7 @@ import { RewardBuff } from "../../../api/rewardbuff.js";
 import { getRandomInteger, langChangeItemName } from "../../../lib/util.js";
 import { DynamicProperties } from "../../../api/dyp.js";
 import { applyDailyLimit } from "../../../lib/jobs.js";
+import { createResultStacks, resolveRecipeResult } from "../../../lib/recipe_result.js";
 import { ModalFormData } from "@minecraft/server-ui";
 import config from "../../../config.js";
 
@@ -538,9 +539,10 @@ export function openRecipeSelect(player: any, page = 0) {
 function openQuantitySelect(player: any, recipeId: any) {
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = OvenRecipes[recipeId];
+    const result = resolveRecipeResult(recipe.result).id;
     const form = new ModalFormData()
         .title({ translate: 'cooking.title.amount' })
-        .slider({ translate: 'cooking.status.amount' }, 1, new ItemStack(recipe.result).maxAmount, { valueStep: 1, defaultValue: 1 });
+        .slider({ translate: 'cooking.status.amount' }, 1, new ItemStack(result).maxAmount, { valueStep: 1, defaultValue: 1 });
 
     form.show(player).then(r => {
         if (r.canceled) return;
@@ -853,20 +855,25 @@ function finish(player: any) {
 
     const { rank, mul } = calcRank(oven, recipe);
 
-    const item = new ItemStack(
-        rank === "F" && oven.phase === "burned"
-            ? "minecraft:charcoal"
-            : recipe.result,
-        oven.quantity
-    );
+    const resolved = resolveRecipeResult(recipe.result);
+    const isFailure = rank === "F" && oven.phase === "burned";
+    const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
+    const totalCount = isFailure ? oven.quantity : oven.quantity * resolved.count;
+    const inv = player.getComponent("inventory").container;
 
-    item.setLore([
-        { rawtext: [{ text: '§r§a==============' }] },
-        { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
-        { rawtext: [{ text: '§r§a==============' }] },
-    ]);
+    for (const item of createResultStacks(itemId, totalCount)) {
+        item.setLore([
+            { rawtext: [{ text: '§r§a==============' }] },
+            { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
+            { rawtext: [{ text: '§r§a==============' }] },
+        ]);
 
-    player.getComponent("inventory").container.addItem(item);
+        const leftover = inv.addItem(item);
+        if (leftover) {
+            player.dimension.spawnItem(leftover, player.location);
+        }
+    }
+
     ovenSessions.delete(player.id);
 
     player.stopSound('cooking.oven_idle');

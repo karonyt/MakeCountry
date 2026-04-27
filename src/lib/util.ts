@@ -36,7 +36,7 @@ export function GetPlayerChunkPropertyId(player: any) {
  * @param {DynamicProperties} database 
  * @returns {any|undefined}
  */
-export function GetAndParsePropertyData(id: any, database = undefined) {
+export function GetAndParsePropertyData(id: string, database?: DynamicProperties): any | undefined {
     if (!database) {
         if (id.includes('_')) {
             const database = new DynamicProperties(id.split('_')[0]);

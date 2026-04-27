@@ -7,6 +7,7 @@ import { DynamicProperties } from "../api/dyp.js";
 import config from "../config.js";
 import { ensureMarriageData } from "../api/player/marriage.js";
 import { ensureBountyData } from "../api/player/bounty.js";
+import { ensureGroupChatData } from "../api/player/group_chat.js";
 
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
     if (ev.sourceType !== ScriptEventSource.Entity || !(ev.sourceEntity instanceof Player)) return;
@@ -80,12 +81,17 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
                     spouseId: undefined,
                     since: undefined,
                     requests: [],
+                },
+                groupChat: {
+                    currentOwnerId: undefined,
+                    ownedGroup: undefined,
                 }
             };
 
             const playerDataBase = new DynamicProperties('player');
             ensureMarriageData(newPlayerData);
             ensureBountyData(newPlayerData);
+            ensureGroupChatData(newPlayerData);
             playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
 
             break;

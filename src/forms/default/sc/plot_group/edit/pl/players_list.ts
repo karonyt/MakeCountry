@@ -6,14 +6,14 @@ import { PlotGroupManager } from "../../../../../../api/country/plotgroup.js";
 import { playerAddPlotGroupDefaultForm } from "./add/player_add.js";
 import { plotGroupPlayerSelectedShowDefaultForm } from "./show/plot_group_player_selected_show.js";
 import { plotGroupEditMainPlotOwnerDefaultForm } from "../edit_main_owner.js";
-/**@typedef {import("../../../../../../jsdoc/player").PlayerData} PlayerData*/
+import { PlayerData } from "@/jsdoc/player.js";
 
 /**
  * @param {Player} player 
  * @param {number} plotGroupId 
  * @param {boolean} isisPlotAdmin 
  */
-export function plotGroupEditPlayersListDefaultForm(player: any, plotGroupId: any, isPlotAdmin = false) {
+export function plotGroupEditPlayersListDefaultForm(player: Player, plotGroupId: any, isPlotAdmin = false) {
     const playerDataBase = new DynamicProperties('player');
     // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
     const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
@@ -30,18 +30,15 @@ export function plotGroupEditPlayersListDefaultForm(player: any, plotGroupId: an
     /**
      * @type {Array<PlayerData>}
      */
-    const players: any = [];
+    const players: PlayerData[] = [];
     for (const playerRawData of plotGroupData.players) {
-        const rawP = playerDataBase.get(`player_${playerRawData}`);
+        const rawP = playerDataBase.get(`player_${playerRawData.id}`);
         if(!rawP) continue;
-        /**
-         * @type {PlayerData}
-         */
-        const p = JSON.parse(rawP);
+        const p: PlayerData = JSON.parse(rawP);
         players.push(p);
         form.button(`${p?.name}\n${p?.id}`);
     };
-    form.show(player).then(rs => {
+    form.show(player as any).then(rs => {
         if (rs.canceled) {
             if (isPlotAdmin) {
                 plotGroupEditMainPlotAdminDefaultForm(player, plotGroupId);

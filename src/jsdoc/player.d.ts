@@ -8,6 +8,17 @@ export interface MarriageData {
     requests: Array<string>;
 }
 
+export interface OwnedGroupChatData {
+    name: string;
+    memberIds: Array<string>;
+    createdAt: number;
+}
+
+export interface GroupChatData {
+    currentOwnerId?: string;
+    ownedGroup?: OwnedGroupChatData;
+}
+
 export interface PlayerData {
     id: string;
     name: string;
@@ -22,4 +33,5 @@ export interface PlayerData {
     invite: Array<number>;
     settings: PlayerSetting;
     marriage: MarriageData;
+    groupChat: GroupChatData;
 }

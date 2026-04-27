@@ -468,8 +468,36 @@ function takeAllItem(player: any, bp: any, data: any, meta: any, entry: any) {
 }
 
 function takeItem(player: any, bp: any, data: any, meta: any, entry: any) {
-    takeItemAmount(player, entry, createItemStackFromData(entry.data, 1).maxAmount);
-    reopenBackpackList(player, 0, "", "single");
+    const addable = getAddableAmount(player, entry.data);
+    const maxTake = Math.min(entry.count, addable);
+
+    if (maxTake <= 0) {
+        player.sendMessage({ translate: 'backpack.error.notenough.inventory' });
+        reopenBackpackList(player, 0, "", "single");
+        return;
+    }
+
+    if (maxTake === 1) {
+        takeItemAmount(player, entry, 1);
+        reopenBackpackList(player, 0, "", "single");
+        return;
+    }
+
+    const maxStack = createItemStackFromData(entry.data, 1).maxAmount;
+    const modal = new ModalFormData()
+        .title({ translate: 'backpack.slider.take' })
+        .slider({ translate: 'backpack.slider.amount' }, 1, maxTake, { valueStep: 1, defaultValue: Math.min(maxStack, maxTake) });
+
+    modal.show(player).then(r => {
+        if (r.canceled) {
+            reopenBackpackList(player, 0, "", "single");
+            return;
+        }
+        // @ts-ignore TS(2532): Object is possibly 'undefined'.
+        const amount = r.formValues[0];
+        takeItemAmount(player, entry, amount);
+        reopenBackpackList(player, 0, "", "single");
+    });
 }
 
 function containerToData(item: any) {
@@ -587,7 +615,7 @@ function storeMatchingItems(player: any, selectedSlot: any) {
     return true;
 }
 
-function storeSingleItem(player: any, selectedSlot: any) {
+function storeItemAmount(player: any, selectedSlot: any, amount: any) {
     const current = getCurrentBackpack(player);
     if (!current) {
         player.sendMessage({ translate: 'backpack.error.notfound' });
@@ -601,7 +629,8 @@ function storeSingleItem(player: any, selectedSlot: any) {
     const item = inv.getItem(selectedSlot);
     if (!item) return false;
 
-    if (meta.total + item.amount > cap.maxTotal) {
+    const storeAmount = Math.min(amount, item.amount);
+    if (meta.total + storeAmount > cap.maxTotal) {
         player.sendMessage({ translate: 'backpack.error.full' });
         return false;
     }
@@ -624,14 +653,50 @@ function storeSingleItem(player: any, selectedSlot: any) {
         data.push(entry);
     }
 
-    entry.count += item.amount;
-    meta.total += item.amount;
-    inv.setItem(selectedSlot, undefined);
+    entry.count += storeAmount;
+    meta.total += storeAmount;
+
+    if (storeAmount >= item.amount) {
+        inv.setItem(selectedSlot, undefined);
+    } else {
+        item.amount -= storeAmount;
+        inv.setItem(selectedSlot, item);
+    }
 
     saveSplit(bp, "bp:data", data);
     saveSplit(bp, "bp:meta", meta);
     inv.setItem(slot, bp);
     return true;
+}
+
+function openStoreAmountUI(player: any, invIndex: any) {
+    const inv = player.getComponent("inventory").container;
+    const item = inv.getItem(invIndex);
+    if (!item) {
+        reopenBackpackStore(player, "single");
+        return;
+    }
+
+    if (item.amount === 1) {
+        storeItemAmount(player, invIndex, 1);
+        reopenBackpackStore(player, "single");
+        return;
+    }
+
+    const modal = new ModalFormData()
+        .title({ translate: 'backpack.slider.store' })
+        .slider({ translate: 'backpack.slider.amount' }, 1, item.amount, { valueStep: 1, defaultValue: item.amount });
+
+    modal.show(player).then(r => {
+        if (r.canceled) {
+            reopenBackpackStore(player, "single");
+            return;
+        }
+        // @ts-ignore TS(2532): Object is possibly 'undefined'.
+        const amount = r.formValues[0];
+        storeItemAmount(player, invIndex, amount);
+        reopenBackpackStore(player, "single");
+    });
 }
 
 function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single") {
@@ -699,7 +764,6 @@ function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single"
             return;
         }
 
-        storeSingleItem(player, invIndex);
-        reopenBackpackStore(player, "single");
+        openStoreAmountUI(player, invIndex);
     });
 }

@@ -365,6 +365,117 @@ export function DeleteCountry(countryId: any) {
 }
 
 /**
+ * 国を完全削除（再入可能・同時削除耐性あり）
+ * @param {string|number} countryId
+ */
+export function DeleteCountryOnMerge(countryId: any) {
+    const cid = String(countryId);
+
+    const countryDB = new DynamicProperties("country");
+    const playerDB = new DynamicProperties("player");
+    const roleDB = new DynamicProperties("role");
+    const chunkDB = new DynamicProperties("chunk");
+    const plotDB = new DynamicProperties("plotgroup");
+
+    const raw = countryDB.get(`country_${cid}`);
+    if (!raw) return; // 既に消えてるなら何もしない
+
+    let del_country;
+    try {
+        del_country = JSON.parse(raw);
+    } catch {
+        // 壊れてるなら即消す
+        countryDB.delete(`country_${cid}`);
+        return;
+    }
+
+    // ===== 削除ロック =====
+    if (del_country.deleting === true) return;
+    del_country.deleting = true;
+    countryDB.set(`country_${cid}`, JSON.stringify(del_country));
+
+    const countryName = del_country.name;
+
+    // ===== before event =====
+    const cancel = country.beforeEvents?.delete?.emit?.({
+        countryId: cid,
+        countryName,
+        type: "delete",
+        cancel: false
+    });
+    if (cancel) {
+        delete del_country.deleting;
+        countryDB.set(`country_${cid}`, JSON.stringify(del_country));
+        return;
+    }
+
+    // ===== チャンク削除 =====
+    try {
+        for (const id of chunkDB.idList) {
+            const rawChunk = chunkDB.get(id);
+            if (!rawChunk) continue;
+            const chunk = JSON.parse(rawChunk);
+            if (String(chunk.countryId) === cid) {
+                chunkDB.delete(id);
+            }
+        }
+    } catch (e) {
+        console.error("[DeleteCountry] chunk cleanup failed", e);
+    }
+
+    // ===== ロール削除 =====
+    for (const rid of del_country.roles ?? []) {
+        try {
+            roleDB.delete(`role_${rid}`);
+        } catch (e) {
+            console.error("[DeleteCountry] role delete failed", rid, e);
+        }
+    }
+
+    // ===== プロットグループ削除 =====
+    for (const gid of del_country.plotgroup ?? []) {
+        try {
+            plotDB.delete(`plotgroup_${gid}`);
+        } catch (e) {
+            console.error("[DeleteCountry] plotgroup delete failed", gid, e);
+        }
+    }
+
+    // ===== 他国との関係解除 =====
+    cleanupRelationsDelete(countryDB, cid, [
+        "alliance",
+        "hostility",
+        "friendly",
+        "warNowCountries",
+        "declarationSend",
+        "declarationReceive",
+        "mergeRequestSend",
+        "mergeRequestReceive",
+        "friendlyRequestSend",
+        "friendlyRequestReceive",
+        "applicationPeaceRequestSend",
+        "applicationPeaceRequestReceive"
+    ]);
+
+    // ===== 本体削除 =====
+    countryDB.delete(`country_${cid}`);
+
+    // ===== after event =====
+    country.afterEvents?.delete?.emit?.({
+        countryId: cid,
+        countryName,
+        type: "delete"
+    });
+
+    world.sendMessage({
+        rawtext: [
+            { text: "§a[MakeCountry]\n" },
+            { translate: "deleted.country", with: [countryName] }
+        ]
+    });
+}
+
+/**
  * 指定した国でロールを作成
  * @param {string} countryId
  * @param {string} name
@@ -1184,7 +1295,7 @@ export function MergeCountry(fromId: any, toId: any, player: any) {
     countryDB.set(toKey, JSON.stringify(to));
 
     // ===== from 国削除 =====
-    DeleteCountry(from.id);
+    DeleteCountryOnMerge(from.id);
 
     world.sendMessage({
         rawtext: [

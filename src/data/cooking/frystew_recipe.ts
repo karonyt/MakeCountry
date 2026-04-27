@@ -10,7 +10,7 @@ export const FryStewRecipes = {
             "mc:food_oil": 2,
         },
         coatings: {
-            "minecraft:wheat": 5
+            "mc:flour": 2
         },
         maxCoatings: 1,
         result: "minecraft:baked_potato",
@@ -28,8 +28,8 @@ export const FryStewRecipes = {
             "mc:food_oil": 2,
         },
         coatings: {
-            "minecraft:wheat": 8,
-            "minecraft:egg": 2
+            "mc:flour": 3,
+            "minecraft:egg": 1
         },
         maxCoatings: 2,
         result: "mc:shrimp_tempra",

@@ -160,7 +160,10 @@ export const MixerRecipes = {
     },
     "flour": {
         name: "mc:flour",
-        result: "mc:flour",
+        result: {
+            id: "mc:flour",
+            count: 2
+        },
         requiredLevel: 5,
         needSpeed: [35, 75],
         baseActions: 8,
@@ -172,6 +175,64 @@ export const MixerRecipes = {
         maxAdditives: 1,
         baseMoney: 15,
         baseXp: 20
+    },
+    "bread_material": {
+        name: "mc:bread_material",
+        result: {
+            id: "mc:bread_material",
+            count: 2
+        },
+        requiredLevel: 6,
+        needSpeed: [30, 65],
+        baseActions: 9,
+        ingredients: {
+            "mc:flour": 3,
+            "mc:yeast": 1,
+            "mc:water_beaker": 1,
+        },
+        additives: {
+            "minecraft:egg": 1
+        },
+        maxAdditives: 1,
+        baseMoney: 18,
+        baseXp: 22
+    },
+    "noodle": {
+        name: "mc:noodle",
+        result: {
+            id: "mc:noodle",
+            count: 3
+        },
+        requiredLevel: 5,
+        needSpeed: [40, 70],
+        baseActions: 9,
+        ingredients: {
+            "mc:flour": 2,
+            "minecraft:egg": 1,
+            "mc:water_beaker": 1,
+        },
+        additives: {
+            "mc:salt": 1
+        },
+        maxAdditives: 1,
+        baseMoney: 18,
+        baseXp: 22
+    },
+    "pizza_dough": {
+        name: "mc:pizza_dough",
+        result: "mc:pizza_dough",
+        requiredLevel: 7,
+        needSpeed: [35, 65],
+        baseActions: 9,
+        ingredients: {
+            "mc:bread_material": 1,
+            "mc:ovlive_oil": 1,
+        },
+        additives: {
+        },
+        maxAdditives: 0,
+        baseMoney: 20,
+        baseXp: 24
     },
     "rice_powder": {
         name: "mc:rice_powder",

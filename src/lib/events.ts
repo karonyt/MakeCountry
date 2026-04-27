@@ -15,6 +15,7 @@ import { GrowthPlantReward } from "./jobs.js";
 import { itemUseItems, projectileUseItems } from "../useitems_config.js";
 import { ensureMarriageData, migrateMarriageReferences } from "../api/player/marriage.js";
 import { canAttackBountyTarget, ensureBountyData } from "../api/player/bounty.js";
+import { ensureGroupChatData, migrateGroupChatReferences } from "../api/player/group_chat.js";
 
 world.beforeEvents.itemUse.subscribe((ev) => {
     const { source, itemStack } = ev;
@@ -470,6 +471,10 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 
     const isShopBlock = block.typeId.includes('shop_block'); // ショップブロックかどうか
     if (isShopBlock) return;
+    if (block.typeId == 'minecraft:barrel') {
+        const shopBlock = block.above();
+        if (shopBlock && shopBlock.typeId == 'mc:shop_block') return;
+    }
 
     const now = Date.now();
     const x = block.x;
@@ -628,6 +633,7 @@ function playerDataCheck(player: any) {
         const playerData = JSON.parse(dataCheck);
         ensureMarriageData(playerData);
         ensureBountyData(playerData);
+        ensureGroupChatData(playerData);
         playerData.name = player.name;
         playerData.lastLogined = Date.now();
         playerData.money = Math.floor(playerData.money);
@@ -676,6 +682,10 @@ function playerDataCheck(player: any) {
                 spouseId: undefined,
                 since: undefined,
                 requests: [],
+            },
+            groupChat: {
+                currentOwnerId: undefined,
+                ownedGroup: undefined,
             }
         };
 
@@ -690,10 +700,12 @@ function playerDataCheck(player: any) {
 
         ensureMarriageData(newPlayerData);
         ensureBountyData(newPlayerData);
+        ensureGroupChatData(newPlayerData);
         newPlayerData.id = player.id;
         playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
         playerDataBase.delete(`player_${oldId}`);
         migrateMarriageReferences(playerDataBase, oldId, player.id);
+        migrateGroupChatReferences(playerDataBase, oldId, player.id);
         //プレイ時間の移行
         const playTimeDB = new DynamicProperties('playtime');
         playTimeDB.set(`player_${player.id}_total`, playTimeDB.get(`player_${oldId}_total`) || '0');

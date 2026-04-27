@@ -8,6 +8,7 @@ import { RewardBuff } from "../../../api/rewardbuff.js";
 import { getRandomInteger, langChangeItemName } from "../../../lib/util.js";
 import { DynamicProperties } from "../../../api/dyp.js";
 import { applyDailyLimit } from "../../../lib/jobs.js";
+import { createResultStacks, resolveRecipeResult } from "../../../lib/recipe_result.js";
 import { ModalFormData } from "@minecraft/server-ui";
 import config from "../../../config.js";
 
@@ -563,9 +564,10 @@ export function openRecipeSelect(player: any, page = 0) {
 function openQuantitySelect(player: any, recipeId: any) {
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = FurnaceRecipes[recipeId];
+    const result = resolveRecipeResult(recipe.result).id;
     const form = new ModalFormData()
         .title({ translate: 'smelting.title.amount' })
-        .slider({ translate: 'smelting.status.amount' }, 1, new ItemStack(recipe.result).maxAmount, { valueStep: 1, defaultValue: 1 });
+        .slider({ translate: 'smelting.status.amount' }, 1, new ItemStack(result).maxAmount, { valueStep: 1, defaultValue: 1 });
 
     form.show(player).then(r => {
         if (r.canceled) return;
@@ -860,20 +862,25 @@ function finish(player: any) {
 
     const { rank, mul } = calcRank(furnace, recipe, player);
 
-    const item = new ItemStack(
-        rank === "F" && furnace.phase === "overheated"
-            ? "minecraft:iron_nugget"
-            : recipe.result,
-        furnace.quantity
-    );
+    const resolved = resolveRecipeResult(recipe.result);
+    const isFailure = rank === "F" && furnace.phase === "overheated";
+    const itemId = isFailure ? "minecraft:iron_nugget" : resolved.id;
+    const totalCount = isFailure ? furnace.quantity : furnace.quantity * resolved.count;
+    const inv = player.getComponent("inventory").container;
 
-    item.setLore([
-        { rawtext: [{ text: '§r§a==============' }] },
-        { rawtext: [{ text: '§r§e' }, { translate: "smelting.lore.quality", with: [`${rank}`] }] },
-        { rawtext: [{ text: '§r§a==============' }] },
-    ]);
+    for (const item of createResultStacks(itemId, totalCount)) {
+        item.setLore([
+            { rawtext: [{ text: '§r§a==============' }] },
+            { rawtext: [{ text: '§r§e' }, { translate: "smelting.lore.quality", with: [`${rank}`] }] },
+            { rawtext: [{ text: '§r§a==============' }] },
+        ]);
 
-    player.getComponent("inventory").container.addItem(item);
+        const leftover = inv.addItem(item);
+        if (leftover) {
+            player.dimension.spawnItem(leftover, player.location);
+        }
+    }
+
     furnaceSessions.delete(player.id);
 
     player.stopSound('smelting.idle');

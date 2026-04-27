@@ -87,7 +87,6 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const { player, block, isFirstEvent } = ev;
-    if (!isFirstEvent) return;
     const dimId = block.dimension.id;
 
     if (block.typeId == 'minecraft:barrel') {
@@ -111,11 +110,16 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
                 ev.cancel = false;
                 return;
             };
+            if (player.hasTag('adminmode')) {
+                ev.cancel = false;
+                return;
+            };
             if (shopData.admins.includes(player.id)) {
                 ev.cancel = false;
                 return;
             };
             ev.cancel = true;
+            if (!isFirstEvent) return;
 
             if (shopData.mode === 'buyback') {
                 sellItemsToShopForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
@@ -128,6 +132,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 
     if (block.typeId == 'mc:shop_block') {
         ev.cancel = true;
+        if (!isFirstEvent) return;
         const barrel = block.below();
         if (!barrel || barrel?.typeId != 'minecraft:barrel') {
             system.runTimeout(() => {

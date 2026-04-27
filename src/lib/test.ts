@@ -431,7 +431,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
         case `karo:playerdata`: {
             const player = world.getPlayers({ name: message })[0];
             const playerDataBase = new DynamicProperties('player');
-            sourceEntity.sendMessage(`${playerDataBase.get(`player_${message}`)}`);
+            sourceEntity.sendMessage(`${playerDataBase.get(`player_${player.id}`)}`);
             break;
         };
         case `karo:deleteplayerdata`: {

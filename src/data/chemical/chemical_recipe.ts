@@ -222,13 +222,17 @@ export const ChemistryRecipes = {
     /* 水酸化ナトリウム */
     "sodium_hydroxide": {
         name: "mc:sodium_hydroxide",
-        result: "mc:sodium_hydroxide",
+        result: {
+            id: "mc:sodium_hydroxide",
+            count: 2
+        },
         reactionType: "neutralization",
         requiredLevel: 6,
         baseActions: 14,
         ingredients: {
-            "mc:sodium_carbonate": 4,
-            "mc:calcium_hydroxide": 4
+            "mc:calcium_hydroxide": 2,
+            "mc:salt": 4,
+            "mc:water_beaker": 2
         },
         catalysts: {},
         maxCatalysts: 0,
@@ -336,7 +340,10 @@ export const ChemistryRecipes = {
 
     "naphtha_fraction": {
         name: "mc:naphtha",
-        result: "mc:naphtha",
+        result: {
+            id: "mc:naphtha",
+            count: 2
+        },
         reactionType: "decomposition",
         requiredLevel: 14,
         baseActions: 18,
@@ -354,7 +361,10 @@ export const ChemistryRecipes = {
 
     "crude_oil_fraction": {
         name: "mc:heavy_oil",
-        result: "mc:heavy_oil",
+        result: {
+            id: "mc:heavy_oil",
+            count: 2
+        },
         reactionType: "decomposition",
         requiredLevel: 15,
         baseActions: 20,
@@ -390,7 +400,10 @@ export const ChemistryRecipes = {
 
     "ethylene_cracking": {
         name: "mc:ethylene",
-        result: "mc:ethylene",
+        result: {
+            id: "mc:ethylene",
+            count: 2
+        },
         reactionType: "decomposition",
         requiredLevel: 17,
         baseActions: 22,
@@ -428,7 +441,10 @@ export const ChemistryRecipes = {
 
     "polyethylene_pellet": {
         name: "mc:polyethylene_pellet",
-        result: "mc:polyethylene_pellet",
+        result: {
+            id: "mc:polyethylene_pellet",
+            count: 3
+        },
         reactionType: "polymerization",
         requiredLevel: 20,
         baseActions: 26,

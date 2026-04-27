@@ -91,12 +91,15 @@ export const FurnaceRecipes = {
 
     "iron_alloy": {
         name: "mc:iron_alloy",
-        result: "mc:iron_alloy",
+        result: {
+            id: "mc:iron_alloy",
+            count: 3
+        },
         requiredLevel: 3,
         baseActions: 18,
         needTemperature: [1200, 1400],
         ingredients: {
-            "minecraft:iron_ingot": 5,
+            "minecraft:iron_ingot": 4,
             "minecraft:coal": 1,
         },
         additives: {
@@ -115,7 +118,7 @@ export const FurnaceRecipes = {
         needTemperature: [1600, 1800],
         ingredients: {
             "mc:titanium": 4,
-            "mc:iron_alloy": 8,
+            "mc:iron_alloy": 4,
             "minecraft:coal": 1,
         },
         additives: {
@@ -134,7 +137,7 @@ export const FurnaceRecipes = {
         needTemperature: [1800, 2000],
         ingredients: {
             "mc:tungsten": 4,
-            "mc:iron_alloy": 8,
+            "mc:iron_alloy": 4,
             "minecraft:coal": 1,
         },
         additives: {
@@ -154,7 +157,7 @@ export const FurnaceRecipes = {
         baseActions: 22,
         needTemperature: [1400, 1600],
         ingredients: {
-            "mc:iron_alloy": 2,
+            "mc:iron_alloy": 1,
             "mc:vanadium_powder": 1,
             "minecraft:coal": 1,
         },
@@ -173,7 +176,7 @@ export const FurnaceRecipes = {
         baseActions: 20,
         needTemperature: [1400, 1700],
         ingredients: {
-            "mc:vanadium_alloy": 4,
+            "mc:vanadium_alloy": 3,
             "minecraft:stick": 2, // 柄の仮固定表現
             "minecraft:coal": 1,
         },
@@ -215,7 +218,7 @@ export const FurnaceRecipes = {
         needTemperature: [1600, 1800],
         ingredients: {
             "mc:titanium_ingot": 1,
-            "mc:iron_alloy": 2,
+            "mc:iron_alloy": 1,
             "minecraft:coal": 1,
         },
         additives: {
@@ -233,7 +236,7 @@ export const FurnaceRecipes = {
         baseActions: 22,
         needTemperature: [1700, 1900],
         ingredients: {
-            "mc:titanium_alloy": 4,
+            "mc:titanium_alloy": 3,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },
@@ -252,7 +255,7 @@ export const FurnaceRecipes = {
         needTemperature: [1800, 2000],
         ingredients: {
             "mc:tungsten_ingot": 1,
-            "mc:iron_alloy": 2,
+            "mc:iron_alloy": 1,
             "minecraft:coal": 1,
         },
         additives: {
@@ -269,7 +272,7 @@ export const FurnaceRecipes = {
         baseActions: 22,
         needTemperature: [3500, 4200],
         ingredients: {
-            "mc:titanium_alloy": 12,
+            "mc:titanium_alloy": 6,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },
@@ -287,7 +290,7 @@ export const FurnaceRecipes = {
         baseActions: 26,
         needTemperature: [1900, 2100],
         ingredients: {
-            "mc:tungsten_alloy": 4,
+            "mc:tungsten_alloy": 3,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },
@@ -324,10 +327,10 @@ export const FurnaceRecipes = {
         needTemperature: [4000, 4600],
         ingredients: {
             "mc:mithril": 5,
-            "mc:vanadium_alloy": 9,
-            "mc:tungsten_alloy": 7,
-            "mc:titanium_alloy": 7,
-            "mc:iron_alloy": 10,
+            "mc:vanadium_alloy": 4,
+            "mc:tungsten_alloy": 4,
+            "mc:titanium_alloy": 4,
+            "mc:iron_alloy": 4,
             "minecraft:coal": 1,
         },
         additives: {
@@ -344,7 +347,7 @@ export const FurnaceRecipes = {
         baseActions: 26,
         needTemperature: [7000, 8500],
         ingredients: {
-            "mc:mithril_ingot": 12,
+            "mc:mithril_ingot": 6,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },
@@ -363,10 +366,10 @@ export const FurnaceRecipes = {
         needTemperature: [15000, 20000],
         ingredients: {
             "mc:orichalcum": 12,
-            "mc:vanadium_alloy": 19,
-            "mc:tungsten_alloy": 17,
-            "mc:titanium_alloy": 17,
-            "mc:iron_alloy": 20,
+            "mc:vanadium_alloy": 6,
+            "mc:tungsten_alloy": 6,
+            "mc:titanium_alloy": 6,
+            "mc:iron_alloy": 6,
             "minecraft:coal": 1,
         },
         additives: {
@@ -383,7 +386,7 @@ export const FurnaceRecipes = {
         baseActions: 26,
         needTemperature: [39000, 40000],
         ingredients: {
-            "mc:orichalcum_ingot": 16,
+            "mc:orichalcum_ingot": 8,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },
@@ -401,7 +404,7 @@ export const FurnaceRecipes = {
         baseActions: 26,
         needTemperature: [5000, 5500],
         ingredients: {
-            "mc:tungsten_alloy": 12,
+            "mc:tungsten_alloy": 6,
             "minecraft:stick": 2,
             "minecraft:coal": 1,
         },

@@ -99,6 +99,13 @@ export async function Invade(player: any) {
         return;
     };
 
+    const localX = ((player.location.x % 16) + 16) % 16;
+    const localZ = ((player.location.z % 16) + 16) % 16;
+    if (localX < 3 || localX > 12 || localZ < 3 || localZ > 12) {
+        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `invade.error.chunkborder` }] });
+        return;
+    };
+
     if (config.isAttackCorner) {
         const thisChunk = chunk.id;
         const [c, cx, cz, d] = thisChunk.split(`_`);
