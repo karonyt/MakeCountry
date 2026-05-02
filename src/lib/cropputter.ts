@@ -2,12 +2,12 @@ import {
     world
 } from "@minecraft/server";
 
-world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
+world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     const player = ev.player;
-    const putblock = ev.block
-    const dim = player.dimension
-    const loc = ev.block.location
-    const mainhand = ev.itemStack
+    const putblock = ev.block;
+    const dim = player.dimension;
+    const loc = putblock.location;
+    const mainhand = ev.itemStack;
     const x = loc.x;
     const y = loc.y;
     const z = loc.z;
@@ -50,21 +50,19 @@ world.afterEvents.playerInteractWithBlock.subscribe((ev) => {
     "mc:strawberry_crop",
         "mc:sweet_corn":
     "mc:corn_crop",
-    }
+    };
     if (!mainhand || !puttablecrop.includes(mainhand.typeId)) return;
     const cropset = croplist[mainhand.typeId];
     if (!cropset) return;
-    if (putblock.typeId !== "minecraft:farmland")
-    return;
     let used = 0
     for (let dx = -1; dx <= 1; dx++) {
         for (let dz = -1; dz <= 1; dz++) {
-            const target = {
+            let target = {
                 x: x + dx,
-                y: y,
+                y: y-1,
                 z: z + dz
             };
-            let soilid = dim.getBlock({x: target.x, y: y, z: target.z})
+            let soilid = dim.getBlock({x: target.x, y: target.y, z: target.z})
             if (!soilid || soilid.typeId !== "minecraft:farmland")
             continue;
             const above = dim.getBlock({x: target.x, y: y+1, z: target.z});
@@ -87,4 +85,4 @@ if (durability) {
         equip.setEquipment("offhand", undefined);
     }
 }
-)}
+)};
