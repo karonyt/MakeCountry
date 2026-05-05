@@ -65,10 +65,10 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
             let soilid = dim.getBlock({x: target.x, y: target.y, z: target.z})
             if (!soilid || soilid.typeId !== "minecraft:farmland")
             continue;
-            const above = dim.getBlock({x: target.x, y: y+1, z: target.z});
+            const above = dim.getBlock({x: target.x, y: target.y+1, z: target.z});
             if (!above || above.typeId !== "minecraft:air") continue;
             if (mainhand.amount <= used)
-            continue
+            break;
         player.runCommandAsync(`setblock ${above.location.x} ${above.location.y} ${above.location.z} ${cropset}`)
         used++
         }
@@ -85,4 +85,4 @@ if (durability) {
         equip.setEquipment("offhand", undefined);
     }
 }
-)};
+});
