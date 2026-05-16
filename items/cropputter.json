@@ -1,0 +1,18 @@
+{
+    "format_version": "1.21.120",
+    "minecraft:item": {
+        "description": {
+            "identifier": "mc:clopputter"
+        },
+        "components": {
+            "minecraft:icon": "clopputter",
+            "minecraft:durability": {
+                "max_durability": 3600
+            },
+            "minecraft:max_stack_size": 1,
+            "minecraft:hand_equipped": true,
+            "minecraft:allow_off_hand": true
+            "mc:ranktool": {}
+        }
+    }
+}
