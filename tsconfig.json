@@ -1,23 +1,12 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "outDir": "scripts",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "sourceMap": false,
-    "removeComments": true,
-    "noImplicitAny": true,
-    "baseUrl": "./src",
-    "strict": true,
-    "checkJs": true,
-    "paths": {
-      "@/*": ["*"]
-    }
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "outDir": "./script",
+    "removeComments": false,
+    "skipLibCheck": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "scripts"]
+  "include": ["src/**/*.ts"]
 }

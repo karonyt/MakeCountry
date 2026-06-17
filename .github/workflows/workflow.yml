@@ -15,33 +15,50 @@ jobs:
       - name: Checkout main repo
         uses: actions/checkout@v4
 
-      # Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      # 依存関係インストール
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install -g typescript
 
-      # src → script にコメント付きでビルド
+          npm install \
+            @minecraft/server@stable \
+            @minecraft/server-ui@stable \
+            @minecraft/server-admin@stable \
+            @minecraft/server-gametest@stable
+
       - name: Build scripts
         run: |
-          npx tsc \
+          rm -rf script
+
+          tsc \
             --rootDir src \
             --outDir script \
             --target ES2020 \
             --module ESNext \
-            --removeComments false
+            --moduleResolution node \
+            --removeComments false \
+            --skipLibCheck
 
       - name: Zip pack from repo A
         run: |
           zip -r MakeCountryBehavior.zip . \
-            -x ".github/*" \
-               "*.zip" \
+            -x ".git/*" \
+               ".github/*" \
                "README.md" \
-               "src/*"
+               "*.zip" \
+               "*.mcpack" \
+               "*.mcaddon" \
+               "src/*" \
+               "src/**" \
+               "node_modules/*" \
+               "node_modules/**" \
+               "package.json" \
+               "package-lock.json"
+
           mv MakeCountryBehavior.zip MakeCountryBehavior.mcpack
 
       - name: Checkout other repo
@@ -54,18 +71,28 @@ jobs:
       - name: Zip pack from repo B
         run: |
           cd other
-          zip -r MakeCountryResource.zip * \
-            -x ".github/*" "*.zip" "README.md"
+
+          zip -r MakeCountryResource.zip . \
+            -x ".git/*" \
+               ".github/*" \
+               "README.md" \
+               "*.zip" \
+               "*.mcpack" \
+               "*.mcaddon"
+
           mv MakeCountryResource.zip ../MakeCountryResource.mcpack
 
       - name: Create mcaddon
         run: |
           VERSION="${GITHUB_REF_NAME}"
+
           zip "MakeCountry-${VERSION}.zip" \
             MakeCountryBehavior.mcpack \
             MakeCountryResource.mcpack
+
           mv "MakeCountry-${VERSION}.zip" \
              "MakeCountry-${VERSION}.mcaddon"
+
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
