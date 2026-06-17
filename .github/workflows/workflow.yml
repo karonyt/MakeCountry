@@ -25,10 +25,10 @@ jobs:
           npm install -g typescript
 
           npm install \
-            @minecraft/server@stable \
-            @minecraft/server-ui@stable \
-            @minecraft/server-admin@stable \
-            @minecraft/server-gametest@stable
+            @minecraft/server@beta \
+            @minecraft/server-ui@beta \
+            @minecraft/server-admin@beta \
+            @minecraft/server-gametest@beta
 
       - name: Build scripts
         run: |
