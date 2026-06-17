@@ -1,95 +1,95 @@
 {
-    "format_version": "1.21.110",
-    "minecraft:block": {
-        "description": {
-            "identifier": "mc:shop_block",
-            "menu_category": {
-                "category": "items"
-            },
-            "traits": {
-                "minecraft:placement_direction": {
-                    "enabled_states": [
-                        "minecraft:cardinal_direction"
-                    ]
-                }
-            }
-        },
+  "format_version": "1.21.110",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:shop_block",
+      "traits": {
+        "minecraft:placement_direction": {
+          "enabled_states": [
+            "minecraft:cardinal_direction"
+          ]
+        }
+      },
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "tag:shop_block": {},
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 1
+      },
+      "minecraft:loot": "loot_tables/blocks/shop_block.json",
+      "minecraft:map_color": "#000000",
+      "minecraft:collision_box": true,
+      "minecraft:geometry": "geometry.shop_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "shop_block",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:crafting_table": {
+        "grid_size": 3,
+        "crafting_tags": [
+          "shop_block"
+        ],
+        "table_name": "tile.mc:shop_block.name"
+      },
+      "mc:shop_block": {},
+      "minecraft:movable": {
+        "movement_type": "immovable"
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
         "components": {
-            "tag:shop_block": {},
-            "minecraft:destructible_by_mining": {
-                "seconds_to_destroy": 1
-            },
-            "minecraft:loot": "loot_tables/blocks/shop_block.json",
-            "minecraft:map_color": "#000000",
-            "minecraft:collision_box": true,
-            "minecraft:geometry": "geometry.shop_block",
-            "minecraft:material_instances": {
-                "*": {
-                    "texture": "shop_block",
-                    "render_method": "opaque"
-                }
-            },
-            "minecraft:crafting_table": {
-                "grid_size": 3,
-                "crafting_tags": [
-                    "shop_block"
-                ],
-                "table_name": "tile.mc:shop_block.name"
-            },
-            "mc:shop_block": {},
-            "minecraft:movable": {
-                "movement_type": "immovable"
-            }
-        },
-        "permutations": [
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            180,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            90,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            0,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            270,
-                            0
-                        ]
-                    }
-                }
-            }
-        ]
-    }
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              270,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
 }

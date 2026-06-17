@@ -1,13 +1,17 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:crayfish"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "fish_crayfish"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:crayfish",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "fish_crayfish"
+      }
     }
+  }
 }

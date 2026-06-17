@@ -1,19 +1,23 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:boiled_sweet_corn"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "boiled_sweet_corn"
-            },
-            "minecraft:use_duration": 2,
-            "minecraft:food": {
-                "nutrition": 5,
-                "can_always_eat": true
-            },
-            "minecraft:use_animation": "eat"
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:boiled_sweet_corn",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "boiled_sweet_corn"
+      },
+      "minecraft:use_duration": 2,
+      "minecraft:food": {
+        "nutrition": 5,
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat"
     }
+  }
 }

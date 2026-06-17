@@ -1,0 +1,70 @@
+import { Player } from "@minecraft/server";
+import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
+import { ModalFormData } from "@minecraft/server-ui";
+import { PlotGroupManager } from "@/domain/country/plot-group.js";
+import { landPermissions } from "@/domain/country/permissions.js";
+import { plotGroupRoleSelectedShowDefaultForm } from "@/features/forms/default/sc/plot_group/edit/rl/show/show.js";
+/**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
+/**@typedef {import("@/types/legacy/country").CountryData} CountryData*/
+/**@typedef {import("@/types/legacy/role").RoleData} RoleData*/
+
+/**
+ * プロットロール権限編集フォーム
+ * @param {Player} player 
+ * @param {number} plotGroupId 
+ * @param {RoleData} targetData 
+ * @param {boolean} isPlotAdmin
+ */
+export function plotGroupRolePermissionsEditDefaultForm(player: any, plotGroupId: any, targetData: any, isPlotAdmin = false) {
+    const playerDataBase = new DynamicProperties('player');
+    /**
+     * @type {PlayerData}
+     */
+    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
+    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
+    if (!playerData?.country) return;
+    const form = new ModalFormData();
+    form.title({ rawtext: [{ translate: `plot.edit.menu.button.permissions` }] });
+    const plotGroupManager = new PlotGroupManager();
+    let plotGroupData = plotGroupManager.get(plotGroupId);
+    if (!plotGroupData) {
+        return;
+    };
+    if (!plotGroupData?.roles) plotGroupData.roles = [];
+    let target: any = plotGroupData.roles.find((d: any) => d.id == targetData?.id) || { id: targetData?.id, permissions: [] };
+    for (const permission of landPermissions) {
+        form.toggle({ translate: `permission.${permission}` }, { defaultValue: target?.permissions.includes(permission) });
+    };
+    form.submitButton({ translate: `mc.button.save` });
+    form.show(player).then(rs => {
+        if (rs.canceled) {
+            if (isPlotAdmin) {
+                plotGroupRoleSelectedShowDefaultForm(player, targetData, plotGroupId, isPlotAdmin);
+                return;
+            };
+            return;
+        };
+        const values = rs.formValues;
+        let newLandPermissions: any[] = [];
+        // @ts-ignore TS(2532): Object is possibly 'undefined'.
+        for (let i = 0; i < values.length; i++) {
+            // @ts-ignore TS(2532): Object is possibly 'undefined'.
+            if (values[i]) {
+                newLandPermissions.push(landPermissions[i]);
+            };
+        };
+        target.permissions = newLandPermissions;
+        const index = plotGroupData?.roles.findIndex((d: any) => d.id == target.id);
+        if (index != -1) {
+            plotGroupData.roles[index] = target;
+        } else {
+            plotGroupData?.roles.push(target);
+        };
+        plotGroupManager.set(plotGroupId, plotGroupData);
+        if (isPlotAdmin) {
+            plotGroupRoleSelectedShowDefaultForm(player, targetData, plotGroupId, isPlotAdmin);
+            return;
+        };
+        return;
+    });
+};

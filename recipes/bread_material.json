@@ -5,31 +5,21 @@
             "identifier": "mc:bread_material_recipe"
         },
         "tags": [
-            "oven_range"
+            "mixer"
         ],
         "pattern": [
-            "*#c",
-            "a+b"
+            "ff",
+            "yw"
         ],
         "key": {
-            "#": {
-                "item": "mc:dissolved_sugar"
+            "f": {
+                "item": "mc:flour"
             },
-            "+": {
-                "item": "mc:food_oil"
-            },
-            "*": {
-                "item": "mc:salt"
-            },
-            "c": {
-                "item": "minecraft:egg"
-            },
-            "a": {
-                "item": "minecraft:wheat",
-                "data": 0
-            },
-            "b": {
+            "y": {
                 "item": "mc:yeast"
+            },
+            "w": {
+                "item": "mc:water_cup"
             }
         },
         "unlock": [
@@ -41,7 +31,7 @@
         "result": [
             {
                 "item": "mc:bread_material",
-                "count": 1
+                "count": 2
             }
         ]
     }

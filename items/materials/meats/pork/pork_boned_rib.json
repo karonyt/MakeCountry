@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:pork_boned_rib"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "pork_boned_rib"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:pork_boned_rib"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pork_boned_rib"
+      }
     }
+  }
 }

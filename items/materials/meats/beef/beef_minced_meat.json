@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:beef_minced_meat"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "beef_minced_meat"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:beef_minced_meat"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "beef_minced_meat"
+      }
     }
+  }
 }

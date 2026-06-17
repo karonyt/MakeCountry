@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:dirty_plate"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "dirty_plate"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:dirty_plate"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "dirty_plate"
+      }
     }
+  }
 }

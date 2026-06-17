@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:salt"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "salt"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:salt"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "salt"
+      }
     }
+  }
 }

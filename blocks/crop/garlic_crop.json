@@ -4,7 +4,8 @@
     "description": {
       "identifier": "mc:garlic_crop",
       "menu_category": {
-        "category": "none"
+        "category": "none",
+        "is_hidden_in_commands": false
       },
       "states": {
         "mc:growth_stage": [

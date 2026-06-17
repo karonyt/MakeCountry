@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:pepper"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "pepper"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:pepper"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pepper"
+      }
     }
+  }
 }

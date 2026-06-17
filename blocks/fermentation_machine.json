@@ -1,91 +1,91 @@
 {
-    "format_version": "1.21.10",
-    "minecraft:block": {
-        "description": {
-            "identifier": "mc:fermentation_machine",
-            "menu_category": {
-                "category": "items"
-            },
-            "traits": {
-                "minecraft:placement_direction": {
-                    "enabled_states": [
-                        "minecraft:cardinal_direction"
-                    ]
-                }
-            }
-        },
+  "format_version": "1.21.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:fermentation_machine",
+      "menu_category": {
+        "category": "items"
+      },
+      "traits": {
+        "minecraft:placement_direction": {
+          "enabled_states": [
+            "minecraft:cardinal_direction"
+          ]
+        }
+      }
+    },
+    "components": {
+      "tag:fermentation_machine": {},
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 1
+      },
+      "minecraft:loot": "loot_tables/blocks/fermentation_machine.json",
+      "minecraft:map_color": "#000000",
+      "minecraft:collision_box": true,
+      "minecraft:geometry": "geometry.fermentation_machine",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "fryingpan",
+          "render_method": "blend"
+        }
+      },
+      "minecraft:crafting_table": {
+        "grid_size": 3,
+        "crafting_tags": [
+          "fermentation_machine"
+        ],
+        "table_name": "item.mc:fermentation_machine"
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
         "components": {
-            "tag:fermentation_machine": {},
-            "minecraft:destructible_by_mining": {
-                "seconds_to_destroy": 1
-            },
-            "minecraft:loot": "loot_tables/blocks/fermentation_machine.json",
-            "minecraft:map_color": "#000000",
-            "minecraft:collision_box": true,
-            "minecraft:geometry": "geometry.fermentation_machine",
-            "minecraft:material_instances": {
-                "*": {
-                    "texture": "fryingpan",
-                    "render_method": "blend"
-                }
-            },
-            "minecraft:crafting_table": {
-                "grid_size": 3,
-                "crafting_tags": [
-                    "fermentation_machine"
-                ],
-                "table_name": "item.mc:fermentation_machine"
-            }
-        },
-        "permutations": [
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            180,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            90,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            0,
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
-                "components": {
-                    "minecraft:transformation": {
-                        "rotation": [
-                            0,
-                            270,
-                            0
-                        ]
-                    }
-                }
-            }
-        ]
-    }
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              270,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
 }

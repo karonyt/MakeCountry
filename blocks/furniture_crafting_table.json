@@ -1,0 +1,114 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:furniture_crafting_table",
+      "traits": {
+        "minecraft:placement_direction": {
+          "enabled_states": [
+            "minecraft:cardinal_direction"
+          ]
+        }
+      },
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "tag:furniture_crafting_table": {},
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 1
+      },
+      "minecraft:loot": "loot_tables/blocks/furniture_crafting_table.json",
+      "minecraft:map_color": "#000000",
+      "minecraft:collision_box": true,
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "up": {
+          "texture": "furniture_crafting_table_top",
+          "render_method": "opaque"
+        },
+        "down": {
+          "texture": "furniture_crafting_table_bottom",
+          "render_method": "opaque"
+        },
+        "north": {
+          "texture": "furniture_crafting_table_front",
+          "render_method": "opaque"
+        },
+        "east": {
+          "texture": "furniture_crafting_table_side",
+          "render_method": "opaque"
+        },
+        "south": {
+          "texture": "furniture_crafting_table_side",
+          "render_method": "opaque"
+        },
+        "west": {
+          "texture": "furniture_crafting_table_side",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:crafting_table": {
+        "grid_size": 3,
+        "crafting_tags": [
+          "furniture_crafting_table"
+        ],
+        "table_name": "tile.mc:furniture_crafting_table.name"
+      },
+      "minecraft:movable": {
+        "movement_type": "immovable"
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'north'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              180,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'east'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              90,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'south'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('minecraft:cardinal_direction') == 'west'",
+        "components": {
+          "minecraft:transformation": {
+            "rotation": [
+              0,
+              270,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

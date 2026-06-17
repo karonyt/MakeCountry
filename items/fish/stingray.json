@@ -1,13 +1,17 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:stingray"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "fish_stingray"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:stingray",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "fish_stingray"
+      }
     }
+  }
 }

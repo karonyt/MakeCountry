@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:pork_loin"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "pork_loin"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:pork_loin"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pork_loin"
+      }
     }
+  }
 }

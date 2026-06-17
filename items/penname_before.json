@@ -1,16 +1,16 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:penname_before"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "paper"
-            },
-            "minecraft:glint": {
-                "value": true
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:penname_before"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "paper"
+      },
+      "minecraft:glint": {
+        "value": true
+      }
     }
+  }
 }

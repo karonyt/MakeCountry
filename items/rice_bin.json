@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:rice_bin"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "rice_bin"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:rice_bin"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "rice_bin"
+      }
     }
+  }
 }

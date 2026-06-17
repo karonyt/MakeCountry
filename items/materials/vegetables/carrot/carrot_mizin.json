@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:carrot_mizin"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "carrot_mizin"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:carrot_mizin"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "carrot_mizin"
+      }
     }
+  }
 }

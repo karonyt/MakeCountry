@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:green_soybeans"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "green_soybeans"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:green_soybeans"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "green_soybeans"
+      }
     }
+  }
 }

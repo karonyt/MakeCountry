@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:dissolved_sugar"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "dissolved_sugar"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:dissolved_sugar"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "dissolved_sugar"
+      }
     }
+  }
 }

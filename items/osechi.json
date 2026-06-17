@@ -1,19 +1,23 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:osechi"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "osechi"
-            },
-            "minecraft:use_duration": 9,
-            "minecraft:food": {
-                "nutrition": 18,
-                "can_always_eat": true
-            },
-            "minecraft:use_animation": "eat"
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:osechi",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "osechi"
+      },
+      "minecraft:use_duration": 9,
+      "minecraft:food": {
+        "nutrition": 18,
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat"
     }
+  }
 }

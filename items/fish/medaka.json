@@ -1,14 +1,17 @@
-//めだか
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:medaka"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "fish_medaka"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:medaka",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "fish_medaka"
+      }
     }
+  }
 }

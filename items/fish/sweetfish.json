@@ -1,14 +1,17 @@
-//あゆ
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:sweetfish"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "fish_ayu"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:sweetfish",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "fish_ayu"
+      }
     }
+  }
 }

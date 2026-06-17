@@ -13,7 +13,7 @@
         ],
         "key": {
             "#": {
-                "item": "minecraft:iron_block"
+                "item": "minecraft:iron_ingot"
             },
             "+": {
                 "item": "minecraft:glass"

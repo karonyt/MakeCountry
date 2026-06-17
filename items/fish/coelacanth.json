@@ -1,14 +1,17 @@
-//シーラカンス
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:coelacanth"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "fish_siirakansu"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:coelacanth",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "fish_siirakansu"
+      }
     }
+  }
 }

@@ -8,13 +8,16 @@
             "mixer"
         ],
         "pattern": [
-            "#  ",
-            "   ",
+            "###",
+            " b ",
             "   "
         ],
         "key": {
             "#": {
                 "item": "mc:ovlive"
+            },
+            "b": {
+                "item": "mc:oil_bottle"
             }
         },
         "unlock": [

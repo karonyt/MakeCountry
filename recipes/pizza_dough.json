@@ -9,12 +9,15 @@
         ],
         "pattern": [
             "   ",
-            "   ",
-            "###"
+            " o ",
+            " # "
         ],
         "key": {
             "#": {
                 "item": "mc:bread_material"
+            },
+            "o": {
+                "item": "mc:ovlive_oil"
             }
         },
         "unlock": [

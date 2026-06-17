@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:bread_material"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "bread_material"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:bread_material"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "bread_material"
+      }
     }
+  }
 }

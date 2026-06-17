@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:vinegar"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "vinegar"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:vinegar"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "vinegar"
+      }
     }
+  }
 }

@@ -1,19 +1,19 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:sweet_corn"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "sweet_corn"
-            },
-            "minecraft:block_placer": {
-                "block": "mc:corn_crop",
-                "use_on": [
-                    "farmland"
-                ]
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:sweet_corn"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "sweet_corn"
+      },
+      "minecraft:block_placer": {
+        "block": "mc:corn_crop",
+        "use_on": [
+          "farmland"
+        ]
+      }
     }
+  }
 }

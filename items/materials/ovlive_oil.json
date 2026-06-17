@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:ovlive_oil"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "ovlive_oil"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:ovlive_oil"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "ovlive_oil"
+      }
     }
+  }
 }

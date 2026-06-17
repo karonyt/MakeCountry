@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:beaker"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "beaker"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:beaker"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "beaker"
+      }
     }
+  }
 }

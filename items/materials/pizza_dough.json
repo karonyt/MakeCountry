@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:pizza_dough"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "pizza_dough"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:pizza_dough"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pizza_dough"
+      }
     }
+  }
 }

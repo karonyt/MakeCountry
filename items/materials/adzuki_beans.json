@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:adzuki_beans"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "adzuki_beans"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:adzuki_beans"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "adzuki_beans"
+      }
     }
+  }
 }

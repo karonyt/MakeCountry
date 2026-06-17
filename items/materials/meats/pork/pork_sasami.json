@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:pork_sasami"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "pork_sasami"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:pork_sasami"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "pork_sasami"
+      }
     }
+  }
 }

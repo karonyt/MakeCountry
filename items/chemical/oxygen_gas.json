@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:oxygen_gas"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "oxygen_gas"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:oxygen_gas"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "oxygen_gas"
+      }
     }
+  }
 }

@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:syoyu"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "syoyu"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:syoyu"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "syoyu"
+      }
     }
+  }
 }

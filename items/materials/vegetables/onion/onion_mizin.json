@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:onion_mizin"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "onion_mizin"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:onion_mizin"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "onion_mizin"
+      }
     }
+  }
 }

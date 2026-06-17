@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:potato_mizin"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "potato_mizin"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:potato_mizin"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "potato_mizin"
+      }
     }
+  }
 }

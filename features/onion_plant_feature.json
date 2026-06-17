@@ -5,7 +5,7 @@
             "identifier": "mc:onion_plant_feature"
         },
         "places_block": {
-            "name": "mc:rice_crop",
+            "name": "mc:onion_crop",
             "states": {
                 "mc:growth_stage": 0
             }

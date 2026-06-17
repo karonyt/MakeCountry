@@ -1,20 +1,24 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:xmas_chicken"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "xmas_chicken"
-            },
-            "minecraft:use_duration": 6,
-            "minecraft:food": {
-                "nutrition": 15,
-                "using_converts_to": "minecraft:bone",
-                "can_always_eat": true
-            },
-            "minecraft:use_animation": "eat"
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:xmas_chicken",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "xmas_chicken"
+      },
+      "minecraft:use_duration": 6,
+      "minecraft:food": {
+        "nutrition": 15,
+        "using_converts_to": "minecraft:bone",
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat"
     }
+  }
 }

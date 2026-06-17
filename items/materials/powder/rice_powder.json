@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:rice_powder"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "rice_powder"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:rice_powder"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "rice_powder"
+      }
     }
+  }
 }

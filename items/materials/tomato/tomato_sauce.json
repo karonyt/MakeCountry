@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:tomato_sauce"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "tomato_sauce"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:tomato_sauce"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "tomato_sauce"
+      }
     }
+  }
 }

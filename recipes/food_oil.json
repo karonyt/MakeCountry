@@ -9,12 +9,11 @@
         ],
         "pattern": [
             "***",
-            "*#*",
-            "***"
+            " # "
         ],
         "key": {
             "#": {
-                "item": "minecraft:glass_bottle"
+                "item": "mc:oil_bottle"
             },
             "*": {
                 "item": "minecraft:wheat_seeds"

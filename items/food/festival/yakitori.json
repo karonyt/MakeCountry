@@ -1,21 +1,25 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:yakitori"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "yakitori"
-            },
-            "minecraft:use_duration": 2,
-            "minecraft:food": {
-                "nutrition": 4,
-                "using_converts_to": "minecraft:stick",
-                "can_always_eat": true
-            },
-            "minecraft:use_animation": "eat",
-            "minecraft:hand_equipped": true
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:yakitori",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "yakitori"
+      },
+      "minecraft:use_duration": 2,
+      "minecraft:food": {
+        "nutrition": 4,
+        "using_converts_to": "minecraft:stick",
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat",
+      "minecraft:hand_equipped": true
     }
+  }
 }

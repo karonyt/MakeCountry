@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:food_oil"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "food_oil"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:food_oil"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "food_oil"
+      }
     }
+  }
 }

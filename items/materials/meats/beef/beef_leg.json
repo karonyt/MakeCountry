@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:beef_leg"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "beef_leg"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:beef_leg"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "beef_leg"
+      }
     }
+  }
 }

@@ -1,19 +1,19 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:rice_seed"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "rice_seed"
-            },
-            "minecraft:block_placer": {
-                "block": "mc:rice_crop",
-                "use_on": [
-                    "farmland"
-                ]
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:rice_seed"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "rice_seed"
+      },
+      "minecraft:block_placer": {
+        "block": "mc:rice_crop",
+        "use_on": [
+          "farmland"
+        ]
+      }
     }
+  }
 }

@@ -1,13 +1,13 @@
 {
-    "format_version": "1.20.30",
-    "minecraft:item": {
-        "description": {
-            "identifier": "mc:flask"
-        },
-        "components": {
-            "minecraft:icon": {
-                "texture": "flask"
-            }
-        }
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:flask"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "flask"
+      }
     }
+  }
 }
