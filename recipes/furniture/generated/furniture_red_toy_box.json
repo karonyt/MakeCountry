@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_red_toy_box_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PCP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:red_wool"
+      },
+      "C": {
+        "item": "minecraft:chest"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:red_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_red_toy_box",
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_birch_kitchen_cabinet_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PGP",
+      "PCP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:birch_planks"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "C": {
+        "item": "minecraft:chest"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:birch_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_birch_kitchen_cabinet",
+      "count": 1
+    }
+  }
+}

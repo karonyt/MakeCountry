@@ -1,0 +1,30 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_shoe_rack_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "P P",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_shoe_rack",
+      "count": 1
+    }
+  }
+}

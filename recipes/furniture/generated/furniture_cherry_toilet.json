@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_cherry_toilet_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " Q ",
+      "PWP",
+      " P "
+    ],
+    "key": {
+      "Q": {
+        "item": "minecraft:quartz_block"
+      },
+      "P": {
+        "item": "minecraft:cherry_planks"
+      },
+      "W": {
+        "item": "minecraft:cherry_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:cherry_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_cherry_toilet",
+      "count": 1
+    }
+  }
+}

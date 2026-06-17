@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_bathtub_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "I I",
+      "IWI",
+      "PPP"
+    ],
+    "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "W": {
+        "item": "minecraft:dark_oak_planks"
+      },
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_bathtub",
+      "count": 1
+    }
+  }
+}

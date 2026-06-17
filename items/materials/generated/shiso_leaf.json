@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:shiso_leaf"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "shiso_leaf"
+      }
+    }
+  }
+}

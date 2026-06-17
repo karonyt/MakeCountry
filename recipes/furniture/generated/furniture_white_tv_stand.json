@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_white_tv_stand_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PRP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:white_wool"
+      },
+      "R": {
+        "item": "minecraft:redstone"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:white_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_white_tv_stand",
+      "count": 1
+    }
+  }
+}

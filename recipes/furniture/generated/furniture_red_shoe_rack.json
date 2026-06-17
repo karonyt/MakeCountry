@@ -1,0 +1,30 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_red_shoe_rack_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "P P",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:red_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:red_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_red_shoe_rack",
+      "count": 1
+    }
+  }
+}

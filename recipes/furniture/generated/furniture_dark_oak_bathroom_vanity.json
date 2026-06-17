@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_bathroom_vanity_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PGP",
+      "PWP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "W": {
+        "item": "minecraft:dark_oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_bathroom_vanity",
+      "count": 1
+    }
+  }
+}

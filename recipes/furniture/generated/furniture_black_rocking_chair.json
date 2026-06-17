@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_black_rocking_chair_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "P  ",
+      "PPP",
+      "SSS"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:black_wool"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:black_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_black_rocking_chair",
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_green_low_shelf_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "P P",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:green_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:green_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_green_low_shelf",
+      "count": 1
+    }
+  }
+}

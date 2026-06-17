@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_coffee_table_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "S S",
+      "S S"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_coffee_table",
+      "count": 1
+    }
+  }
+}

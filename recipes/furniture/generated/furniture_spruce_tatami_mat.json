@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_tatami_mat_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "WWW"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:spruce_planks"
+      },
+      "P": {
+        "item": "minecraft:spruce_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_tatami_mat",
+      "count": 1
+    }
+  }
+}

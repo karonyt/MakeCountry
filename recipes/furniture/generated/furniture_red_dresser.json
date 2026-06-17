@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_red_dresser_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PGP",
+      "PIP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:red_wool"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "I": {
+        "item": "minecraft:iron_ingot"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:red_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_red_dresser",
+      "count": 1
+    }
+  }
+}

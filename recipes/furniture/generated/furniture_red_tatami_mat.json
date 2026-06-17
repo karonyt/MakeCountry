@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_red_tatami_mat_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "WWW"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:red_wool"
+      },
+      "P": {
+        "item": "minecraft:red_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:red_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_red_tatami_mat",
+      "count": 1
+    }
+  }
+}

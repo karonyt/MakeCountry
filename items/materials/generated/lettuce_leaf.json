@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:lettuce_leaf"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "lettuce_leaf"
+      }
+    }
+  }
+}

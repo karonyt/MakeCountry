@@ -1,0 +1,25 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:plate_recipe"
+        },
+        "tags": [
+            "crafting_table"
+        ],
+        "pattern": [
+            " C ",
+            "C C",
+            " C "
+        ],
+        "key": {
+            "C": {
+                "item": "minecraft:clay_ball"
+            }
+        },
+        "result": {
+            "item": "mc:plate",
+            "count": 4
+        }
+    }
+}

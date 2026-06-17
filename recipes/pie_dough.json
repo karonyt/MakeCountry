@@ -1,0 +1,37 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:pie_dough_recipe"
+        },
+        "tags": [
+            "mixer"
+        ],
+        "pattern": [
+            "##",
+            "bb",
+            "s "
+        ],
+        "key": {
+            "#": {
+                "item": "mc:flour"
+            },
+            "b": {
+                "item": "mc:butter"
+            },
+            "s": {
+                "item": "minecraft:sugar"
+            }
+        },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
+        "result": {
+            "item": "mc:pie_dough",
+            "count": 1
+        }
+    }
+}

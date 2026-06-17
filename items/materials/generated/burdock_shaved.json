@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:burdock_shaved"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "burdock_shaved"
+      }
+    }
+  }
+}

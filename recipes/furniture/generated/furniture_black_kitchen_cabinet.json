@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_black_kitchen_cabinet_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PGP",
+      "PCP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:black_wool"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "C": {
+        "item": "minecraft:chest"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:black_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_black_kitchen_cabinet",
+      "count": 1
+    }
+  }
+}

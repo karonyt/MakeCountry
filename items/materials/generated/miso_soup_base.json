@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:miso_soup_base"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "miso_soup_base"
+      }
+    }
+  }
+}

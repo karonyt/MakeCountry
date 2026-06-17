@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_birch_wine_rack_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PVP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:birch_planks"
+      },
+      "V": {
+        "item": "minecraft:glass_bottle"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:birch_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_birch_wine_rack",
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:tortilla_dough_recipe"
+        },
+        "tags": [
+            "mixer"
+        ],
+        "pattern": [
+            "##",
+            "ow"
+        ],
+        "key": {
+            "#": {
+                "item": "mc:flour"
+            },
+            "o": {
+                "item": "mc:food_oil"
+            },
+            "w": {
+                "item": "mc:water_cup"
+            }
+        },
+        "unlock": [
+            {
+                "item": "minecraft:bedrock",
+                "data": 0
+            }
+        ],
+        "result": {
+            "item": "mc:tortilla_dough",
+            "count": 1
+        }
+    }
+}

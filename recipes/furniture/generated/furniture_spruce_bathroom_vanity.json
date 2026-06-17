@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_bathroom_vanity_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PGP",
+      "PWP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:spruce_planks"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "W": {
+        "item": "minecraft:spruce_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_bathroom_vanity",
+      "count": 1
+    }
+  }
+}

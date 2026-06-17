@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_green_tatami_mat_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "WWW"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:green_wool"
+      },
+      "P": {
+        "item": "minecraft:green_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:green_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_green_tatami_mat",
+      "count": 1
+    }
+  }
+}

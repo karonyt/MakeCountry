@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_birch_bar_stool_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      " S ",
+      "S S"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:birch_planks"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:birch_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_birch_bar_stool",
+      "count": 1
+    }
+  }
+}

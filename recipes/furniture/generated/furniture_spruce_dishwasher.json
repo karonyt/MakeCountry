@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_dishwasher_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "IPI",
+      "IWI",
+      "PPP"
+    ],
+    "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "P": {
+        "item": "minecraft:spruce_planks"
+      },
+      "W": {
+        "item": "minecraft:spruce_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_dishwasher",
+      "count": 1
+    }
+  }
+}

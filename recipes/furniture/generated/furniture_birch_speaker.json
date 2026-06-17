@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_birch_speaker_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "RIR",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:birch_planks"
+      },
+      "R": {
+        "item": "minecraft:redstone"
+      },
+      "I": {
+        "item": "minecraft:iron_ingot"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:birch_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_birch_speaker",
+      "count": 1
+    }
+  }
+}

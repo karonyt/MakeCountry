@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_oak_dishwasher_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "IPI",
+      "IWI",
+      "PPP"
+    ],
+    "key": {
+      "I": {
+        "item": "minecraft:iron_ingot"
+      },
+      "P": {
+        "item": "minecraft:oak_planks"
+      },
+      "W": {
+        "item": "minecraft:oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_oak_dishwasher",
+      "count": 1
+    }
+  }
+}

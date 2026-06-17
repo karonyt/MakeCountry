@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_lamp_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " T ",
+      " S ",
+      " P "
+    ],
+    "key": {
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      },
+      "P": {
+        "item": "minecraft:spruce_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_lamp",
+      "count": 1
+    }
+  }
+}

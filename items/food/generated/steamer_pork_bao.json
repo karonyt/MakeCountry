@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:steamer_pork_bao",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "steamer_pork_bao"
+      },
+      "minecraft:use_duration": 5,
+      "minecraft:food": {
+        "nutrition": 10,
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat"
+    }
+  }
+}

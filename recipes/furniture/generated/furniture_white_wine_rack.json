@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_white_wine_rack_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PVP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:white_wool"
+      },
+      "V": {
+        "item": "minecraft:glass_bottle"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:white_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_white_wine_rack",
+      "count": 1
+    }
+  }
+}

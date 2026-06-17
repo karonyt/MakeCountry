@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:homeprep_tomato_diced"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "homeprep_tomato_diced"
+      }
+    }
+  }
+}

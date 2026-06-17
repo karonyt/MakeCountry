@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:mashed_potato"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "mashed_potato"
+      }
+    }
+  }
+}

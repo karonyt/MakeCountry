@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_ceiling_light_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " P ",
+      "GTG",
+      " P "
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:spruce_planks"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_ceiling_light",
+      "count": 1
+    }
+  }
+}

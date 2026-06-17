@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:ramen_soup"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "ramen_soup"
+      }
+    }
+  }
+}

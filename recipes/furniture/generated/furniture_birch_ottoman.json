@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_birch_ottoman_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "S S"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:birch_planks"
+      },
+      "P": {
+        "item": "minecraft:birch_planks"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:birch_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_birch_ottoman",
+      "count": 1
+    }
+  }
+}

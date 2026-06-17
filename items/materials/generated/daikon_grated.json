@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:daikon_grated"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "daikon_grated"
+      }
+    }
+  }
+}

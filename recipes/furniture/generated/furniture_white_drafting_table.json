@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_white_drafting_table_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "BP ",
+      "S S"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:white_wool"
+      },
+      "B": {
+        "item": "minecraft:book"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:white_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_white_drafting_table",
+      "count": 1
+    }
+  }
+}

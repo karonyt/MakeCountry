@@ -1,0 +1,39 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_white_kotatsu_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PTP",
+      "S S"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:white_wool"
+      },
+      "P": {
+        "item": "minecraft:white_wool"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:white_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_white_kotatsu",
+      "count": 1
+    }
+  }
+}

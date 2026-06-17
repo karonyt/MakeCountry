@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_lamp_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " T ",
+      " S ",
+      " P "
+    ],
+    "key": {
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      },
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_lamp",
+      "count": 1
+    }
+  }
+}

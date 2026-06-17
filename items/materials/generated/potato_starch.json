@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:potato_starch"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "potato_starch"
+      }
+    }
+  }
+}

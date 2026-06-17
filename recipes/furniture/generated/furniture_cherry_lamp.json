@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_cherry_lamp_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " T ",
+      " S ",
+      " P "
+    ],
+    "key": {
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      },
+      "P": {
+        "item": "minecraft:cherry_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:cherry_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_cherry_lamp",
+      "count": 1
+    }
+  }
+}

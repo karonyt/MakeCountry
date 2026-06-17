@@ -1,0 +1,39 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_dark_oak_kotatsu_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PTP",
+      "S S"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:dark_oak_planks"
+      },
+      "P": {
+        "item": "minecraft:dark_oak_planks"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:dark_oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_dark_oak_kotatsu",
+      "count": 1
+    }
+  }
+}

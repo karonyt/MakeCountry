@@ -1,0 +1,28 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "mc:dirty_plate_recipe"
+        },
+        "tags": [
+            "crafting_table"
+        ],
+        "pattern": [
+            " D ",
+            " P ",
+            "   "
+        ],
+        "key": {
+            "D": {
+                "item": "minecraft:dirt"
+            },
+            "P": {
+                "item": "mc:plate"
+            }
+        },
+        "result": {
+            "item": "mc:dirty_plate",
+            "count": 1
+        }
+    }
+}

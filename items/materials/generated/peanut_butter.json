@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:peanut_butter"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "peanut_butter"
+      }
+    }
+  }
+}

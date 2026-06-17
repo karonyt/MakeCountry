@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_cherry_bed_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "P P"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:cherry_planks"
+      },
+      "P": {
+        "item": "minecraft:cherry_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:cherry_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_cherry_bed",
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:asparagus_cut"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "asparagus_cut"
+      }
+    }
+  }
+}

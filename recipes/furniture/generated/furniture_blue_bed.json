@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_blue_bed_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "P P"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:blue_wool"
+      },
+      "P": {
+        "item": "minecraft:blue_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:blue_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_blue_bed",
+      "count": 1
+    }
+  }
+}

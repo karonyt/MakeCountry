@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:caramel_sauce"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "caramel_sauce"
+      }
+    }
+  }
+}

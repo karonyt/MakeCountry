@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_green_toilet_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " Q ",
+      "PWP",
+      " P "
+    ],
+    "key": {
+      "Q": {
+        "item": "minecraft:quartz_block"
+      },
+      "P": {
+        "item": "minecraft:green_wool"
+      },
+      "W": {
+        "item": "minecraft:green_wool"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:green_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_green_toilet",
+      "count": 1
+    }
+  }
+}

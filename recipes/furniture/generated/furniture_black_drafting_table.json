@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_black_drafting_table_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "BP ",
+      "S S"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:black_wool"
+      },
+      "B": {
+        "item": "minecraft:book"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:black_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_black_drafting_table",
+      "count": 1
+    }
+  }
+}

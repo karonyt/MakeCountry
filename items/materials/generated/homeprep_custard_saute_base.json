@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:homeprep_custard_saute_base"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "homeprep_custard_saute_base"
+      }
+    }
+  }
+}

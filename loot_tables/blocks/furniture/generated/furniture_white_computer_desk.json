@@ -1,0 +1,15 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:furniture_white_computer_desk",
+          "quantity": 1,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

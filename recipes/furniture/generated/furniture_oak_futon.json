@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_oak_futon_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PPP",
+      "   "
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:oak_planks"
+      },
+      "P": {
+        "item": "minecraft:oak_planks"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:oak_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_oak_futon",
+      "count": 1
+    }
+  }
+}

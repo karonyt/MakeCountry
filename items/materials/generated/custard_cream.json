@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:custard_cream"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "custard_cream"
+      }
+    }
+  }
+}

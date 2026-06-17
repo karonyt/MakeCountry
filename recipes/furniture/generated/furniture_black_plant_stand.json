@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_black_plant_stand_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " F ",
+      "PPP",
+      "S S"
+    ],
+    "key": {
+      "F": {
+        "item": "minecraft:flower_pot"
+      },
+      "P": {
+        "item": "minecraft:black_wool"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:black_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_black_plant_stand",
+      "count": 1
+    }
+  }
+}

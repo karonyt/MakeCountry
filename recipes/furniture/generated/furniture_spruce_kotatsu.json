@@ -1,0 +1,39 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_spruce_kotatsu_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PTP",
+      "S S"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:spruce_planks"
+      },
+      "P": {
+        "item": "minecraft:spruce_planks"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:spruce_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_spruce_kotatsu",
+      "count": 1
+    }
+  }
+}

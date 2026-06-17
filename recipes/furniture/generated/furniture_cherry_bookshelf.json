@@ -1,0 +1,33 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_cherry_bookshelf_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "PPP",
+      "PBP",
+      "PPP"
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:cherry_planks"
+      },
+      "B": {
+        "item": "minecraft:book"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:cherry_planks"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_cherry_bookshelf",
+      "count": 1
+    }
+  }
+}

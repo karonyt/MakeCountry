@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:lotus_root_slice"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "lotus_root_slice"
+      }
+    }
+  }
+}

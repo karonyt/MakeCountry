@@ -1,0 +1,39 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_blue_kotatsu_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      "WWW",
+      "PTP",
+      "S S"
+    ],
+    "key": {
+      "W": {
+        "item": "minecraft:blue_wool"
+      },
+      "P": {
+        "item": "minecraft:blue_wool"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      },
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:blue_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_blue_kotatsu",
+      "count": 1
+    }
+  }
+}

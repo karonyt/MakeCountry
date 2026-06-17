@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:steamer_eggplant_chawanmushi",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "steamer_eggplant_chawanmushi"
+      },
+      "minecraft:use_duration": 5,
+      "minecraft:food": {
+        "nutrition": 7,
+        "can_always_eat": true
+      },
+      "minecraft:use_animation": "eat"
+    }
+  }
+}

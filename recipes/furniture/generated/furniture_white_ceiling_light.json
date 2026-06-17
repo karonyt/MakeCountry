@@ -1,0 +1,36 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:furniture_white_ceiling_light_recipe"
+    },
+    "tags": [
+      "furniture_crafting_table"
+    ],
+    "pattern": [
+      " P ",
+      "GTG",
+      " P "
+    ],
+    "key": {
+      "P": {
+        "item": "minecraft:white_wool"
+      },
+      "G": {
+        "item": "minecraft:glass_pane"
+      },
+      "T": {
+        "item": "minecraft:torch"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:white_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:furniture_white_ceiling_light",
+      "count": 1
+    }
+  }
+}

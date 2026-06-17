@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:soba_noodle"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "soba_noodle"
+      }
+    }
+  }
+}
