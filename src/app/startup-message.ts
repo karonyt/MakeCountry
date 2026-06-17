@@ -1,6 +1,6 @@
 import { world } from "@minecraft/server";
 
-const version = "ver.KaroEarth";
+const version = "ver.2.3.3-beta";
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: "world.message.addon", with: [version] });
