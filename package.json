@@ -2,9 +2,9 @@
   "private": true,
   "devDependencies": {
     "typescript": "^5.9.2",
-    "@minecraft/server": "*",
-    "@minecraft/server-ui": "*",
-    "@minecraft/server-admin": "*",
-    "@minecraft/server-gametest": "*"
+    "@minecraft/server": "beta",
+    "@minecraft/server-ui": "beta",
+    "@minecraft/server-admin": "beta",
+    "@minecraft/server-gametest": "beta"
   }
 }
