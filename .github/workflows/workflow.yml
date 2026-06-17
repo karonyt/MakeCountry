@@ -33,15 +33,7 @@ jobs:
       - name: Build scripts
         run: |
           rm -rf script
-
-          tsc \
-            --rootDir src \
-            --outDir script \
-            --target ES2020 \
-            --module ESNext \
-            --moduleResolution node \
-            --removeComments false \
-            --skipLibCheck
+          tsc
 
       - name: Zip pack from repo A
         run: |
