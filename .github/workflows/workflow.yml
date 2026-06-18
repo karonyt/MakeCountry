@@ -34,6 +34,7 @@ jobs:
         run: |
           rm -rf script
           tsc
+          tsc-alias
 
       - name: Zip pack from repo A
         run: |
