@@ -10,7 +10,7 @@
     },
 
     "rootDir": "./src",
-    "outDir": "./script",
+    "outDir": "./scripts",
     "removeComments": false,
     "skipLibCheck": true,
 
