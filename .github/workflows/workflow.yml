@@ -22,7 +22,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install -g typescript
+          npm install -g typescript tsc-alias
 
           npm install --force \
             @minecraft/server@beta \
