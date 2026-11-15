@@ -1,4 +1,6 @@
-import { EntityDamageCause, GameMode, Player, system, world } from "@minecraft/server";
+import { cancelGateBlockEdit, cancelGateTerrainInteraction } from "@/shared/integration/standalone.js";
+import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
+import { type Block, EntityDamageCause, GameMode, Player, system, world } from "@minecraft/server";
 import { CheckPermissionFromLocation, GetAndParsePropertyData, getRandomInteger, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import config from "@/config/server.js";
 import jobs_config from "@/config/jobs.js";
@@ -14,8 +16,74 @@ import { CountryManager } from "@/domain/country/country-manager.js";
 import { GrowthPlantReward } from "@/domain/jobs/job-events.js";
 import { itemUseItems, projectileUseItems } from "@/config/use-items.js";
 import { ensureMarriageData, migrateMarriageReferences } from "@/domain/player/marriage.js";
-import { canAttackBountyTarget, ensureBountyData } from "@/domain/player/bounty.js";
+import { ensureBountyData } from "@/domain/player/bounty.js";
+import { isEntityAttackDenied } from "@/domain/protection/entity-attack.js";
 import { ensureGroupChatData, migrateGroupChatReferences } from "@/domain/player/group-chat.js";
+import { isUnsafeToPlay } from "@/shared/integration/standalone.js";
+import { getDetailedBlockUsePermission, getDetailedItemUsePermission, getDetailedEntityUsePermission } from "@/domain/country/detailed-permissions.js";
+import { isSpawnEgg } from "@/domain/protection/spawner.js";
+
+const startFallYByPlayer = new Map<string, number>();
+const breakTeleportingPlayers = new Set<string>();
+
+/** Lock keys stay coordinate-based so lighting/unlighting a furnace preserves its owner. */
+function isLockableContainer(typeId: string): boolean {
+    return typeId.includes('chest') || [
+        'minecraft:furnace', 'minecraft:lit_furnace',
+        'minecraft:blast_furnace', 'minecraft:lit_blast_furnace',
+        'minecraft:smoker', 'minecraft:lit_smoker',
+        'minecraft:brewing_stand',
+    ].includes(typeId);
+}
+
+type ChestLock = { player: string; admin?: string[] };
+
+function isChestLockMember(lock: ChestLock, playerId: string): boolean {
+    return lock.player === playerId || (lock.admin ? lock.admin.includes(playerId) : false);
+}
+
+/** 東西南北の隣のブロック。読み込まれていない・世界の外なら返さない */
+function horizontalNeighbors(block: Block): Block[] {
+    const neighbors: Block[] = [];
+    for (const step of [() => block.north(), () => block.south(), () => block.east(), () => block.west()]) {
+        try {
+            const neighbor = step();
+            if (neighbor) neighbors.push(neighbor);
+        } catch {
+            // 読み込まれていないチャンクの隣は見ない
+        }
+    }
+    return neighbors;
+}
+
+function isLargeChest(block: Block): boolean {
+    try {
+        return (block.getComponent('inventory')?.container?.size ?? 0) > 27;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * ラージチェストのもう片方に、この人が触れない保護が掛かっていればその保護を返す。
+ * 保護は片側だけに掛かっていることが多く、保護の無い側を開けると両方の中身が見えてしまう (#ticket-1309)
+ */
+function lockedLargeChestPartner(block: Block, playerId: string): ChestLock | undefined {
+    if (!isLargeChest(block)) return undefined;
+    for (const neighbor of horizontalNeighbors(block)) {
+        if (neighbor.typeId !== block.typeId || !isLargeChest(neighbor)) continue;
+        const lock = GetAndParsePropertyData(`chest_${neighbor.x}_${neighbor.y}_${neighbor.z}_${neighbor.dimension.id}`) as ChestLock | undefined;
+        if (lock && !isChestLockMember(lock, playerId)) return lock;
+    }
+    return undefined;
+}
+
+/** Legacy broad permissions remain an umbrella so existing country settings keep working. */
+function cannotUseDetailedPermission(player: Player, x: number, z: number, dimensionId: string, broadPermission: string, detailedPermission?: string) {
+    const cannotUseBroad = CheckPermissionFromLocation(player, x, z, dimensionId, broadPermission);
+    if (!detailedPermission || !cannotUseBroad) return cannotUseBroad;
+    return CheckPermissionFromLocation(player, x, z, dimensionId, detailedPermission);
+}
 
 world.beforeEvents.itemUse.subscribe((ev) => {
     const { source, itemStack } = ev;
@@ -35,7 +103,8 @@ world.beforeEvents.itemUse.subscribe((ev) => {
     };
 
     if (checksItemUse) {
-        ev.cancel = CheckPermissionFromLocation(source, x, z, dimensionId, 'itemUse');
+        const detailedPermission = getDetailedItemUsePermission(itemTypeId);
+        ev.cancel = cannotUseDetailedPermission(source, x, z, dimensionId, 'itemUse', detailedPermission);
         return;
     };
 
@@ -45,133 +114,83 @@ world.beforeEvents.itemUse.subscribe((ev) => {
     };
 });
 
+// Cancel the attack before Fire Aspect, knockback and other hit effects occur.
+world.beforeEvents.playerItemAttackEntity.subscribe((ev) => {
+    try {
+        if (isEntityAttackDenied(ev.player, ev.target)) ev.cancel = true;
+    } catch {
+        ev.cancel = true;
+    }
+});
+
+// Keep the damage guard for projectiles and scripted damage as well.
 world.beforeEvents.entityHurt.subscribe((ev) => {
     const { hurtEntity, damageSource } = ev;
-    const { x, z } = hurtEntity.location;
-    if (damageSource.damagingEntity && (damageSource.damagingEntity instanceof Player)) {
-        if (hurtEntity instanceof Player) {
-            if (canAttackBountyTarget(damageSource.damagingEntity, hurtEntity)) {
-                ev.cancel = false;
-                return;
-            }
-            if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
-                return;
-            };
+    if (!(damageSource.damagingEntity instanceof Player)) return;
+    // Preserve cancellations made by another protection handler.
+    try {
+        if (isEntityAttackDenied(damageSource.damagingEntity, hurtEntity)) ev.cancel = true;
+    } catch {
+        ev.cancel = true;
+    }
+});
 
-            ev.cancel = CheckPermissionFromLocation(damageSource.damagingEntity, x, z, hurtEntity.dimension.id, 'playerAttack');
-            return;
-        } else {
-            if (hurtEntity.typeId == 'mc:core') {
-                return;
+/** 足元から下へ 1 段ずつ見て、最初に固いものが現れた段で止める。その段 (足元と四方) に守られた畑があれば落下をゆっくりにする */
+function protectFarmlandBelow(player: Player, px: number, py: number, pz: number, permission: string) {
+    const dimension = player.dimension;
+    const offsets = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let j = 1; j < 15; j++) {
+        let solid = false;
+        for (const [dx, dz] of offsets) {
+            let block;
+            try {
+                block = dimension.getBlock({ x: px + dx, y: py - j, z: pz + dz });
+            } catch {
+                continue;
             };
-
-            if (hurtEntity.dimension.getEntities({ location: hurtEntity.location, maxDistance: config.maxDropDistance, type: `mc:core` }).length > 0) {
-                return;
+            if (!block?.isValid || block.isAir) continue;
+            // 作物や草は畑の上にあって踏み抜けるので「止まる段」に数えない (畑そのものは数える)
+            const isFarmland = block.typeId === "minecraft:farmland";
+            if (block.isSolid || isFarmland) solid = true;
+            if (!isFarmland) continue;
+            if (!CheckPermissionFromLocation(player, block.x, block.z, dimension.id, permission)) continue;
+            player.addEffect(`slow_falling`, 1, { amplifier: 15 / j, showParticles: false });
+            if (!startFallYByPlayer.has(player.id)) {
+                startFallYByPlayer.set(player.id, py);
             };
-
-            ev.cancel = CheckPermissionFromLocation(damageSource.damagingEntity, x, z, hurtEntity.dimension.id, 'entityAttack');
             return;
         };
+        // 何かに当たる段まで来たら、それより下には落ちないので見なくてよい
+        if (solid) return;
     };
-});
+}
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
         const permission = 'break';
         for (const player of world.getPlayers()) {
             const { x: px, y: py, z: pz } = player.location;
-            if (!player.isOnGround) {
-                for (let j = 1; j < 15; j++) {
-                    let finish = false;
-                    if (finish) break;
-                    for (let i = -1; i < 2; i += 2) {
-                        try {
-                            const block = player.dimension.getBlock({ x: px + i, y: py - j, z: pz });
-                            if (block?.isValid) {
-                                const x = block.x;
-                                const z = block.z;
-                                if (block.typeId == "minecraft:farmland") {
-                                    const cannot = CheckPermissionFromLocation(player, x, z, block.dimension.id, permission);
-                                    if (cannot) {
-                                        player.addEffect(`slow_falling`, 1, { amplifier: 15 / j, showParticles: false });
-                                        // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                        if (!player?.startFallY) {
-                                            // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                            player.startFallY = py;
-                                        };
-                                        finish = true;
-                                        break;
-                                    };
-                                };
-                            }
-                        } catch (error) {
-                        };
-                        try {
-                            const block2 = player.dimension.getBlock({ x: px, y: py - j, z: pz + i });
-                            if (block2?.isValid) {
-                                const x2 = block2.x;
-                                const z2 = block2.z;
-                                if (block2.typeId == "minecraft:farmland") {
-                                    // @ts-ignore TS(2552): Cannot find name 'block'. Did you mean 'block2'?
-                                    const cannot = CheckPermissionFromLocation(player, x2, z2, block.dimension.id, permission);
-                                    if (cannot) {
-                                        player.addEffect(`slow_falling`, 1, { amplifier: 15 / j, showParticles: false });
-                                        // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                        if (!player?.startFallY) {
-                                            // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                            player.startFallY = py;
-                                        };
-                                        finish = true;
-                                        break;
-                                    };
-                                };
-                            };
-                        } catch (error) {
-                        };
-                    };
-                    try {
-                        const block = player.dimension.getBlock({ x: px, y: py - j, z: pz });
-                        if (block?.isValid) {
-                            const x = block.x;
-                            const z = block.z;
-
-                            if (block.typeId == "minecraft:farmland") {
-                                const cannot = CheckPermissionFromLocation(player, x, z, block.dimension.id, permission);
-                                if (cannot) {
-                                    player.addEffect(`slow_falling`, 1, { amplifier: 15 / j, showParticles: false });
-                                    // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                    if (!player?.startFallY) {
-                                        // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                                        player.startFallY = py;
-                                    };
-                                    finish = true;
-                                    break;
-                                };
-                            };
-                        };
-                    } catch (error) {
-                    };
-                };
+            // 他人の畑を踏み荒らさないよう、落ちている先に「壊してはいけない畑」があれば落下をゆっくりにする。
+            // 2026-09-24: 以前は空中にいる全員を毎 tick、下 14 段 × 5 マスずつ調べ続けていた (途中で止める処理も効いていなかった)。
+            // 70 人時に Earth のスクリプト時間の約 4 割を使っていたので、落ちているときだけ調べ、最初に当たる固い段で止める。
+            if (!player.isOnGround && !player.isInWater && !player.isGliding && player.getVelocity().y < -0.1) {
+                protectFarmlandBelow(player, px, py, pz, permission);
             };
             if (player.isOnGround && !player.isInWater && !player.isGliding) {
-                // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                if (player?.startFallY) {
-                    // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                    let damage = Math.floor(player.startFallY - py - 3);
+                const startFallY = startFallYByPlayer.get(player.id);
+                if (startFallY !== undefined) {
+                    let damage = Math.floor(startFallY - py - 3);
                     if (damage > 0) {
                         player.applyDamage(damage, { cause: EntityDamageCause.fall });
                     };
-                    // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                    player.startFallY = null;
+                    startFallYByPlayer.delete(player.id);
                 };
             };
             if (player.isInWater) {
-                // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                player.startFallY = null;
+                startFallYByPlayer.delete(player.id);
             };
             if (player.isGliding) {
-                // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-                player.startFallY = null;
+                startFallYByPlayer.delete(player.id);
             };
         };
     });
@@ -185,14 +204,15 @@ world.afterEvents.entityHurt.subscribe(ev => {
     const mace = container.getItem(player.selectedSlotIndex);
     if (mace) {
         if (mace.typeId == "minecraft:mace") {
-            // @ts-ignore TS(2339): Property 'startFallY' does not exist on type 'Play... Remove this comment to see the full error message
-            player.startFallY = null;
+            startFallYByPlayer.delete(player.id);
             return;
         };
     };
 });
 
-world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
+world.beforeEvents.playerBreakBlock.subscribe((ev) => {
+    if (cancelGateBlockEdit(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const permission = 'break';
     const { player, block, dimension } = ev;
     const x = block.x;
@@ -200,7 +220,7 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
     const z = block.z;
     const chestId = `chest_${x}_${y}_${z}_${dimension.id}`;
     const chestLockData = GetAndParsePropertyData(chestId);
-    const isChest = block.typeId.includes('chest');
+    const isLockable = isLockableContainer(block.typeId);
     let pL = player.location;
 
     const dimId = dimension.id;
@@ -263,23 +283,20 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
 
     if (chestLockData) {
         const chestDataBase = new DynamicProperties("chest");
-        if (isChest && (chestLockData.player === player.id || (chestLockData?.admin ? chestLockData.admin.includes(player.id) : false))) {
+        if (isLockable && (chestLockData.player === player.id || (chestLockData?.admin ? chestLockData.admin.includes(player.id) : false))) {
             system.runTimeout(() => chestDataBase.delete(chestId));
             return;
-        } else if (isChest) {
+        } else if (isLockable) {
             if (player.hasTag(`adminmode`)) return;
             ev.cancel = true;
-            // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-            if (!player?.breaktp) {
-                // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-                player.breaktp = true;
+            if (!breakTeleportingPlayers.has(player.id)) {
+                breakTeleportingPlayers.add(player.id);
                 system.run(() => {
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
                     player.setGameMode(GameMode.Adventure);
                 });
                 system.runTimeout(() => {
-                    // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-                    player.breaktp = false;
+                    breakTeleportingPlayers.delete(player.id);
                     player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
                     player.setGameMode(GameMode.Survival);
                 }, 5);
@@ -293,13 +310,6 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
     }
 
     const cannot = CheckPermissionFromLocation(player, x, z, dimension.id, permission);
-    // @ts-ignore TS(2339): Property 'breakInfo' does not exist on type 'Playe... Remove this comment to see the full error message
-    player.breakInfo = {
-        time: Date.now(),
-        typeId: block.typeId,
-        location: { x: block.x, y: block.y, z: block.z },
-        cancel: cannot
-    };
     if (cannot) {
         /*if ('upper_block_bit' in states && states['upper_block_bit'] === true) {
             system.run(() => {
@@ -331,17 +341,14 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
 
     if (cannot) {
         player.sendMessage({ translate: `cannot.permission.${permission}` });
-        // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-        if (!player?.breaktp) {
-            // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-            player.breaktp = true;
+        if (!breakTeleportingPlayers.has(player.id)) {
+            breakTeleportingPlayers.add(player.id);
             system.run(() => {
                 player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} 1000 ${Math.floor(pL.z * 100) / 100}`);
                 player.setGameMode(GameMode.Adventure);
             });
             system.runTimeout(() => {
-                // @ts-ignore TS(2339): Property 'breaktp' does not exist on type 'Player'... Remove this comment to see the full error message
-                player.breaktp = false;
+                breakTeleportingPlayers.delete(player.id);
                 player.runCommand(`tp ${Math.floor(pL.x * 100) / 100} ${Math.floor(pL.y * 100) / 100} ${Math.floor(pL.z * 100) / 100}`);
                 player.setGameMode(GameMode.Survival);
             }, 5);
@@ -351,22 +358,15 @@ world.beforeEvents.playerBreakBlock.subscribe(async (ev) => {
 });
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
+    if (cancelGateBlockEdit(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const permission = `place`
     const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
     const x = block.x;
     const z = block.z;
-    const now = Date.now();
-
     if (permutationBeingPlaced?.type.id.includes(`hopper`)) return;
     if (permutationBeingPlaced?.type.id.includes(`piston`)) return;
     const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
-    // @ts-ignore TS(2339): Property 'placeInfo' does not exist on type 'Playe... Remove this comment to see the full error message
-    player.placeInfo = {
-        time: now,
-        typeId: permutationBeingPlaced?.type?.id,
-        location: { x: block.x, y: block.y, z: block.z },
-        cancel: cannot
-    };
     ev.cancel = cannot;
     if (!cannot) {
         return
@@ -376,6 +376,8 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
+    if (cancelGateBlockEdit(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const permission = `pistonPlace`
     const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
     if (!permutationBeingPlaced?.type.id.includes(`piston`)) return;
@@ -389,6 +391,8 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
+    if (cancelGateBlockEdit(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
     if (!permutationBeingPlaced?.type.id.includes(`hopper`)) return;
     const permission = `place`;
@@ -423,11 +427,12 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
         }
     };
 
-    //保護チェスト
-    if (!chest.typeId.includes('chest')) return;
+    // 保護された収納・設備からの吸い出しを防ぐ
+    if (!isLockableContainer(chest.typeId)) return;
     const chestId = `chest_${chest.x}_${chest.y}_${chest.z}_${chest.dimension.id}`;
     const chestLockData = GetAndParsePropertyData(chestId);
-    if (chestLockData) {
+    // ラージチェストの保護の無い側の下に置くと、保護された側の中身も吸い出せる
+    if (chestLockData || lockedLargeChestPartner(chest, player.id)) {
         if (player.hasTag(`adminmode`)) return;
         ev.cancel = true;
         //保護されているチェストの下にホッパーを置くことはできません
@@ -436,11 +441,31 @@ world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
     return;
 });
 
+// 他人の保護チェストの横にチェストを置くとラージチェストになり、保護の無い側から中身を取れてしまう (#ticket-1309)
+world.beforeEvents.playerPlaceBlock.subscribe((ev) => {
+    if (cancelGateBlockEdit(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
+    const { player, block, permutationToPlace: permutationBeingPlaced } = ev;
+    const placedTypeId = permutationBeingPlaced?.type.id;
+    if (!placedTypeId || !placedTypeId.includes('chest') || placedTypeId.includes('ender_chest')) return;
+    if (player.hasTag(`adminmode`)) return;
+    for (const neighbor of horizontalNeighbors(block)) {
+        if (neighbor.typeId !== placedTypeId) continue;
+        const lock = GetAndParsePropertyData(`chest_${neighbor.x}_${neighbor.y}_${neighbor.z}_${neighbor.dimension.id}`) as ChestLock | undefined;
+        if (!lock || isChestLockMember(lock, player.id)) continue;
+        ev.cancel = true;
+        player.sendMessage({ translate: 'message.thischest.islocked', with: [GetAndParsePropertyData(`player_${lock.player}`)?.name ?? '?'] });
+        return;
+    }
+});
+
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+    if (cancelGateTerrainInteraction(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const permission = `place`
     const { player, block } = ev;
 
-    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner') {
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner' && isSpawnEgg(ev.itemStack?.typeId)) {
         ev.cancel = true;
         return;
     };
@@ -449,7 +474,6 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     if (!container.getItem(player.selectedSlotIndex)) return;
     const x = block.x;
     const z = block.z;
-    const now = Date.now();
     /*if (player?.itemUseOnInfo) {
         if ((now - player?.itemUseOnInfo?.time) < 5000 && ev.block.typeId == player?.itemUseOnInfo?.typeId && ev.block.location == player?.itemUseOnnfo?.location) {
             ev.cancel = player?.itemUseOnInfo?.cancel;
@@ -470,6 +494,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+    if (cancelGateTerrainInteraction(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const permission2 = 'openContainer'; // コンテナの開放権限
     const permission = 'blockUse'; // ブロックの使用権限
     const { player, block } = ev;
@@ -486,7 +512,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const y = block.y;
     const z = block.z;
 
-    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner') {
+    if (config.spawnerSpawnEggBlock && block.typeId == 'minecraft:mob_spawner' && isSpawnEgg(ev.itemStack?.typeId)) {
         ev.cancel = true;
         return;
     };
@@ -494,6 +520,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const dimensionId = player.dimension.id;
     const chestId = `chest_${x}_${y}_${z}_${dimensionId}`;
     const isChest = block.typeId.includes('chest'); // チェストかどうか
+    const isLockable = isLockableContainer(block.typeId);
     const playerId = player.id;
     const isSneaking = player.isSneaking; // スニーク状態かどうか
     const container = player.getComponent('inventory')?.container;
@@ -503,91 +530,59 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     if (block.getComponent('inventory')) {
         const cannot2 = CheckPermissionFromLocation(player, x, z, dimensionId, permission2);
         if (!cannot2) {
+            // ラージチェストは保護の無い側から開けても両方の中身が見えるので、もう片方の保護も見る
+            if (isChest && !player.hasTag(`adminmode`)) {
+                const partnerLock = lockedLargeChestPartner(block, playerId);
+                if (partnerLock) {
+                    ev.cancel = true;
+                    player.sendMessage({ translate: 'message.thischest.islocked', with: [GetAndParsePropertyData(`player_${partnerLock.player}`)?.name ?? '?'] });
+                    return;
+                }
+            }
             const chestLockData = GetAndParsePropertyData(chestId);
             if (chestLockData) {
                 const isOwner = (chestLockData.player === playerId || (chestLockData?.admin ? chestLockData.admin.includes(player.id) : false)); // 所有者かどうか
                 const chestDataBase = new DynamicProperties("chest");
-                if (isChest) {
+                if (isLockable) {
                     if (isOwner && !isSneaking) return;
                     if (isOwner && isSneaking && !selectedItem) {
-                        // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-                        player.interactWithBlockInfo = {
-                            time: now,
-                            typeId: block?.typeId,
-                            location: { x: block.x, y: block.y, z: block.z },
-                            cancel: true
-                        };
                         ev.cancel = true;
                         system.runTimeout(() => chestLockDefaultForm(player, chestId));
                         return;
                     }
                     if (player.hasTag(`adminmode`)) return;
-                    // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-                    player.interactWithBlockInfo = {
-                        time: now,
-                        typeId: block?.typeId,
-                        location: { x: block.x, y: block.y, z: block.z },
-                        cancel: true
-                    };
                     ev.cancel = true;
-                    player.sendMessage({ translate: 'message.thischest.islocked', with: [GetAndParsePropertyData(`player_${chestLockData.player}`).name] });
+                    player.sendMessage({ translate: 'message.thischest.islocked', with: [GetAndParsePropertyData(`player_${chestLockData.player}`)?.name ?? '?'] });
                     return;
                 }
-                if (!isChest) {
+                if (!isLockable) {
                     chestDataBase.delete(chestId);
                 }
-            } else if (isSneaking && isChest && !selectedItem) {
+            } else if (isSneaking && isLockable && !selectedItem) {
                 ev.cancel = true;
-                // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-                player.interactWithBlockInfo = {
-                    time: now,
-                    typeId: block?.typeId,
-                    location: { x: block.x, y: block.y, z: block.z },
-                    cancel: true
-                };
                 system.runTimeout(() => chestLockDefaultForm(player, chestId));
                 return;
             }
         }
         ev.cancel = cannot2;
-        // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-        player.interactWithBlockInfo = {
-            time: now,
-            typeId: block?.typeId,
-            location: { x: block.x, y: block.y, z: block.z },
-            cancel: cannot2
-        };
         return;
     }
     if (block.typeId == "minecraft:ender_chest") {
         const cannot2 = CheckPermissionFromLocation(player, x, z, dimensionId, permission2);
-        ev.cancel == cannot2;
-        // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-        player.interactWithBlockInfo = {
-            time: now,
-            typeId: block?.typeId,
-            location: { x: block.x, y: block.y, z: block.z },
-            cancel: cannot2
-        };
+        if (cannot2) ev.cancel = true;
         return;
     };
 
     // 一般的なブロック操作の権限確認
-    const cannot = CheckPermissionFromLocation(player, x, z, dimensionId, permission);
+    const detailedPermission = getDetailedBlockUsePermission(block.typeId);
+    const cannot = cannotUseDetailedPermission(player, x, z, dimensionId, permission, detailedPermission);
     ev.cancel = cannot;
-    // @ts-ignore TS(2339): Property 'interactWithBlockInfo' does not exist on... Remove this comment to see the full error message
-    player.interactWithBlockInfo = {
-        time: now,
-        typeId: block?.typeId,
-        location: { x: block.x, y: block.y, z: block.z },
-        cancel: cannot
-    };
     if (!cannot) {
         GrowthPlantReward(player, block);
         return;
     }
 
-    if (ev.isFirstEvent) player.sendMessage({ translate: `cannot.permission.${permission}` });
+    if (ev.isFirstEvent) player.sendMessage({ translate: `cannot.permission.${detailedPermission ?? permission}` });
     /*if ('open_bit' in block.permutation.getAllStates()) {
         const playerLocation = player.location;
         player.runCommand(`tp ${Math.floor(playerLocation.x * 100) / 100} 1000 ${Math.floor(playerLocation.z * 100) / 100}`);
@@ -602,16 +597,22 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
 });
 
 world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
-    const permission = `entityUse`
     const { player, target } = ev;
+    // The training scarecrow's settings menu is public in the lobby.
+    if (target.typeId === 'mc:training_dummy') return;
+    const permission = getDetailedEntityUsePermission(target.typeId) ?? 'entityUse';
     const { x, z } = target.location;
 
-    const cannot = CheckPermissionFromLocation(player, x, z, player.dimension.id, permission);
-    ev.cancel = cannot;
+    const cannot = CheckPermissionFromLocation(player, x, z, target.dimension.id, permission);
+    if (cannot) ev.cancel = true;
     if (!cannot) return;
     player.sendMessage({ translate: `cannot.permission.${permission}` });
     return;
 });
+
+// The Core mirror is empty during worldLoad/reload. Empty is not proof that a
+// connected player is new. Keep initialization pending until all namespaces load.
+const pendingPlayerDataChecks = new Map<string, Player>();
 
 world.afterEvents.playerSpawn.subscribe((ev) => {
     const { player, initialSpawn } = ev;
@@ -623,15 +624,31 @@ world.afterEvents.playerSpawn.subscribe((ev) => {
 world.afterEvents.worldLoad.subscribe(() => {
     for (const player of world.getPlayers()) {
         playerDataCheck(player);
-        return;
     };
+    system.runInterval(() => {
+        if (isUnsafeToPlay()) return;
+        for (const player of pendingPlayerDataChecks.values()) playerDataCheck(player);
+    }, 20);
 })
+
+world.afterEvents.playerLeave.subscribe((ev) => {
+    pendingPlayerDataChecks.delete(ev.playerId);
+});
 
 /**
  * 
  * @param {Player} player 
  */
 function playerDataCheck(player: any) {
+    if (!player.isValid) {
+        pendingPlayerDataChecks.delete(player.id);
+        return;
+    }
+    if (isUnsafeToPlay()) {
+        pendingPlayerDataChecks.set(player.id, player);
+        return;
+    }
+    pendingPlayerDataChecks.delete(player.id);
     const playerDataBase = new DynamicProperties("player");
     const dataCheck = playerDataBase.get(`player_${player.id}`);
     if (dataCheck) {
@@ -641,7 +658,7 @@ function playerDataCheck(player: any) {
         ensureGroupChatData(playerData);
         playerData.name = player.name;
         playerData.lastLogined = Date.now();
-        playerData.money = Math.floor(playerData.money);
+        playerData.money = Math.floor((Number(playerData.money) || 0) * 100) / 100;
         playerDataBase.set(`player_${player.id}`, JSON.stringify(playerData));
         if (config.countryNameDisplayOnPlayerNameTag) {
             nameSet(player);
@@ -657,8 +674,9 @@ function playerDataCheck(player: any) {
                 };
             }
 
-            updateRecipe(player, lv);
         };
+
+        updateRecipe(player);
 
         return;
     };
@@ -713,7 +731,7 @@ function playerDataCheck(player: any) {
         const playTimeDB = new DynamicProperties('playtime');
         playTimeDB.set(`player_${player.id}_total`, playTimeDB.get(`player_${oldId}_total`) || '0');
         playTimeDB.set(`player_${player.id}_daily`, playTimeDB.get(`player_${oldId}_daily`) || '{}');
-        playTimeDB.set(`player_${player.id}_monthly`, playTimeDB.get(`player_${oldId}_monthly` || '{}'));
+        playTimeDB.set(`player_${player.id}_monthly`, playTimeDB.get(`player_${oldId}_monthly`) || '{}');
         playTimeDB.set(`player_${player.id}_yearly`, playTimeDB.get(`player_${oldId}_yearly`) || '{}');
     };
 };

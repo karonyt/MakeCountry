@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:manganese_steel",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "manganese_steel",
+      "minecraft:display_name": {
+        "value": "item.mc:manganese_steel"
+      }
+    }
+  }
+}

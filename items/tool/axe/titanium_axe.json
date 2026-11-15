@@ -1,0 +1,64 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:titanium_axe",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "titanium_axe",
+      "minecraft:durability": {
+        "max_durability": 3200
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:damage": 11,
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "minecraft:cherry_log",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:cherry_wood",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:stripped_cherry_log",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:stripped_cherry_wood",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:mangrove_log",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:mangrove_wood",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:stripped_mangrove_log",
+            "speed": 180
+          },
+          {
+            "block": "minecraft:stripped_mangrove_wood",
+            "speed": 180
+          },
+          {
+            "block": {
+              "tags": "q.any_tag('minecraft:is_axe_item_destructible')"
+            },
+            "speed": 10
+          }
+        ]
+      },
+      "mc:ranktool": {}
+    }
+  }
+}

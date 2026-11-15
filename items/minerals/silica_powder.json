@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:silica_powder",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "silica_powder",
+      "minecraft:display_name": {
+        "value": "item.mc:silica_powder"
+      }
+    }
+  }
+}

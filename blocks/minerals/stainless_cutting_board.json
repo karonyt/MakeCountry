@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:stainless_cutting_board",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:stainless_cutting_board.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#b7cbd5",
+      "minecraft:geometry": "geometry.cutting_board",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "stainless_cutting_board",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/stainless_cutting_board.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:cutting_board": {}
+    }
+  }
+}

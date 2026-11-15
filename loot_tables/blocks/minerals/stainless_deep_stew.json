@@ -1,0 +1,14 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:stainless_deep_stew",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

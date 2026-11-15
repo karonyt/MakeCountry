@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:silver_fermentation_machine",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:silver_fermentation_machine.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#cfdae6",
+      "minecraft:geometry": "geometry.fermentation_machine",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "silver_fermentation_machine",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/silver_fermentation_machine.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:fermentation_machine": {}
+    }
+  }
+}

@@ -1,4 +1,6 @@
-export const FurnaceRecipes = {
+import { MineralSmeltingRecipes } from './mineral-recipes.js';
+
+export const FurnaceRecipes = {    ...MineralSmeltingRecipes,
     "glass": {
         name: "minecraft:glass",
         result: "minecraft:glass",
@@ -460,4 +462,483 @@ export const FurnaceRecipes = {
         baseMoney: 325,
         baseXp: 195
     },
+
+
+    /* ===== 特殊鉱石ツール ===== */
+
+    "vanadium_axe": {
+        name: "mc:vanadium_axe",
+        result: "mc:vanadium_axe",
+        requiredLevel: 12,
+        baseActions: 20,
+        needTemperature: [1400, 1700],
+        ingredients: {
+            "mc:vanadium_alloy": 3,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:redstone": 2
+        },
+        maxAdditives: 2,
+        baseMoney: 60,
+        baseXp: 36
+    },
+
+    "vanadium_shovel": {
+        name: "mc:vanadium_shovel",
+        result: "mc:vanadium_shovel",
+        requiredLevel: 12,
+        baseActions: 16,
+        needTemperature: [1400, 1700],
+        ingredients: {
+            "mc:vanadium_alloy": 1,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:redstone": 2
+        },
+        maxAdditives: 2,
+        baseMoney: 20,
+        baseXp: 12
+    },
+
+    "vanadium_hoe": {
+        name: "mc:vanadium_hoe",
+        result: "mc:vanadium_hoe",
+        requiredLevel: 12,
+        baseActions: 18,
+        needTemperature: [1400, 1700],
+        ingredients: {
+            "mc:vanadium_alloy": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:redstone": 2
+        },
+        maxAdditives: 2,
+        baseMoney: 40,
+        baseXp: 24
+    },
+
+    "vanadium_sword": {
+        name: "mc:vanadium_sword",
+        result: "mc:vanadium_sword",
+        requiredLevel: 12,
+        baseActions: 18,
+        needTemperature: [1400, 1700],
+        ingredients: {
+            "mc:vanadium_alloy": 2,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:redstone": 2
+        },
+        maxAdditives: 2,
+        baseMoney: 40,
+        baseXp: 24
+    },
+
+    "titanium_axe": {
+        name: "mc:titanium_axe",
+        result: "mc:titanium_axe",
+        requiredLevel: 21,
+        baseActions: 22,
+        needTemperature: [1700, 1900],
+        ingredients: {
+            "mc:titanium_alloy": 3,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 3
+        },
+        maxAdditives: 3,
+        baseMoney: 105,
+        baseXp: 63
+    },
+
+    "titanium_shovel": {
+        name: "mc:titanium_shovel",
+        result: "mc:titanium_shovel",
+        requiredLevel: 21,
+        baseActions: 18,
+        needTemperature: [1700, 1900],
+        ingredients: {
+            "mc:titanium_alloy": 1,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 3
+        },
+        maxAdditives: 3,
+        baseMoney: 35,
+        baseXp: 21
+    },
+
+    "titanium_hoe": {
+        name: "mc:titanium_hoe",
+        result: "mc:titanium_hoe",
+        requiredLevel: 21,
+        baseActions: 20,
+        needTemperature: [1700, 1900],
+        ingredients: {
+            "mc:titanium_alloy": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 3
+        },
+        maxAdditives: 3,
+        baseMoney: 70,
+        baseXp: 42
+    },
+
+    "titanium_sword": {
+        name: "mc:titanium_sword",
+        result: "mc:titanium_sword",
+        requiredLevel: 21,
+        baseActions: 20,
+        needTemperature: [1700, 1900],
+        ingredients: {
+            "mc:titanium_alloy": 2,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 3
+        },
+        maxAdditives: 3,
+        baseMoney: 70,
+        baseXp: 42
+    },
+
+    "tungsten_axe": {
+        name: "mc:tungsten_axe",
+        result: "mc:tungsten_axe",
+        requiredLevel: 35,
+        baseActions: 26,
+        needTemperature: [1900, 2100],
+        ingredients: {
+            "mc:tungsten_alloy": 3,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 185,
+        baseXp: 105
+    },
+
+    "tungsten_shovel": {
+        name: "mc:tungsten_shovel",
+        result: "mc:tungsten_shovel",
+        requiredLevel: 35,
+        baseActions: 22,
+        needTemperature: [1900, 2100],
+        ingredients: {
+            "mc:tungsten_alloy": 1,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 62,
+        baseXp: 35
+    },
+
+    "tungsten_hoe": {
+        name: "mc:tungsten_hoe",
+        result: "mc:tungsten_hoe",
+        requiredLevel: 35,
+        baseActions: 24,
+        needTemperature: [1900, 2100],
+        ingredients: {
+            "mc:tungsten_alloy": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 123,
+        baseXp: 70
+    },
+
+    "tungsten_sword": {
+        name: "mc:tungsten_sword",
+        result: "mc:tungsten_sword",
+        requiredLevel: 35,
+        baseActions: 24,
+        needTemperature: [1900, 2100],
+        ingredients: {
+            "mc:tungsten_alloy": 2,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 123,
+        baseXp: 70
+    },
+
+    "aluminum_axe": {
+        name: "mc:aluminum_axe",
+        result: "mc:aluminum_axe",
+        requiredLevel: 40,
+        baseActions: 26,
+        needTemperature: [4500, 5000],
+        ingredients: {
+            "mc:aluminum": 6,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 200,
+        baseXp: 120
+    },
+
+    "aluminum_shovel": {
+        name: "mc:aluminum_shovel",
+        result: "mc:aluminum_shovel",
+        requiredLevel: 40,
+        baseActions: 22,
+        needTemperature: [4500, 5000],
+        ingredients: {
+            "mc:aluminum": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 67,
+        baseXp: 40
+    },
+
+    "aluminum_hoe": {
+        name: "mc:aluminum_hoe",
+        result: "mc:aluminum_hoe",
+        requiredLevel: 40,
+        baseActions: 24,
+        needTemperature: [4500, 5000],
+        ingredients: {
+            "mc:aluminum": 4,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 133,
+        baseXp: 80
+    },
+
+    "aluminum_sword": {
+        name: "mc:aluminum_sword",
+        result: "mc:aluminum_sword",
+        requiredLevel: 40,
+        baseActions: 24,
+        needTemperature: [4500, 5000],
+        ingredients: {
+            "mc:aluminum": 4,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 133,
+        baseXp: 80
+    },
+
+    "katana": {
+        name: "mc:katana",
+        result: "mc:katana",
+        requiredLevel: 40,
+        baseActions: 24,
+        needTemperature: [4500, 5000],
+        ingredients: {
+            "mc:aluminum": 4,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 133,
+        baseXp: 80
+    },
+
+    "mithril_axe": {
+        name: "mc:mithril_axe",
+        result: "mc:mithril_axe",
+        requiredLevel: 50,
+        baseActions: 26,
+        needTemperature: [7000, 8500],
+        ingredients: {
+            "mc:mithril_ingot": 3,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 250,
+        baseXp: 150
+    },
+
+    "mithril_shovel": {
+        name: "mc:mithril_shovel",
+        result: "mc:mithril_shovel",
+        requiredLevel: 50,
+        baseActions: 22,
+        needTemperature: [7000, 8500],
+        ingredients: {
+            "mc:mithril_ingot": 1,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 83,
+        baseXp: 50
+    },
+
+    "mithril_hoe": {
+        name: "mc:mithril_hoe",
+        result: "mc:mithril_hoe",
+        requiredLevel: 50,
+        baseActions: 24,
+        needTemperature: [7000, 8500],
+        ingredients: {
+            "mc:mithril_ingot": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 167,
+        baseXp: 100
+    },
+
+    "mithril_sword": {
+        name: "mc:mithril_sword",
+        result: "mc:mithril_sword",
+        requiredLevel: 50,
+        baseActions: 24,
+        needTemperature: [7000, 8500],
+        ingredients: {
+            "mc:mithril_ingot": 2,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 167,
+        baseXp: 100
+    },
+
+    "orichalcum_axe": {
+        name: "mc:orichalcum_axe",
+        result: "mc:orichalcum_axe",
+        requiredLevel: 60,
+        baseActions: 26,
+        needTemperature: [39000, 40000],
+        ingredients: {
+            "mc:orichalcum_ingot": 4,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 300,
+        baseXp: 180
+    },
+
+    "orichalcum_shovel": {
+        name: "mc:orichalcum_shovel",
+        result: "mc:orichalcum_shovel",
+        requiredLevel: 60,
+        baseActions: 22,
+        needTemperature: [39000, 40000],
+        ingredients: {
+            "mc:orichalcum_ingot": 2,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 150,
+        baseXp: 90
+    },
+
+    "orichalcum_hoe": {
+        name: "mc:orichalcum_hoe",
+        result: "mc:orichalcum_hoe",
+        requiredLevel: 60,
+        baseActions: 24,
+        needTemperature: [39000, 40000],
+        ingredients: {
+            "mc:orichalcum_ingot": 3,
+            "minecraft:stick": 2,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 225,
+        baseXp: 135
+    },
+
+    "orichalcum_sword": {
+        name: "mc:orichalcum_sword",
+        result: "mc:orichalcum_sword",
+        requiredLevel: 60,
+        baseActions: 24,
+        needTemperature: [39000, 40000],
+        ingredients: {
+            "mc:orichalcum_ingot": 3,
+            "minecraft:stick": 1,
+            "minecraft:coal": 1,
+        },
+        additives: {
+            "minecraft:blaze_powder": 5
+        },
+        maxAdditives: 3,
+        baseMoney: 225,
+        baseXp: 135
+    },
+
 };

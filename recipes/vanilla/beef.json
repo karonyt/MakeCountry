@@ -8,7 +8,7 @@
             "delete"
         ],
         "input": {
-            "item": "minecraft:beef"
+            "item": "minecraft:bedrock"
         },
         "unlock": [
             {

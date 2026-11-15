@@ -1,0 +1,29 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:compressed_mossy_cobblestone",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 4
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 12
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#596b45",
+      "minecraft:loot": "loot_tables/blocks/compressed/compressed_mossy_cobblestone.json",
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "compressed_mossy_cobblestone",
+          "render_method": "opaque"
+        }
+      }
+    }
+  }
+}

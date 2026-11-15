@@ -24,8 +24,9 @@ export default {
         'builder': 50000,
         'gardener': 50000,
         'chef': 50000,
-        'blacksmith': 50000,
-        'chemist': 50000,
+        'blacksmith': 50000,        'chemist': 50000,
+        'crafter': 50000,
+        'tamer': 50000,
     },
 
     //職業一覧
@@ -101,11 +102,22 @@ export default {
             id: 'blacksmith',
             name: 'blacksmith',
             lv: 0,
-        },
-        //化学者
+        },        //化学者
         {
             id: 'chemist',
             name: 'chemist',
+            lv: 0
+        },
+        //クラフター
+        {
+            id: 'crafter',
+            name: 'crafter',
+            lv: 0
+        },
+        //テイマー
+        {
+            id: 'tamer',
+            name: 'tamer',
             lv: 0
         }
         //ここに追加可能
@@ -114,32 +126,39 @@ export default {
     //職業報酬の全体倍率
     jobRewardMagnification: 2,
 
-    buildReward: { min: 0.04, max: 0.1, xp: 0.1 }, //ブロックを置いたときにもらえる報酬の変域
+    buildReward: { min: 0.3, max: 0.6, xp: 0.5 }, //ブロックを置いたときにもらえる報酬の変域
+
+    craftReward: { min: 0.3, max: 0.6, xp: 0.5 }, //クラフトで作ったアイテム1個あたりの報酬
+
+    tameReward: { min: 10, max: 20, xp: 3 }, //動物を初めて手懐けたときにもらえる報酬
 
     chefReward: { min: 0.5, max: 1, xp: 3 }, //料理を作ったときにもらえる報酬の変域
 
     blacksmithReward: { min: 0.5, max: 1, xp: 3 }, //鍛冶をしたときにもらえる報酬の変域
 
+    blacksmithXpMultiplier: 2, //鍛冶の XP の倍率。10/15 の改修で 1 回にかかる時間が延びた分を埋める (2026-10-20)
+
     chemistReward: { min: 0.5, max: 1, xp: 3 }, //鍛冶をしたときにもらえる報酬の変域
 
-    gardeningReward: { min: 0.6, max: 1, xp: 0.15 }, //葉っぱブロックを素手で壊したときにもらえる報酬の変域
+    gardeningReward: { min: 0.6, max: 1, xp: 0.5 }, //葉っぱブロックを素手で壊したときにもらえる報酬の変域
 
     fishingReward: { min: 10, max: 20, xp: 1.2 }, //釣りでアイテムを釣ったときにもらえる報酬の変域
 
-    sanddiggerReward: { min: 0.2, max: 0.8, xp: 0.25 }, //砂を掘ったときにもらえる報酬の変域
+    sanddiggerReward: { min: 0.2, max: 0.8, xp: 0.45 }, //砂を掘ったときにもらえる報酬の変域
 
-    netherdiggerReward: { min: 0.07, max: 0.13, xp: 0.5 }, //ネザー系ブロックを掘ったときにもらえる報酬の変域
+    netherdiggerReward: { min: 0.5, max: 1.0, xp: 0.5 }, //ネザー系ブロックを掘ったときにもらえる報酬の変域
 
-    dirtdiggerReward: { min: 0.2, max: 0.8, xp: 0.20 }, //土を掘ったときにもらえる報酬の変域
+    dirtdiggerReward: { min: 0.2, max: 0.8, xp: 0.45 }, //土を掘ったときにもらえる報酬の変域
 
     woodCutReward: { min: 2, max: 5.5, xp: 0.98 }, //木を切ったときにもらえる報酬の変域
 
-    cropHarvestReward: { min: 3.7, max: 15, xp: 0.1 }, //作物収穫時にもらえる報酬の変域
-    cocoaHarvestReward: { min: 3.7, max: 10, xp: 0.11 }, //ココア収穫時にもらえる報酬の変域
+    cropHarvestReward: { min: 3.7, max: 15, xp: 0.5 }, //作物収穫時にもらえる報酬の変域
+    cocoaHarvestReward: { min: 3.7, max: 10, xp: 0.55 }, //ココア収穫時にもらえる報酬の変域
 
     oreMiningReward: { min: 2, max: 8, xp: 1.2 }, //鉱石系ブロックを掘ったときにもらえる報酬の変域
     stoneMiningReward: { min: 1, max: 2, xp: 0.5 }, //石系ブロックを掘ったときにもらえる報酬の変域
     normalStoneMiningReward: { min: 1, max: 2, xp: 0.45 }, //minecraft:stoneを掘ったときにもらえる報酬の変域 
+    endStoneMiningReward: { min: 1, max: 2, xp: 0.5 }, //エンドストーンを掘ったときにもらえる鉱夫報酬の変域
 
     skeletonKillReward: { min: 1, max: 2.5, xp: 1.2 }, //スケルトンを倒したときにもらえる報酬の変域
     strayKillReward: { min: 1, max: 2.5, xp: 0.5 }, //ストレイを倒したときにもらえる報酬の変域
@@ -162,6 +181,13 @@ export default {
     vindicatorKillReward: { min: 1, max: 3, xp: 1.2 }, //ヴィンディケーターを倒したときにもらえる報酬の変域
     zombie_villagerKillReward: { min: 1, max: 3, xp: 0.98 }, //村人ゾンビを倒したときにもらえる報酬の変域
     witchKillReward: { min: 1, max: 3, xp: 0.98 }, //ウィッチを倒したときにもらえる報酬の変域
+    // ここに無い敵は otherMobkillReward (0) になり、報酬もXPも出ない。新しい敵と、今の村人ゾンビの ID (_v2) を似た敵と同じ値で足す
+    drownedKillReward: { min: 1, max: 2.5, xp: 0.98 }, //ドラウンドを倒したときにもらえる報酬の変域 (ゾンビと同じ)
+    zombie_villager_v2KillReward: { min: 1, max: 3, xp: 0.98 }, //村人ゾンビ (今の ID) を倒したときにもらえる報酬の変域
+    boggedKillReward: { min: 1, max: 2.5, xp: 1.2 }, //ボグドを倒したときにもらえる報酬の変域 (スケルトンと同じ)
+    parchedKillReward: { min: 1, max: 2.5, xp: 1.2 }, //パーチドを倒したときにもらえる報酬の変域 (スケルトンと同じ)
+    breezeKillReward: { min: 2, max: 3, xp: 0.98 }, //ブリーズを倒したときにもらえる報酬の変域 (ブレイズと同じ)
+    zombie_nautilusKillReward: { min: 1, max: 2.5, xp: 0.98 }, //ゾンビオウムガイを倒したときにもらえる報酬の変域 (ゾンビと同じ)
 
     skeleton_horseKillReward: { min: 1, max: 2, xp: 0.98 }, //スケルトンホースを倒したときにもらえる報酬の変域
     zombie_horseKillReward: { min: 1, max: 2, xp: 0.98 }, //ゾンビホースを倒したときにもらえる報酬の変域

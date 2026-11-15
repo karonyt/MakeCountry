@@ -11,12 +11,17 @@ export interface PlotData {
     permissions: PlotPermission[];
     roles: Array<{ id: number, permissions: PlotPermission[] }>;
     countries: Array<{ id: number, permissions: PlotPermission[] }>;
+    alliancePermissions: PlotPermission[];
+    friendlyPermissions: PlotPermission[];
     players: Array<{ id: string, permissions: PlotPermission[] }>;
     type: PlotTypes;
     enable?: boolean;
 }
 
 export interface PlotGroupData {
+    /** Webマップの色。未指定なら本国の色。 */
+    mapColor?: string;
+    mapPattern?: 'diagonal' | 'vertical' | 'horizontal' | 'crosshatch' | 'grid' | 'dots';
     id: number;
     group: undefined | number;
     is_selling: boolean;
@@ -26,6 +31,8 @@ export interface PlotGroupData {
     permissions: PlotPermission[];
     roles: Array<{ id: number, permissions: PlotPermission[] }>;
     countries: Array<{ id: number, permissions: PlotPermission[] }>;
+    alliancePermissions: PlotPermission[];
+    friendlyPermissions: PlotPermission[];
     players: Array<{ id: string, permissions: PlotPermission[] }>;
     type: PlotTypes;
     enable?: boolean;

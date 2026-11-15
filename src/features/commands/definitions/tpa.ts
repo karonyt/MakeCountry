@@ -1,3 +1,4 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import config from "@/config/server.js";
 import { AcceptTeleportRequest, teleportRequest, tpaMainForm } from "@/domain/player/tpa.js";
@@ -10,7 +11,7 @@ function tpaExecuter(origin: any, args: any) {
         sender.sendMessage({ translate: `command.error.tpa.novalidity` });
         return;
     };
-    if (sender.hasTag(`mc_notp`)) {
+    if (teleportLocked(sender)) {
         return;
     };
     if (config.combatTagNoTeleportValidity) {

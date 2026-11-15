@@ -1,9 +1,12 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
+import { SocialActionForm as ActionFormData, SocialMessageFormData as MessageFormData, SocialModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason, MessageFormData, ModalFormData } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
+
 import config from "@/config/server.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { CheckPermissionFromLocation, GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 
 /**
  * @typedef {import("@/types/legacy/player").PlayerData} PlayerData
@@ -176,7 +179,7 @@ function canTeleportLikeTpa(sender: any, target: any) {
         sender.sendMessage({ translate: "command.error.tpa.novalidity" });
         return false;
     }
-    if (sender.hasTag("mc_notp")) {
+    if (teleportLocked(sender)) {
         return false;
     }
     if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
@@ -206,7 +209,7 @@ function canUseMarriageHomeTeleport(sender: any) {
         sender.sendMessage({ translate: "command.error.tpa.novalidity" });
         return false;
     }
-    if (sender.hasTag("mc_notp")) {
+    if (teleportLocked(sender)) {
         return false;
     }
     if (config.combatTagNoTeleportValidity && sender.hasTag("mc_combat")) {
@@ -258,6 +261,9 @@ export function setMarriageHomeAtCurrentLocation(player: any) {
         return false;
     }
 
+    // 普通の /sethome と同じく、ホームを置けない場所 (他国の領土など) では設定させない (#1017)
+    if (CheckPermissionFromLocation(player, player.location.x, player.location.z, player.dimension.id, "setHome")) return false;
+
     const homeData = {
         x: player.location.x,
         y: player.location.y,
@@ -295,6 +301,11 @@ export function teleportToMarriageHome(player: any) {
     const homeData = getMarriageHome(player.id, spouseId);
     if (!homeData) {
         player.sendMessage({ translate: "marriage.home.error.not_set" });
+        return false;
+    }
+    // 以前に他国の領土へ設定されたホームへは飛ばさない (/home と同じ確認)
+    if (CheckPermissionFromLocation(player, homeData.x, homeData.z, homeData.dimension, "setHome")) {
+        player.sendMessage({ translate: "command.home.error.thischunk" });
         return false;
     }
 
@@ -873,7 +884,7 @@ export function showMarriageMainForm(player: any) {
             if (rs.selection === 3) {
                 return showDivorceConfirmForm(player);
             }
-            return playerMainMenuDefaultForm(player);
+            return callPlayerMainMenuForm(player);
         }
 
         if (rs.selection === 0) {
@@ -882,6 +893,6 @@ export function showMarriageMainForm(player: any) {
         if (rs.selection === 1) {
             return showMarriageRequestListForm(player);
         }
-        playerMainMenuDefaultForm(player);
+        callPlayerMainMenuForm(player);
     });
 }

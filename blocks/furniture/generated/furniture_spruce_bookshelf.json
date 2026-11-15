@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.26.20",
   "minecraft:block": {
     "description": {
       "identifier": "mc:furniture_spruce_bookshelf",
@@ -15,8 +15,6 @@
       }
     },
     "components": {
-      "tag:furniture": {},
-      "tag:furniture_bookshelf": {},
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.6
       },
@@ -30,6 +28,19 @@
           "texture": "furniture_spruce_bookshelf",
           "render_method": "opaque"
         }
+      },
+      "minecraft:tags": [
+        "furniture",
+        "furniture_bookshelf"
+      ],
+      "minecraft:block_entity": {
+        "container": {
+          "slot_count": 27,
+          "title": "tile.mc:furniture_spruce_bookshelf.name"
+        }
+      },
+      "minecraft:movable": {
+        "movement_type": "immovable"
       }
     },
     "permutations": [

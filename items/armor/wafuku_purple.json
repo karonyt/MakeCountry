@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:wafuku_purple",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "wafuku_purple",
+      "minecraft:wearable": {
+        "slot": "slot.armor.chest",
+        "protection": 3,
+        "dispensable": true
+      },
+      "minecraft:durability": {
+        "max_durability": 240
+      },
+      "minecraft:enchantable": {
+        "slot": "armor_torso",
+        "value": 12
+      }
+    }
+  }
+}

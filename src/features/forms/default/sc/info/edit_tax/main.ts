@@ -1,5 +1,5 @@
+import { CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { settingCountryInfoDefaultForm } from "@/features/forms/default/sc/info/info.js";

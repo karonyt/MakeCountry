@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:tin_can",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "tin_can",
+      "minecraft:display_name": {
+        "value": "item.mc:tin_can"
+      }
+    }
+  }
+}

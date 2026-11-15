@@ -1,7 +1,7 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { countryInvitesListDefaultForm } from "@/features/forms/default/menu/join/invite/invite_list.js";
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData*/
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/

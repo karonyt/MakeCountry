@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:potassium_fertilizer",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "potassium_fertilizer",
+      "minecraft:display_name": {
+        "value": "item.mc:potassium_fertilizer"
+      }
+    }
+  }
+}

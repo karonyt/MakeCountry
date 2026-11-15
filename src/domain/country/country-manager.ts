@@ -1,3 +1,4 @@
+import { planNationalTierUpgrade } from "@/domain/country/national-tier-batch.js";
 import { DynamicProperties, describeDynamicPropertyEntry } from "@/shared/storage/dynamic-properties.js";
 import { CheckPermission, GetAndParsePropertyData, GetChunkPropertyId, GetPlayerChunkPropertyId, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import { nameSet } from "@/domain/player/name-tag.js";
@@ -7,7 +8,7 @@ import config from "@/config/server.js";
 import { acceptFriendlyRequestFunction, denyFriendlyRequestFunction, removeFriendlyFunction, sendFriendlyRequestFunction } from "@/domain/country/relationships/friendly.js";
 import { acceptApplicationRequestFunction, denyApplicationRequestFunction, sendApplicationRequestFunction } from "@/domain/country/relationships/application.js";
 import { acceptAllianceRequestFunction, denyAllianceRequestFunction, removeAllianceFunction, sendAllianceRequestFunction } from "@/domain/country/relationships/alliance.js";
-import { acceptFederationRequestFunction, addFederationSubLeaderFunction, createFederationFunction, denyFederationRequestFunction, disbandFederationFunction, getFederationMemberIds, getFederationRequestCountryIds, leaveFederationFunction, normalizeFederationData, removeFederationFunction, removeFederationSubLeaderFunction, sendFederationRequestFunction, setFederationCapitalFunction, setFederationTaxRateFunction, transferFederationLeaderFunction, updateFederationBasicFunction, updateFederationSettingsFunction } from "@/domain/country/relationships/federation.js";
+import { acceptFederationRequestFunction, addFederationSubLeaderFunction, createFederationFunction, denyFederationRequestFunction, disbandFederationFunction, getFederationMemberIds, getFederationRequestCountryIds, leaveFederationFunction, normalizeFederationData, removeFederationFunction, removeFederationSubLeaderFunction, sendFederationRequestFunction, setFederationCapitalFunction, setFederationTaxRateFunction, transferFederationLeaderFunction, updateFederationBasicFunction, updateFederationGovernanceFunction, updateFederationSettingsFunction } from "@/domain/country/relationships/federation.js";
 import { addHostilityFunction } from "@/domain/country/relationships/hostility.js";
 import { denyMergeRequestFunction, sendMergeRequestFunction } from "@/domain/country/relationships/merge.js";
 import { inviteFunction } from "@/domain/country/relationships/invite.js";
@@ -17,6 +18,7 @@ import { DeleteCountry, MergeCountry } from "@/domain/country/land-service.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import { updateRecipe } from "@/domain/recipes/recipe-service.js";
 import jobs_config from "@/config/jobs.js";
+import { countryBoostOf } from "@/domain/player/supporter-badge.js";
 /**
  * @typedef {import("@/types/legacy/player").PlayerData} PlayerData
  * @typedef {import("@/types/legacy/country").CountryData} CountryData 
@@ -101,10 +103,18 @@ class CountryMemberManager {
          */
         this.countryData = this.countryRawData ? JSON.parse(this.countryRawData) : undefined;
         this.isVaildProperty = this.countryData ? true : false;
-        this.owner = this.countryData.owner;
+        this.owner = this.countryData?.owner;
         this.id = id;
-        this.name = this.countryData.name;
+        this.name = this.countryData?.name;
         this.roleManager = new RoleManager();
+    }
+
+    reload() {
+        this.countryRawData = this.countryDataBase.get(`country_${this.id}`);
+        this.countryData = this.countryRawData ? JSON.parse(this.countryRawData) : undefined;
+        this.isVaildProperty = !!this.countryData;
+        this.owner = this.countryData?.owner;
+        this.name = this.countryData?.name;
     }
 
     isVaild() {
@@ -172,6 +182,7 @@ class CountryMemberManager {
      * @param {Player|undefined} player 
      */
     kick(targetMember: any, player = undefined) {
+        this.reload();
         if (!this.isVaildProperty) {
             console.error(`[MakeCountry CountryMemberManager] The Country ${this.id} is not vaild.`)
             return;
@@ -261,6 +272,7 @@ class CountryMemberManager {
      * @param {Player|undefined} player 
      */
     add(newMember: any, player = undefined) {
+        this.reload();
         if (!this.isVaildProperty) {
             console.error(`[MakeCountry CountryMemberManager] The Country ${this.id} is not vaild.`)
             return;
@@ -277,7 +289,9 @@ class CountryMemberManager {
         /**
          * @type {PlayerData}
          */
-        const newMemberData = JSON.parse(this.playerDataBase.get(`player_${playerId}`));
+        const newMemberRaw = this.playerDataBase.get(`player_${playerId}`);
+        if (!newMemberRaw) return;
+        const newMemberData = JSON.parse(newMemberRaw);
         if (newMemberData.country) {
             //既に所属しているプレイヤーは加入させない
             return;
@@ -305,8 +319,8 @@ class CountryMemberManager {
             return;
         };
 
-        this.countryData.members.push(playerId);
-        newMemberData.roles.push(this.countryData.peopleRole);
+        this.countryData.members = [...new Set([...(this.countryData.members ?? []), playerId])];
+        newMemberData.roles = [...new Set([...(newMemberData.roles ?? []), this.countryData.peopleRole])];
         newMemberData.country = this.countryData.id;
         newMemberData.invite = [];
         const roleRawData = this.roleDataBase.get(`role_${this.countryData.peopleRole}`);
@@ -315,10 +329,10 @@ class CountryMemberManager {
             members: [],
             permissions: []
         };
-        memberRoleData.members.push(`${playerId}`);
+        memberRoleData.members = [...new Set([...(memberRoleData.members ?? []), `${playerId}`])];
+        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         this.roleDataBase.set(`role_${memberRoleData.id}`, memberRoleData);
         this.playerDataBase.set(`player_${playerId}`, newMemberData);
-        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         if (newMemberEntity) {
             // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'Ent... Remove this comment to see the full error message
             newMemberEntity.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `joined.country` }] });
@@ -343,6 +357,7 @@ class CountryMemberManager {
      * @param {player|undefined} player 
      */
     forceAdd(targetMember: any, player = undefined) {
+        this.reload();
         if (!this.isVaildProperty) {
             console.error(`[MakeCountry CountryMemberManager] The Country ${this.id} is not vaild.`)
             return;
@@ -368,7 +383,16 @@ class CountryMemberManager {
         /**
          * @type {PlayerData}
          */
-        const targetMemberData = JSON.parse(this.playerDataBase.get(`player_${playerId}`));
+        const targetMemberRaw = this.playerDataBase.get(`player_${playerId}`);
+        if (!targetMemberRaw) return;
+        const targetMemberData = JSON.parse(targetMemberRaw);
+        // A repeated force-add must not strip this country's existing roles.
+        if (String(targetMemberData.country) === String(this.countryData.id)) return;
+        // Check eligibility before removing anything from the previous country.
+        if (targetMemberData.money < 0) return;
+        const destinationRoleRaw = this.roleDataBase.get(`role_${this.countryData.peopleRole}`);
+        if (!destinationRoleRaw) return;
+        const memberRoleData = JSON.parse(destinationRoleRaw);
         if (targetMemberData.country) {
             const targetMemberCountryRawData = this.countryDataBase.get(`country_${targetMemberData.country}`);
             if (targetMemberCountryRawData) {
@@ -376,7 +400,7 @@ class CountryMemberManager {
                  * @type {CountryData}
                  */
                 const targetMemberCountryData = JSON.parse(targetMemberCountryRawData);
-                targetMemberCountryData.members = this.countryData.members.filter((m: any) => m != playerId);
+                targetMemberCountryData.members = targetMemberCountryData.members.filter((m: any) => m != playerId);
                 this.countryDataBase.set(`country_${targetMemberCountryData.id}`, targetMemberCountryData);
 
                 try {
@@ -405,19 +429,18 @@ class CountryMemberManager {
             return;
         };
 
-        this.countryData.members.push(playerId);
-        targetMemberData.roles.push(this.countryData.peopleRole);
+        this.countryData.members = [...new Set([...(this.countryData.members ?? []), playerId])];
+        targetMemberData.roles = [...new Set([...(targetMemberData.roles ?? []), this.countryData.peopleRole])];
         targetMemberData.country = this.countryData.id;
         targetMemberData.invite = [];
 
         /**
          * @type {RoleData}
          */
-        const memberRoleData = JSON.parse(this.roleDataBase.get(`role_${this.countryData.peopleRole}`));
-        memberRoleData.members.push(`${playerId}`);
+        memberRoleData.members = [...new Set([...(memberRoleData.members ?? []), `${playerId}`])];
+        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         this.roleDataBase.set(`role_${memberRoleData.id}`, memberRoleData);
         this.playerDataBase.set(`player_${playerId}`, targetMemberData);
-        this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         if (targetMemberEntity) {
             // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'Ent... Remove this comment to see the full error message
             targetMemberEntity.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `joined.country` }] });
@@ -481,6 +504,7 @@ export class CountryManager {
      * @param {Player|undefined} player 
      */
     reName(newName: any, player = undefined) {
+        this.reload();
         if (!this.isVaildProperty) {
             console.error(`[MakeCountry CountryManager] The Country ${this.id} is not vaild.`);
             return;
@@ -687,6 +711,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     sendAllianceRequest(countryId: any, player = undefined) {
+        this.reload();
         return sendAllianceRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -697,6 +722,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     acceptAllianceRequest(countryId: any, player = undefined) {
+        this.reload();
         return acceptAllianceRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -707,6 +733,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     denyAllianceRequest(countryId: any, player = undefined) {
+        this.reload();
         return denyAllianceRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -717,6 +744,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     removeAlliance(countryId: any, player = undefined) {
+        this.reload();
         return removeAllianceFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -727,6 +755,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     createFederation(federationName: any, player = undefined) {
+        this.reload();
         return createFederationFunction(federationName, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -737,6 +766,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     sendFederationRequest(countryId: any, player = undefined) {
+        this.reload();
         return sendFederationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -747,6 +777,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     acceptFederationRequest(countryId: any, player = undefined) {
+        this.reload();
         return acceptFederationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -757,6 +788,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     denyFederationRequest(countryId: any, player = undefined) {
+        this.reload();
         return denyFederationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -767,6 +799,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     removeFederation(countryId: any, player = undefined) {
+        this.reload();
         return removeFederationFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -776,6 +809,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     leaveFederation(player = undefined) {
+        this.reload();
         return leaveFederationFunction(this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -786,6 +820,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     setFederationCapital(countryId: any, player = undefined) {
+        this.reload();
         return setFederationCapitalFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -796,6 +831,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     transferFederationLeader(playerId: any, player = undefined) {
+        this.reload();
         return transferFederationLeaderFunction(playerId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -807,6 +843,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     updateFederationBasic(name: any, description: any, player = undefined) {
+        this.reload();
         return updateFederationBasicFunction(name, description, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -817,6 +854,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     updateFederationSettings(settings: any, player = undefined) {
+        this.reload();
         return updateFederationSettingsFunction(settings, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -827,7 +865,12 @@ export class CountryManager {
      * @returns {boolean}
      */
     setFederationTaxRate(taxRate: any, player = undefined) {
+        this.reload();
         return setFederationTaxRateFunction(taxRate, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
+    }
+
+    updateFederationGovernance(roles: any, memberPolicies: any, player = undefined) {
+        return updateFederationGovernanceFunction(roles, memberPolicies, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
     /**
@@ -837,6 +880,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     addFederationSubLeader(playerId: any, player = undefined) {
+        this.reload();
         return addFederationSubLeaderFunction(playerId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -847,6 +891,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     removeFederationSubLeader(playerId: any, player = undefined) {
+        this.reload();
         return removeFederationSubLeaderFunction(playerId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -856,6 +901,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     disbandFederation(player = undefined) {
+        this.reload();
         return disbandFederationFunction(this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -866,6 +912,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     sendFriendlyRequest(countryId: any, player = undefined) {
+        this.reload();
         return sendFriendlyRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -876,6 +923,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     acceptFriendlyRequest(countryId: any, player = undefined) {
+        this.reload();
         return acceptFriendlyRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -886,6 +934,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     denyFriendlyRequest(countryId: any, player = undefined) {
+        this.reload();
         return denyFriendlyRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -896,6 +945,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     removeFriendly(countryId: any, player = undefined) {
+        this.reload();
         return removeFriendlyFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -906,6 +956,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     sendApplicationRequest(countryId: any, player = undefined) {
+        this.reload();
         return sendApplicationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -916,6 +967,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     acceptApplicationRequest(countryId: any, player = undefined) {
+        this.reload();
         return acceptApplicationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -926,6 +978,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     denyApplicationRequest(countryId: any, player = undefined) {
+        this.reload();
         return denyApplicationRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -935,6 +988,7 @@ export class CountryManager {
      * @param {Player} player 
      */
     sendMergeRequest(countryId: any, player = undefined) {
+        this.reload();
         return sendMergeRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -955,6 +1009,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     denyMergeRequest(countryId: any, player = undefined) {
+        this.reload();
         return denyMergeRequestFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -965,6 +1020,7 @@ export class CountryManager {
      * @returns {boolean}
      */
     AddHostility(countryId: any, player = undefined) {
+        this.reload();
         return addHostilityFunction(countryId, this.countryData, this.id, this.isVaildProperty, this.countryDataBase, player);
     }
 
@@ -987,6 +1043,7 @@ export class CountryManager {
         this.countryData = raw ? JSON.parse(raw) : undefined;
         this.isVaildProperty = !!this.countryData;
         this.name = this.countryData?.name;
+        this.memberManager = this.isVaildProperty ? new CountryMemberManager(this.id) : undefined;
     }
 
     /**
@@ -1174,12 +1231,23 @@ export class CountryManager {
             warNowCountryName.push(warNowCountryNameValue);
         };
 
+        // 国家ブースト (月額サポーターが付けたもの) と後援者。ストアから届いていなければ出さない
+        const boostInfo = countryBoostOf(this.countryData.id);
+        const boostLines: Array<{ text: string }> = [];
+        if (boostInfo && boostInfo.boosts > 0) {
+            const names = boostInfo.backers.map((b) => (b.boosts > 1 ? `${b.playerName} ×${b.boosts}` : b.playerName));
+            if (boostInfo.anonymous > 0) names.push(`匿名 ${boostInfo.anonymous} 人`);
+            boostLines.push({ text: `§p★ 国家ブースト§r: ${boostInfo.boosts} §7(Lv.${boostInfo.level})§r\n§r` });
+            boostLines.push({ text: `§p後援者§r: ${names.join(`§r , `)}\n§r` });
+        }
+
         return {
             rawtext: [
                 { translate: `form.showcountry.option.name`, with: [this.countryData.name] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.lore`, with: [this.countryData.lore] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.id`, with: [`${this.countryData.id}`] }, { text: `\n§r` },
                 { translate: `form.showcountry.option.lv`, with: [`${this.countryData?.lv ?? 0}`] }, { text: `\n§r` },
+                ...boostLines,
                 { text: `${this.roleManager.getRole(this.countryData.ownerRole)?.name || 'None'}: ${ownerName}` }, { text: `\n§r` },
                 { translate: `form.showcountry.option.memberscount`, with: [`${countryMemberIds.length}`] }, { text: `\n§r` },
                 { text: `${this.roleManager.getRole(this.countryData.peopleRole)?.name || 'None'}: ${membersName.join(`§r , `)}` }, { text: `\n§r` },
@@ -1210,9 +1278,24 @@ export class CountryManager {
      * 
      * @param {Player} player 
      */
-    nationTierLevelTryUp(player: any) {
-        // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-        const need = national_tier_level.needs[(this.countryData.lv ?? 0) + 1];
+    nationTierLevelTryUp(player: any, count = 1, expectedLevel?: number) {
+        this.reload();
+        const playerData = JSON.parse(new DynamicProperties('player').get(`player_${player.id}`) ?? 'null');
+        if (!this.isVaildProperty || playerData?.country !== this.countryData.id
+            || CheckPermission(player, 'nationalTierLevelAdmin')) {
+            player.sendMessage({ translate: 'no.permission' });
+            return;
+        }
+        const currentLevel = this.countryData.lv ?? 0;
+        if (expectedLevel !== undefined && currentLevel !== expectedLevel) {
+            player.sendMessage('§c国家レベルが変更されました。必要資源を確認し直してください。');
+            return;
+        }
+        const need = planNationalTierUpgrade(currentLevel, count, national_tier_level.needs);
+        if (!need) {
+            player.sendMessage('§c上げるレベル数は、上限までの正の整数で入力してください。');
+            return;
+        }
         const needItems = need.item;
         const needPoint = need.point;
         const needItemId = needItems.map((a: any) => a.typeId);
@@ -1234,17 +1317,48 @@ export class CountryManager {
                 notEnough.push({ typeId: item.typeId, need: item.amount, amount: (itemMap.get(item.typeId) ?? 0), notEnough: enough });
             };
         };
-        if (needPoint > this.countryData.resourcePoint) {
+        if (!Number.isFinite(this.countryData.resourcePoint) || needPoint > this.countryData.resourcePoint) {
             notEnough.push({ typeId: 'resourcepoint', need: needPoint, amount: this.countryData.resourcePoint, notEnough: needPoint - this.countryData.resourcePoint });
         } else if (notEnough.length == 0) {
-            for (const item of needItems) {
-                removeItemsFromContainer(container, item.typeId, item.amount);
-            };
-            this.countryData.resourcePoint = this.countryData.resourcePoint - needPoint;
-            this.countryData.lv = (this.countryData.lv ?? 0) + 1;
-            this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+            const previousLevel = this.countryData.lv;
+            const previousResourcePoint = this.countryData.resourcePoint;
+            const inventorySnapshot = Array.from({ length: container.size }, (_, index) => {
+                const item = container.getItem(index);
+                return item?.clone ? item.clone() : item;
+            });
+            let countryWriteAttempted = false;
+            try {
+                for (const item of needItems) {
+                    const remaining = removeItemsFromContainer(container, item.typeId, item.amount);
+                    if (remaining !== 0) throw new Error(`required item removal incomplete: ${item.typeId}`);
+                }
+                this.countryData.resourcePoint = this.countryData.resourcePoint - needPoint;
+                this.countryData.lv = need.to;
+                countryWriteAttempted = true;
+                this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
+            } catch (error) {
+                const rollbackErrors: string[] = [];
+                this.countryData.lv = previousLevel;
+                this.countryData.resourcePoint = previousResourcePoint;
+                if (countryWriteAttempted) {
+                    try { this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData); }
+                    catch (rollbackError) { rollbackErrors.push(`country: ${String(rollbackError)}`); }
+                }
+                for (let index = 0; index < inventorySnapshot.length; index++) {
+                    try { container.setItem(index, inventorySnapshot[index]); }
+                    catch (rollbackError) { rollbackErrors.push(`slot ${index}: ${String(rollbackError)}`); }
+                }
+                if (rollbackErrors.length) {
+                    console.error(`[country tier] rollback incomplete: country=${this.countryData.id} player=${player.id} errors=${rollbackErrors.join("; ")}`);
+                    player.sendMessage("§c処理失敗後の復元を完了できませんでした。操作を繰り返さず運営へ連絡してください。");
+                } else {
+                    player.sendMessage("§c処理に失敗したため、素材とRPを消費せず中止しました。時間をおいて再度お試しください。");
+                }
+                console.error(`[country tier] upgrade commit failed: country=${this.countryData.id} player=${player.id} error=${String(error)}`);
+                return;
+            }
             player.onScreenDisplay.setTitle({ text: `§a§lLevel UP!!` });
-            player.onScreenDisplay.updateSubtitle({ text: `§e${this.countryData.lv - 1} §f>> §e${this.countryData.lv}` });
+            player.onScreenDisplay.updateSubtitle({ text: `§e${currentLevel} §f>> §e${this.countryData.lv}` });
             player.sendMessage({ translate: 'national.tier.level.up', with: [`${this.countryData.lv}`] });
             player.playSound('random.levelup', { location: player.location });
             for (const memberId of this.countryData.members) {
@@ -1284,6 +1398,7 @@ export class CountryManager {
      * @param {number} lv 
      */
     nationTierLevelSet(lv: any) {
+        this.reload();
         this.countryData.lv = lv;
         this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         for (const memberId of this.memberManager.members) {
@@ -1307,6 +1422,7 @@ export class CountryManager {
      * @param {Player|undefined} player 
      */
     nationTierLevelUp(add = 1, player = undefined) {
+        this.reload();
         this.countryData.lv = (this.countryData.lv ?? 0) + add;
         this.countryDataBase.set(`country_${this.countryData.id}`, this.countryData);
         for (const memberId of this.memberManager.members) {

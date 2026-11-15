@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:glow_pigment",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "glow_pigment",
+      "minecraft:display_name": {
+        "value": "item.mc:glow_pigment"
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
+import { CountryActionForm as ActionForm, CountryModalForm as ModalForm } from "@/shared/ui/purpose-forms.js";
 import { Player, system, world } from "@minecraft/server";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionForm, ModalForm } from "@/shared/ui/form-class.js";
+
 const ActionFormData = ActionForm;
 const ModalFormData = ModalForm;
 import config from "@/config/server.js";

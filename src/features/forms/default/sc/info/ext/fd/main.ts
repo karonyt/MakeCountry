@@ -1,5 +1,6 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CheckPermission, CheckPermissionFromLocation } from "@/shared/utils/minecraft.js";
 import { externalAffairsMainDefaultForm } from "@/features/forms/default/sc/info/ext/main.js";
@@ -55,7 +56,7 @@ function teleportFederationSpawn(player: any, countryData: any) {
         player.sendMessage({ translate: "teleport.error.invader" });
         return;
     }
-    if (player.hasTag(`mc_notp`)) return;
+    if (teleportLocked(player)) return;
 
     const [x, y, z, rx, ry, dimensionId] = spawnData.pos.split("_");
     if (CheckPermissionFromLocation(player, Number(x), Number(z), dimensionId, `publicHomeUse`)) {

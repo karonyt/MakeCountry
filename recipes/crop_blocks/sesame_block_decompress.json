@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:sesame_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:sesame_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:sesame_block"
+      }
+    ],
+    "result": {
+      "item": "mc:sesame",
+      "count": 9
+    }
+  }
+}
+

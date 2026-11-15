@@ -1,0 +1,51 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "mc:frosted_heath"
+    },
+    "components": {
+      "minecraft:climate": {
+        "temperature": -0.5,
+        "downfall": 0.5,
+        "snow_accumulation": [
+          0,
+          0
+        ]
+      },
+      "minecraft:surface_builder": {
+        "builder": {
+          "type": "minecraft:overworld",
+          "sea_floor_depth": 7,
+          "sea_floor_material": "minecraft:gravel",
+          "foundation_material": "minecraft:stone",
+          "mid_material": "mc:chalk_stone",
+          "top_material": "mc:froststone",
+          "sea_material": "minecraft:water"
+        }
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "dimension": "minecraft:overworld",
+            "targets": [
+              "minecraft:cold_taiga",
+              "minecraft:ice_plains"
+            ],
+            "amount": 0.18,
+            "noise_frequency_scale": 16
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "overworld",
+          "monster",
+          "mc:frosted_heath",
+          "cold",
+          "animal"
+        ]
+      }
+    }
+  }
+}

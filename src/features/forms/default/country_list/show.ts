@@ -1,11 +1,21 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { countryListDefaultForm } from "@/features/forms/default/country_list/list.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { CheckPermissionFromLocation } from "@/shared/utils/minecraft.js";
 import { describeDynamicPropertyEntry } from "@/shared/storage/dynamic-properties.js";
 import config from "@/config/server.js";
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData*/
+
+/**
+ * server_form.json uses section-sign sequences in the form title as invisible
+ * routing markers. A decorated country name (for example one containing `§m`)
+ * can otherwise be mistaken for a custom gacha form.
+ */
+function getSafeCountryFormTitle(countryName: unknown): string {
+    return String(countryName ?? "").replace(/§./g, "").trim() || "Country";
+}
 
 /**
  * 国の情報を表示（新システム対応・defaultスポーンのみ）
@@ -34,7 +44,7 @@ export function showCountryInfoDefaultForm(player: any, countryData: any, type =
 
         const showBody = countryManager.getCountryInfoRawText();
         const form = new ActionFormData();
-        form.title(countryData.name);
+        form.title(getSafeCountryFormTitle(countryData.name));
         form.body(showBody);
 
         form.button({ translate: `mc.button.close` });
@@ -57,7 +67,7 @@ export function showCountryInfoDefaultForm(player: any, countryData: any, type =
                     break;
                 case 1:
                     // テレポート
-                    if (player.hasTag(`mc_notp`)) return;
+                    if (teleportLocked(player)) return;
 
                     if (config.invaderNoTeleportValidity && player.getTags().find((tag: any) => tag.startsWith("war"))) {
                         player.sendMessage({ translate: "teleport.error.invader" });

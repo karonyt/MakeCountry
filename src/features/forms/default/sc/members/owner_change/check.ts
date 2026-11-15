@@ -1,6 +1,6 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { memberSelectedShowDefaultForm } from "@/features/forms/default/sc/members/member_show.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/

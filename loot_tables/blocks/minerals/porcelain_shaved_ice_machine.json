@@ -1,0 +1,14 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:porcelain_shaved_ice_machine",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

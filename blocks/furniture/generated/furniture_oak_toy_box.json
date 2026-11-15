@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.26.20",
   "minecraft:block": {
     "description": {
       "identifier": "mc:furniture_oak_toy_box",
@@ -15,8 +15,6 @@
       }
     },
     "components": {
-      "tag:furniture": {},
-      "tag:furniture_toy_box": {},
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.6
       },
@@ -30,6 +28,19 @@
           "texture": "furniture_oak_toy_box",
           "render_method": "opaque"
         }
+      },
+      "minecraft:tags": [
+        "furniture",
+        "furniture_toy_box"
+      ],
+      "minecraft:block_entity": {
+        "container": {
+          "slot_count": 27,
+          "title": "tile.mc:furniture_oak_toy_box.name"
+        }
+      },
+      "minecraft:movable": {
+        "movement_type": "immovable"
       }
     },
     "permutations": [

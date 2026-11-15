@@ -1,0 +1,29 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:dense_smooth_basalt",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 8
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 24
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#4f4d4b",
+      "minecraft:loot": "loot_tables/blocks/compressed/dense_smooth_basalt.json",
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "compressed_smooth_basalt",
+          "render_method": "opaque"
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { settingCountryRoleDefaultForm } from "@/features/forms/default/sc/role/main.js";
 import { RoleNameChangeDefaultForm } from "@/features/forms/default/sc/role/edit_type/name_change.js";
 import { RoleIconChangeDefaultForm } from "@/features/forms/default/sc/role/edit_type/icon_change.js";

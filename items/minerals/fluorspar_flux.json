@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:fluorspar_flux",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "fluorspar_flux",
+      "minecraft:display_name": {
+        "value": "item.mc:fluorspar_flux"
+      }
+    }
+  }
+}

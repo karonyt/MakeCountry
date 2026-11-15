@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:anpan",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "anpan"
+      },
+      "minecraft:use_duration": 2,
+      "minecraft:food": {
+        "nutrition": 8,
+        "saturation_modifier": 0.8
+      },
+      "minecraft:use_animation": "eat"
+    }
+  }
+}

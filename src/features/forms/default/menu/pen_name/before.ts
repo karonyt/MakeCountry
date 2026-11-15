@@ -1,4 +1,4 @@
-import { ActionFormData } from "@minecraft/server-ui";
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { penNameMainDefaultForm } from "@/features/forms/default/menu/pen_name/main.js";
 import { Player } from "@minecraft/server";
 import config from "@/config/server.js";

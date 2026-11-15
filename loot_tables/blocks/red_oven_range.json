@@ -1,0 +1,15 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:red_oven_range",
+          "quantity": 1,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

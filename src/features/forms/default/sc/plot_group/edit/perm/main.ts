@@ -1,7 +1,7 @@
-import { ModalFormData } from "@minecraft/server-ui";
+import { PlotModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { landPermissions } from "@/domain/country/permissions.js";
+import { landPermissions, isPermissionEnabled, permissionsFromToggles } from "@/domain/country/permissions.js";
 import { plotGroupEditMainPlotAdminDefaultForm } from "@/features/forms/default/sc/plot_group/edit/edit_main_admin.js";
 
 /**
@@ -24,7 +24,7 @@ export function plotGroupEditPermissionsDefaultForm(player: any, plotGroupId: an
     };
     if (!plotGroupData?.permissions) plotGroupData.permissions = [];
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, { defaultValue: plotGroupData?.permissions.includes(permission) });
+        form.toggle({ translate: `permission.${permission}` }, { defaultValue: isPermissionEnabled(plotGroupData?.permissions, permission) });
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then(rs => {
@@ -37,14 +37,7 @@ export function plotGroupEditPermissionsDefaultForm(player: any, plotGroupId: an
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions = [];
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        for (let i = 0; i < values.length; i++) {
-            // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         plotGroupData.permissions = newLandPermissions;
         plotGroupManager.set(plotGroupId, plotGroupData);
         if (isPlotAdmin) {

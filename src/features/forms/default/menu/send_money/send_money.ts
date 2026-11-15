@@ -1,6 +1,6 @@
+import { CommerceActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import { sendMoneyCheckDefaultForm } from "@/features/forms/default/menu/send_money/check.js";
 import { searchSendMoneyDefaultForm } from "@/features/forms/default/menu/send_money/search.js";
 
@@ -24,7 +24,7 @@ export function sendMoneyDefaultForm(player: any, serch = false, keyword = ``) {
     };
     form.show(player).then(rs => {
         if (rs.canceled) {
-            playerMainMenuDefaultForm(player);
+            callPlayerMainMenuForm(player);
             return;
         };
         switch (rs.selection) {

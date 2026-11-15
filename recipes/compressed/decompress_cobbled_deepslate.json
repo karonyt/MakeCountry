@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:decompress_cobbled_deepslate"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_cobbled_deepslate"
+      }
+    },
+    "result": {
+      "item": "minecraft:cobbled_deepslate",
+      "count": 9
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:suit",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "suit",
+      "minecraft:wearable": {
+        "slot": "slot.armor.chest",
+        "protection": 3,
+        "dispensable": true
+      },
+      "minecraft:durability": {
+        "max_durability": 240
+      },
+      "minecraft:enchantable": {
+        "slot": "armor_torso",
+        "value": 12
+      }
+    }
+  }
+}

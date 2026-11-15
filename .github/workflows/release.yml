@@ -1,0 +1,125 @@
+name: Build and release mcaddon
+
+# 使い方
+#   A) GitHub の Releases で新しいリリース (タグ例: v2.5.0) を作成する
+#   B) Actions > "Build and release mcaddon" > Run workflow でバージョン (例: 2.5.0) を入力する
+#      (タグ v<バージョン> のリリースが自動で作成される)
+# どちらの場合もビルドした MakeCountry-v<バージョン>.mcaddon と各 .mcpack がリリースに添付される。
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "リリースするバージョン (例: 2.5.0)"
+        required: true
+      prerelease:
+        description: "プレリリースにする"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="v${{ inputs.version }}"
+          fi
+          VERSION="${TAG#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::バージョンは 2.5.0 のような X.Y.Z 形式で指定してください (受け取った値: $TAG)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout behavior pack
+        uses: actions/checkout@v4
+        with:
+          path: bp
+
+      - name: Checkout resource pack
+        uses: actions/checkout@v4
+        with:
+          repository: karonyt/MakeCountryResourcePack
+          path: rp
+          # リソースパックのリポジトリが非公開の場合は、読み取り権限のあるトークンを
+          # リポジトリの Secrets に OTHER_REPO_TOKEN として登録する
+          token: ${{ secrets.OTHER_REPO_TOKEN || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: bp
+        run: npm ci
+
+      - name: Set pack versions
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node - <<'EOF'
+          const fs = require("fs");
+          const v = process.env.VERSION.split(".").map(Number);
+          const rpUuid = JSON.parse(fs.readFileSync("rp/manifest.json", "utf8")).header.uuid;
+          for (const [file, label] of [["bp/manifest.json", "MakeCountryBehavior"], ["rp/manifest.json", "MakeCountryResource"]]) {
+            const m = JSON.parse(fs.readFileSync(file, "utf8"));
+            m.header.name = `${label} v.${process.env.VERSION}`;
+            m.header.version = v;
+            for (const mod of m.modules) mod.version = v;
+            for (const dep of m.dependencies ?? []) if (dep.uuid === rpUuid) dep.version = v;
+            fs.writeFileSync(file, JSON.stringify(m, null, 2) + "\n");
+          }
+          const startup = "bp/src/app/startup-message.ts";
+          fs.writeFileSync(startup, fs.readFileSync(startup, "utf8").replace(/const version = "[^"]*";/, `const version = "ver.${process.env.VERSION}";`));
+          EOF
+
+      - name: Typecheck
+        working-directory: bp
+        run: npm run typecheck
+
+      - name: Build scripts
+        working-directory: bp
+        run: |
+          npm run clean
+          npm run build
+          test -f scripts/index.js
+
+      - name: Package
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          mkdir -p dist
+          (cd bp && zip -qr ../dist/MakeCountryBehavior.mcpack . \
+            -x ".git/*" ".github/*" "node_modules/*" "src/*" "tools/*" "localization/*" \
+               "package.json" "package-lock.json" "tsconfig.json" "tsdown.config.js" ".npmrc" \
+               ".gitignore" "README.md" "*.zip" "*.mcpack" "*.mcaddon")
+          (cd rp && zip -qr ../dist/MakeCountryResource.mcpack . \
+            -x ".git/*" ".github/*" ".gitignore" "README.md" "*.zip" "*.mcpack" "*.mcaddon")
+          (cd dist && zip -q "MakeCountry-${TAG}.mcaddon" MakeCountryBehavior.mcpack MakeCountryResource.mcpack)
+          ls -la dist
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ github.event_name == 'release' && github.event.release.name || steps.version.outputs.tag }}
+          prerelease: ${{ github.event_name == 'release' && github.event.release.prerelease || inputs.prerelease }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            dist/MakeCountry-${{ steps.version.outputs.tag }}.mcaddon
+            dist/MakeCountryBehavior.mcpack
+            dist/MakeCountryResource.mcpack

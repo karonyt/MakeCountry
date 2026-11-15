@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:eggplant_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:eggplant_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:eggplant_block"
+      }
+    ],
+    "result": {
+      "item": "mc:eggplant",
+      "count": 9
+    }
+  }
+}
+

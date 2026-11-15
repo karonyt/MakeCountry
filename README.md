@@ -29,7 +29,7 @@
 > カスタマイズしたい？
 
 もちろんそんなことも考えて簡単にカスタマイズできる機能を用意しました。  
-アドオン(ビヘイビア)フォルダのscript/config/
+ソースの `src/config/` (ビルド前)
 こちらのフォルダ内のファイルで簡単に色々な設定を行えます  
 設定項目は300種類以上あるのでオリジナリティあふれるサーバーにできます  
 
@@ -58,6 +58,33 @@
 | **税金回収**        | ✅ |
 | **tp申請**        | ✅ |
 | **カスタムコマンド**        | ✅ |
+
+> 導入に必要なもの
+
+- ワールド設定で「ベータ API」の実験的機能をオンにしてください
+- ビヘイビアパックとリソースパックの両方が必要です(リリースの `.mcaddon` に両方入っています)
+
+> 開発者向け: ビルド
+
+```bash
+npm ci
+npm run typecheck
+npm run build   # scripts/index.js が生成されます
+```
+
+- 設定は `src/config/server.ts` などを編集してからビルドします
+- レシピ検索用の生成ファイル(`src/generated/`)を作り直すときは、隣に MakeCountryResourcePack を置いて `npm run generate` を実行します
+  (バニラの名前も含める場合は `VANILLA_TEXTS` に BDS の `resource_packs/vanilla/texts` を指定)
+
+> 開発者向け: リリース
+
+GitHub Actions の「Build and release mcaddon」で自動ビルドします。
+
+- Releases で `v2.5.0` のようなタグのリリースを作成する、または
+- Actions から Run workflow でバージョン(例: `2.5.0`)を入力する
+
+と、両パックの manifest をそのバージョンにしてビルドし、`MakeCountry-v2.5.0.mcaddon` をリリースに添付します。
+リソースパックは非公開リポジトリ karonyt/MakeCountryResourcePack から取得するため、読み取り権限のあるトークンを Secrets の `OTHER_REPO_TOKEN` に登録しておいてください。
 
 > ライセンス
   

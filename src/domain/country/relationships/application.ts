@@ -4,6 +4,7 @@
 
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
+import { notifyRelationshipRequest } from "@/domain/country/relationships/request-notifications.js";
 /**@typedef {import("@/domain/country/country-manager.js").CountryData} CountryData*/
 
 /**
@@ -32,22 +33,19 @@ export function acceptApplicationRequestFunction(countryId: any, countryData: an
      */
     const targetCountryData = JSON.parse(rawTargetCountryData);
 
-    targetCountryData.applicationPeaceRequestReceive = targetCountryData.applicationPeaceRequestReceive.filter((r: any) => r != countryData.country);
+    targetCountryData.applicationPeaceRequestReceive = targetCountryData.applicationPeaceRequestReceive.filter((r: any) => r != id);
     countryData.applicationPeaceRequestSend = countryData.applicationPeaceRequestSend.filter((r: any) => r != countryId);
-    targetCountryData.applicationPeaceRequestSend = targetCountryData.applicationPeaceRequestSend.filter((r: any) => r != countryData.country);
+    targetCountryData.applicationPeaceRequestSend = targetCountryData.applicationPeaceRequestSend.filter((r: any) => r != id);
     countryData.applicationPeaceRequestReceive = countryData.applicationPeaceRequestReceive.filter((r: any) => r != countryId);
-    targetCountryData.hostility = targetCountryData.hostility.filter((h: any) => h != countryData.country);
+    targetCountryData.hostility = targetCountryData.hostility.filter((h: any) => h != id);
     countryData.hostility = countryData.hostility.filter((h: any) => h != countryId);
-    targetCountryData.warNowCountries = targetCountryData.warNowCountries.filter((w: any) => w != countryData.country);
+    targetCountryData.warNowCountries = targetCountryData.warNowCountries.filter((w: any) => w != id);
     countryData.warNowCountries = countryData.warNowCountries.filter((w: any) => w != countryId);
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
-    if (player) {
-        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
-        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.application.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("accepted", "application", targetCountryData, countryData, player);
     return true;
 };
 
@@ -124,10 +122,7 @@ export function sendApplicationRequestFunction(countryId: any, countryData: any,
     countryDataBase.set(`country_${id}`, JSON.stringify(countryData));
     countryDataBase.set(`country_${countryId}`, JSON.stringify(targetCountryData));
 
-    if (player) {
-        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
-        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `sent.application.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("sent", "application", countryData, targetCountryData, player);
 
     return true;
 

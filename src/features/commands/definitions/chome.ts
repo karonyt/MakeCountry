@@ -1,3 +1,4 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CheckPermissionFromLocation, GetAndParsePropertyData } from "@/shared/utils/minecraft.js";
@@ -22,7 +23,7 @@ function countryHomeExecuter(origin: any, args: any) {
         sender.sendMessage({ translate: "teleport.error.invader" });
         return;
     }
-    if (sender.hasTag(`mc_notp`)) return;
+    if (teleportLocked(sender)) return;
 
     if (!playerData?.country) {
         sender.sendMessage({ translate: `command.chome.error.notjoin.country` });

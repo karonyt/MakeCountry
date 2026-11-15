@@ -1,0 +1,12 @@
+import * as server from '@minecraft/server';
+import entries from './catalog/all.js';
+import strings from './catalog/server-text.js';
+import { createLocalizer } from './runtime.js';
+import { createNameTagPresenter } from './nametags.js';
+import { createCommandPresenters } from './commands.js';
+const ui=createLocalizer(entries);
+export const { raw, primitive, template, capture, literal, lore, literalLore, titleOptions } = ui;
+export const { commandInfo, commandCallback, runCommand } = createCommandPresenters(ui,server,strings);
+const labels=createNameTagPresenter(ui,server,'makecountry',{monsterHealthNames:false});
+export const { setNameTag, getNameTag, getNameTagMessage } = labels;
+labels.start();

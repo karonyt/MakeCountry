@@ -1,0 +1,34 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:sulfur_stone_bricks"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:sulfur_stone"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:sulfur_stone"
+      },
+      {
+        "item": "mc:sulfur_stone"
+      },
+      {
+        "item": "mc:sulfur_stone"
+      },
+      {
+        "item": "mc:sulfur_stone"
+      }
+    ],
+    "result": {
+      "item": "mc:sulfur_stone_bricks",
+      "count": 4
+    }
+  }
+}

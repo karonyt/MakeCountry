@@ -1,55 +1,10 @@
-import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
-import config from "@/config/server.js";
-import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
-import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
+import { CommandPermissionLevel, CustomCommandParamType, Player, system } from "@minecraft/server";
+import { sendMoneyBetweenPlayers } from "@/domain/player/money-transfer.js";
 
 function sendMoneyExecuter(origin: any, args: any) {
-    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
-    const sender = origin.sourceEntity;
-
-    const playerDataBase = new DynamicProperties('player');
-    const rawData = playerDataBase.get(`player_${sender.id}`);
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(rawData);
-
-    const amount = args[0];
-
-    if (amount <= 0 || 1000000000000 < amount) {
-        sender.sendMessage({ translate: 'command.number.limit.range', with: ['1', '1,000,000,000,000'] });
-        return;
-    };
-
-    //const targetName = args[1].name;
-    /**
-     * @type {Player}
-     */
-    //const targetPlayer = world.getDimension(this.sender.dimension.id).getEntities({ type: "minecraft:player", name: targetName })[0];
-    const targetPlayer = args[1][0];
-
-    if (!targetPlayer) {
-        sender.sendMessage({ translate: `command.error.notarget.this.dimension` });
-        return;
-    };
-    if (targetPlayer.id == sender.id) {
-        sender.sendMessage({ translate: `command.error.trysend.moremoney.yourself` })
-        return;
-    };
-    if (amount < 1) {
-        sender.sendMessage({ translate: `command.error.canuse.number.more`, with: [`1`] });
-        return;
-    };
-    if (playerData.money < amount) {
-        sender.sendMessage({ translate: `command.error.trysend.moremoney.youhave`, with: [`${playerData.money}`] });
-        return;
-    };
-    const targetData = GetAndParsePropertyData(`player_${targetPlayer.id}`);
-    targetData.money += Math.floor(amount);
-    playerData.money -= Math.floor(amount);
-    StringifyAndSavePropertyData(`player_${targetPlayer.id}`, targetData);
-    StringifyAndSavePropertyData(`player_${sender.id}`, playerData);
-    sender.sendMessage({ translate: `command.sendmoney.result.sender`, with: [targetPlayer.name, `${config.MoneyName} ${Math.floor(amount)}`] });
-    targetPlayer.sendMessage({ translate: `command.sendmoney.result.receiver`, with: [sender.name, `${config.MoneyName} ${Math.floor(amount)}`] });
-};
+    if (!origin?.sourceEntity || !(origin.sourceEntity instanceof Player)) return;
+    sendMoneyBetweenPlayers(origin.sourceEntity, args[1]?.[0], args[0], 1000000000000);
+}
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(

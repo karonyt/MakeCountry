@@ -1,9 +1,11 @@
+import { SocialActionForm as ActionFormData, SocialModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { FormCancelationReason } from "@minecraft/server-ui";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import { PlayerManager } from "@/domain/player/player-manager.js";
 import { playerChatMuteMenuForm } from "@/features/forms/default/menu/setting/chat_mute.js";
+import { CLASSIC_FORM_UI_PROPERTY, usesClassicFormUI } from "@/shared/ui/form-class.js";
 
 /**
  * 
@@ -35,7 +37,7 @@ export function playerSettingDefaultForm(player: any) {
                 playerChatMuteMenuForm(player);
                 break;
             default:
-                playerMainMenuDefaultForm(player);
+                callPlayerMainMenuForm(player);
                 break;
         }
     });
@@ -47,6 +49,10 @@ function playerBasicSettingDefaultForm(player: any) {
     const index = uiTypes.indexOf(player.getDynamicProperty('uiType'));
     form.title({ translate: 'form.mainmenu.button.setting' });
     form.dropdown({ translate: 'settings.ui_type' }, ['default', 'kingdoms', 'towny'], { defaultValueIndex: index });
+    form.toggle("従来のフォームUIを使う", {
+        defaultValue: usesClassicFormUI(player),
+        tooltip: "改変前のバニラフォーム・ChestFormの見た目と操作へ戻します",
+    });
 
     let settings = [
         {
@@ -119,9 +125,10 @@ function playerBasicSettingDefaultForm(player: any) {
         };
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         player.setDynamicProperty('uiType', uiTypes[rs.formValues[0]]);
+        player.setDynamicProperty(CLASSIC_FORM_UI_PROPERTY, rs.formValues[1] === true);
         for (let i = 0; i < settings.length; i++) {
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            player.setDynamicProperty(settings[i].dypKey, `${rs.formValues[i + 1]}`);
+            player.setDynamicProperty(settings[i].dypKey, `${rs.formValues[i + 2]}`);
         };
         player.sendMessage({ translate: 'updated' });
     });

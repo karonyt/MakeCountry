@@ -1,9 +1,9 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { sendMergeRequestListDefaultForm } from "@/features/forms/default/sc/info/ext/s_mrg_req_list/send_req_list.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { checkSendMergeDefaultForm } from "@/features/forms/default/sc/info/ext/s_mrg_req_list/check.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData */
 

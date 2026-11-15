@@ -1,20 +1,28 @@
+import { addCraftableFilterButton, craftableOnly, toggleCraftableOnly, filterCraftableRecipeIds, CRAFTABLE_FILTER_SLOT } from "@/shared/ui/craftable-filter.js";
+import { resolveCookingCategoryPreference } from "@/shared/ui/artisan-filter-preferences.js";
+import { openCookingRecipeCategory } from "@/shared/ui/artisan-recipe-filter.js";
+import { cancelArtisanCraft, runArtisanCraft } from "@/domain/jobs/pending-artisan-rewards.js";
+import { recipeListName, recipeTitleParts } from "@/domain/recipes/recipe-display.js";
+import { captureCookingEquipment, requireCookingEquipment } from '@/domain/cooking/cookware.js';
+import { CraftingModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { ItemStack, Player, world } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
+import { addLastCraftedRecipeButton, getLastCraftedRecipeId, rememberLastCraftedRecipe } from "@/shared/ui/last-crafted-recipe.js";
 import { MixerRecipes } from "@/content/cooking/mixer-recipe.js";
 import { itemIdToPath } from "@/config/textures.js";
 import jobs_config from "@/config/jobs.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { getRandomInteger, langChangeItemName } from "@/shared/utils/minecraft.js";
-import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { getGameplayRandomValue } from "@/shared/utils/gameplay-random.js";
 import { createResultStacks, resolveRecipeResult } from "@/domain/recipes/recipe-result.js";
-import { capCookingRankByChefLevel } from "@/domain/cooking/quality-cap.js";
+import { buildCookingEffectRawtext } from "@/domain/recipes/recipe-effect-lore.js";
+import { capCookingRankByRecipe } from "@/domain/cooking/quality-cap.js";
 import {
     adjacentRecipeCategory,
+    recipeCategoryLabel,
     filterRecipeIds,
     getAvailableRecipeCategories,
-    resolveRecipeCategory,
 } from "@/domain/cooking/recipe-category.js";
 import {
     cleanRecipeSearchQuery,
@@ -22,18 +30,32 @@ import {
     isRecipeSearchActive,
     sortRecipeIdsByLevel,
 } from "@/domain/recipes/recipe-list.js";
-import { ModalFormData } from "@minecraft/server-ui";
-import config from "@/config/server.js";
+
+import {
+    addComplexCookingMinigameUi,
+    beginComplexCookingAction,
+    canCompleteComplexCooking,
+    endComplexCookingAction,
+    ensureComplexCookingRoute,
+    getComplexCookingAdjustment,
+    getComplexCookingCompletionLore,
+    getComplexCookingCompletionMessage,
+    getComplexCookingResultInfo,
+    initializeComplexCookingMinigame,
+} from "@/features/forms/default/cooking/complex-station-minigame.js";
+import { buildCookingMasteryLore } from "@/features/forms/default/cooking/cooking-mastery-ui.js";
+import {
+    hasAnyUnreservedCookingIngredient,
+    hasUnreservedCookingIngredient,
+} from "@/features/forms/default/cooking/complex-station-ingredients.js";
 
 /* ===============================
    Init
 ================================ */
 let buff: any;
-let playerDB: any;
 
 world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
-    playerDB = new DynamicProperties("player");
 });
 
 /* ===============================
@@ -149,13 +171,13 @@ function isOverblendDanger(mixer: any, recipe: any) {
 
 function calcMaxActions(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
-    return recipe.baseActions + Math.min(Math.floor(lv / 5), 30 + (recipe.requiredLevel * 3));
+    return Math.max(10, recipe.baseActions + Math.min(Math.floor(lv / 5), 30 + (recipe.requiredLevel * 3)));
 }
 
 function speedVariance(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
     const diff = lv - recipe.requiredLevel;
-    return getRandomInteger(
+    return getGameplayRandomValue(
         -Math.max(1, 5 - Math.floor(diff / 3)),
         Math.max(1, 5 - Math.floor(diff / 3))
     );
@@ -228,7 +250,7 @@ const MixerActions = [
         unlockLv: 1,
         cost: 1,
         run(mixer: any, recipe: any, ctx: any, player: any) {
-            mixer.speed += getRandomInteger(30, 50) + ctx.speedVariance();
+            mixer.speed += getGameplayRandomValue(30, 50) + ctx.speedVariance();
             mixer.progress += mixer.speed >= recipe.needSpeed[0] ? 12 : 4;
             if (mixer.speed > recipe.needSpeed[1]) {
                 mixer.oxidation += 8;
@@ -249,7 +271,7 @@ const MixerActions = [
         cost: 1,
         run(mixer: any, recipe: any, ctx: any, player: any) {
             mixer.phase = "mixing";
-            mixer.progress += getRandomInteger(10, 18);
+            mixer.progress += getGameplayRandomValue(10, 18);
             mixer.smoothness += 8;
             mixer.oxidation -= 5;
             player.stopSound('mixer.fast');
@@ -272,7 +294,7 @@ const MixerActions = [
             }
 
             for (const s of Object.keys(recipe.additives ?? {})) {
-                if (!hasAll(player, { [s]: 1 })) continue;
+                if (!hasUnreservedCookingIngredient(player, s, mixer.scaledIngredients)) continue;
 
                 const inv = player.getComponent("inventory").container;
                 let usedItem;
@@ -317,7 +339,7 @@ const MixerActions = [
         cost: 1,
         run(mixer: any, recipe: any, ctx: any, player: any) {
             mixer.phase = "mixing";
-            mixer.speed -= getRandomInteger(25, 40);
+            mixer.speed -= getGameplayRandomValue(25, 40);
             mixer.progress += 5;
             mixer.oxidation -= 10;
             player.stopSound('mixer.fast');
@@ -334,7 +356,7 @@ const MixerActions = [
         cost: 1,
         run(mixer: any, recipe: any, ctx: any, player: any) {
             mixer.phase = "mixing";
-            mixer.progress += getRandomInteger(15, 25);
+            mixer.progress += getGameplayRandomValue(15, 25);
             mixer.smoothness += 15;
             mixer.oxidation -= 8;
             mixer.speed -= 5;
@@ -373,7 +395,7 @@ const MixerActions = [
         cost: 2,
         run(mixer: any, recipe: any, ctx: any, player: any) {
             mixer.phase = "mixing";
-            mixer.speed += getRandomInteger(60, 100) + ctx.speedVariance();
+            mixer.speed += getGameplayRandomValue(60, 100) + ctx.speedVariance();
             mixer.progress += 25;
             mixer.smoothness += 12;
             mixer.oxidation += 15;
@@ -438,22 +460,27 @@ const MixerActions = [
 /* ===============================
    UI
 ================================ */
-export function openRecipeSelect(player: any, page = 0, categoryId = "all", searchQuery = "") {
-    const form = new ChestFormData("large")
+export function openRecipeSelect(player: any, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
+    if (mixerSessions.has(player.id)) {
+        openMixer(player);
+        return;
+    }
+
+    const form = new ChestFormData("large").enableLoreLineBreaks()
         .setTitle({ rawtext: [{ translate: "mixer.title.mixer" }] });
 
     const lv = new JobLevel(player, "chef").getLevel();
     const recipes = MixerRecipes as Record<string, any>;
     const cleanSearchQuery = cleanRecipeSearchQuery(searchQuery);
     const searchActive = isRecipeSearchActive(cleanSearchQuery);
-    const selectedCategory = resolveRecipeCategory(recipes, categoryId);
+    const selectedCategory = resolveCookingCategoryPreference(player, "cooking:mixer", recipes, categoryId);
     const availableCategories = getAvailableRecipeCategories(recipes, selectedCategory.id);
-    const recipeIds = filterUnlockedRecipesForSearch(
+    const recipeIds = filterCraftableRecipeIds(filterUnlockedRecipesForSearch(
         filterRecipeIds(sortRecipeIdsByLevel(Object.keys(recipes), recipes), recipes, selectedCategory.id),
         recipes,
         cleanSearchQuery,
         lv
-    );
+    ), recipes, player, lv);
 
     fill(form,
         [
@@ -464,6 +491,7 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
         "minecraft:black_stained_glass_pane"
     );
 
+    addCraftableFilterButton(form, player, recipeIds.length);
     const totalPages = Math.max(1, Math.ceil(recipeIds.length / RECIPES_PER_PAGE));
     const safePage = Math.min(Math.max(0, page), totalPages - 1);
     const start = safePage * RECIPES_PER_PAGE;
@@ -499,7 +527,7 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
                 ? itemIdToPath[r.name]
                 : itemIdToPath["minecraft:barrier"],
             name: lv >= r.requiredLevel
-                ? langChangeItemName(r.name)
+                ? recipeListName(r)
                 : "mixer.locked",
             lore: lv >= r.requiredLevel
                 ? [{
@@ -513,8 +541,9 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
                         { translate: "mixer.additives" },
                         { text: ":" },
                         ...additives,
+                        ...buildCookingEffectRawtext(r.result),
                     ]
-                }]
+                }, ...buildCookingMasteryLore(lv, r.requiredLevel)]
                 : [{
                     rawtext: [
                         { translate: "mixer.unlock_level" },
@@ -550,14 +579,14 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(47, {
             iconPath: getIconPath(previousCategory.icon),
-            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, { translate: previousCategory.label }],
+            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, recipeCategoryLabel(previousCategory)],
             editedName: true
         });
 
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(51, {
             iconPath: getIconPath(nextCategory.icon),
-            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, { translate: nextCategory.label }],
+            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, recipeCategoryLabel(nextCategory)],
             editedName: true
         });
     }
@@ -579,10 +608,18 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
         });
     }
 
-    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, { translate: selectedCategory.label }] }];
+    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, recipeCategoryLabel(selectedCategory)] }];
     if (searchActive) pageLore.push({ rawtext: [{ text: `§e検索: ${cleanSearchQuery}` }] });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form!.setButton(52, {
+        iconPath: itemIdToPath["minecraft:hopper"],
+        name: "§bジャンルで絞り込み",
+        lore: pageLore,
+        editedName: true
+    });
+
+    // @ts-ignore TS(2532): Object is possibly undefined.
     form.setButton(49, {
         iconPath: itemIdToPath["minecraft:paper"],
         name: [{ translate: "cooking.page.current", with: [`${safePage + 1}`, `${totalPages}`] }],
@@ -590,9 +627,25 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
         editedName: true
     });
 
+    if (!craftableOnly(player) || recipeIds.includes(getLastCraftedRecipeId(player.id, "cooking:mixer") ?? "")) addLastCraftedRecipeButton(form, player.id, "cooking:mixer", recipes);
+
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
         if (r.canceled) return;
+
+        if (r.selection === CRAFTABLE_FILTER_SLOT) {
+            toggleCraftableOnly(player);
+            openRecipeSelect(player, 0, selectedCategory.id, cleanSearchQuery);
+            return;
+        }
+
+        if (r.selection === 46) {
+            const lastRecipeId = getLastCraftedRecipeId(player.id, "cooking:mixer");
+            if (lastRecipeId && (!craftableOnly(player) || recipeIds.includes(lastRecipeId)) && recipes[lastRecipeId] && lv >= recipes[lastRecipeId].requiredLevel) {
+                openQuantitySelect(player, lastRecipeId);
+            }
+            return;
+        }
 
         if (r.selection === 45) {
             openRecipeSelect(player, safePage - 1, selectedCategory.id, cleanSearchQuery);
@@ -610,6 +663,11 @@ export function openRecipeSelect(player: any, page = 0, categoryId = "all", sear
             openRecipeSelect(player, 0, adjacentRecipeCategory(recipes, selectedCategory.id, 1).id, cleanSearchQuery);
             return;
         }
+        if (r.selection === 52) {
+            openCookingRecipeCategory(player, recipes, selectedCategory.id, next => openRecipeSelect(player, 0, next, cleanSearchQuery));
+            return;
+        }
+
         if (r.selection === 48) {
             openRecipeSearch(player, selectedCategory.id, cleanSearchQuery);
             return;
@@ -703,8 +761,10 @@ function startMixing(player: any, recipeId: any, quantity: any) {
 
     const materialQuality = calcAverageMaterialQuality(player, scaledIngredients);
 
-    mixerSessions.set(player.id, {
+    cancelArtisanCraft(mixerSessions.get(player.id));
+    mixerSessions.set(player.id, initializeComplexCookingMinigame({
         recipeId,
+        cookware: captureCookingEquipment(player, "mixer"),
         quantity,
         scaledIngredients,
         speed: 0,
@@ -724,18 +784,24 @@ function startMixing(player: any, recipeId: any, quantity: any) {
         additiveCount: 0,
 
         ctx: { speedVariance: () => speedVariance(player, recipe) }
-    });
+    }));
 
     openMixer(player);
 }
 
 function openMixer(player: any) {
     const mixer = mixerSessions.get(player.id);
+    if (!ensureComplexCookingRoute(player, "mixer", mixer, MixerActions, openMixer)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = MixerRecipes[mixer.recipeId];
     const lv = new JobLevel(player, "chef").getLevel();
+    const predictedRank = capCookingRankByRecipe(
+        player,
+        calcRank({ ...mixer, score: mixer.score + getComplexCookingAdjustment(player, "mixer", mixer) }, recipe),
+        recipe.requiredLevel,
+    ).rank;
 
-    const form = new ChestFormData("large").setTitle({ rawtext: [{ translate: langChangeItemName(recipe.name) }] });
+    const form = new ChestFormData("large").enableLoreLineBreaks().setTitle({ rawtext: recipeTitleParts(recipe) });
 
     fill(form, [...Array(9).keys(), ...Array(9).keys()].map(i => i),
         "minecraft:black_stained_glass_pane"
@@ -743,6 +809,7 @@ function openMixer(player: any) {
     fill(form, [...Array(9).keys(), ...Array(9).keys()].map(i => i + 45),
         "minecraft:black_stained_glass_pane"
     );
+    addComplexCookingMinigameUi(form, player, "mixer", mixer);
 
     const overblendDanger = isOverblendDanger(mixer, recipe);
     if (overblendDanger) {
@@ -767,7 +834,8 @@ function openMixer(player: any) {
             { rawtext: [{ text: '§d' }, { translate: "mixer.status.richness" }, { text: `: ${Math.max(0, mixer.richness)}\n` }] },
             { rawtext: [{ text: '§b' }, { translate: "mixer.status.actions" }, { text: `: ${mixer.actions}/${mixer.maxActions}\n` }] },
             { rawtext: [{ text: '§f' }, { translate: "mixer.status.amount" }, { text: `: ${mixer.quantity}\n` }] },
-            { rawtext: [{ text: '§5' }, { translate: "mixer.lore.quality", with: [`${capCookingRankByChefLevel(player, calcRank(mixer, recipe)).rank}`] }] }
+            { rawtext: [{ text: '§5' }, { translate: "mixer.lore.quality", with: [predictedRank] }] },
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
         ],
         editedName: true
     });
@@ -795,14 +863,19 @@ function openMixer(player: any) {
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.setButton(49, {
-        iconPath: itemIdToPath["minecraft:lime_dye"],
-        name: "mixer.button.complete",
+        iconPath: itemIdToPath[canCompleteComplexCooking(mixer) ? "minecraft:lime_dye" : "minecraft:barrier"],
+        name: canCompleteComplexCooking(mixer) ? "mixer.button.complete" : "cooking.minigame.finish.locked",
+        lore: [
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
+            ...getComplexCookingCompletionLore(mixer),
+        ],
         editedName: true
     });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
-        handleAction(player, r.selection || 0);
+        if (r.canceled || r.selection === undefined) return;
+        handleAction(player, r.selection);
     });
 }
 
@@ -811,11 +884,18 @@ function openMixer(player: any) {
 ================================ */
 function handleAction(player: any, slot: any) {
     const mixer = mixerSessions.get(player.id);
+    if (!mixer) return;
+    if (mixer.artisanFinish) { finish(player); return; }
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = MixerRecipes[mixer.recipeId];
 
-    if (slot === 49 && mixer.phase != 'raw') {
+    if (slot === 49 && mixer.phase != 'raw' && canCompleteComplexCooking(mixer)) {
         finish(player);
+        return;
+    }
+    if (slot === 49) {
+        player.onScreenDisplay.setActionBar(getComplexCookingCompletionMessage(mixer));
+        openMixer(player);
         return;
     }
 
@@ -835,7 +915,17 @@ function handleAction(player: any, slot: any) {
         finish(player);
         return;
     }
+    if (
+        action.key === "add_additive"
+        && mixer.usedAdditives.length < recipe.maxAdditives
+        && !hasAnyUnreservedCookingIngredient(player, Object.keys(recipe.additives ?? {}), mixer.scaledIngredients)
+    ) {
+        player.onScreenDisplay.setActionBar({ rawtext: [{ translate: "cooking.error.optional_requires_surplus" }] });
+        openMixer(player);
+        return;
+    }
 
+    const hadTrouble = beginComplexCookingAction("mixer", mixer, action.key);
     action.run(mixer, recipe, mixer.ctx, player);
     mixer.actions += action.cost;
     mixer.speed = Math.floor(mixer.speed * 100) / 100;
@@ -844,6 +934,7 @@ function handleAction(player: any, slot: any) {
     mixer.smoothness = Math.max(0, Math.floor(mixer.smoothness * 100) / 100);
     mixer.richness = Math.max(0, Math.floor(mixer.richness * 100) / 100);
     mixer.temperature = Math.max(0, Math.floor(mixer.temperature * 100) / 100);
+    endComplexCookingAction(player, "mixer", mixer, MixerActions, hadTrouble);
 
     openMixer(player);
 }
@@ -923,46 +1014,33 @@ function calcRank(mixer: any, recipe: any) {
  */
 function finish(player: any) {
     const mixer = mixerSessions.get(player.id);
+    if (!mixer || mixer.artisanCraftStarted) return;
+    if (!requireCookingEquipment(player, mixer?.cookware)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = MixerRecipes[mixer.recipeId];
 
     if (!checkIngredients(player, mixer.scaledIngredients)) {
+        cancelArtisanCraft(mixer);
         mixerSessions.delete(player.id);
         return;
     }
 
-    consume(player, mixer.scaledIngredients);
+    const { minigameResult, rank, mul, itemId, totalCount } = mixer.artisanFinish ??= (() => {
+        const minigameResult = getComplexCookingResultInfo(player, "mixer", mixer);
+        const finalResult = calcRank({
+            ...mixer,
+            score: mixer.score + getComplexCookingAdjustment(player, "mixer", mixer),
+        }, recipe);
+        const { rank, mul } = capCookingRankByRecipe(player, finalResult, recipe.requiredLevel);
 
-    const { rank, mul } = capCookingRankByChefLevel(player, calcRank(mixer, recipe));
-
-    const resolved = resolveRecipeResult(recipe.result);
-    const isFailure = rank === "F" && mixer.phase === "overblended";
-    const itemId = isFailure ? "minecraft:brown_dye" : resolved.id;
-    const totalCount = isFailure ? mixer.quantity : mixer.quantity * resolved.count;
-    const inv = player.getComponent("inventory").container;
-
-    for (const item of createResultStacks(itemId, totalCount)) {
-        item.setLore([
-            { rawtext: [{ text: '§r§a==============' }] },
-            { rawtext: [{ text: '§r§e' }, { translate: "mixer.lore.quality", with: [`${rank}`] }] },
-            { rawtext: [{ text: '§r§a==============' }] },
-        ]);
-
-        const leftover = inv.addItem(item);
-        if (leftover) {
-            player.dimension.spawnItem(leftover, player.location);
-        }
-    }
-
-    mixerSessions.delete(player.id);
-
-    player.stopSound('mixer.idle');
-    player.stopSound('mixer.fast');
-    player.stopSound('mixer.slow');
-    player.stopSound('mixer.pulse');
-    player.playSound('mixer.complete', player.location);
-
-    if (jobs_config.validity && player.hasTag('mcjobs_chef')) {
+        const resolved = resolveRecipeResult(recipe.result);
+        const isFailure = rank === "F" && mixer.phase === "overblended";
+        const itemId = isFailure ? "minecraft:brown_dye" : resolved.id;
+        const totalCount = isFailure ? mixer.quantity : mixer.quantity * resolved.count;
+        return { minigameResult, rank, mul, itemId, totalCount };
+    })();
+    if (!runArtisanCraft(player, mixer, () => {
+        if (!jobs_config.validity || !player.hasTag('mcjobs_chef')) return undefined;
         const job = new JobLevel(player, "chef");
         const level = job.getLevel();
 
@@ -981,32 +1059,36 @@ function finish(player: any) {
                 buff.getMultiplier("chef") *
                 5
             ) / 100;
+        const xpReward = recipe.baseXp * mul * Math.min(mixer.quantity, 25);
+        return { job: "chef", money: reward, xp: xpReward, rank, display: "mixer" };
+    }, () => {
+        consume(player, mixer.scaledIngredients);
+        rememberLastCraftedRecipe(player.id, "cooking:mixer", mixer.recipeId);
 
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-        const finalReward = applyDailyLimit(
-            playerData,
-            "chef",
-            reward,
-            jobs_config.dailyLimit.chef
-        );
+        const inv = player.getComponent("inventory").container;
 
-        if (finalReward > 0) {
-            job.addXp(recipe.baseXp * mul);
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+        for (const item of createResultStacks(itemId, totalCount)) {
+            item.setLore([
+                { rawtext: [{ text: '§r§a==============' }] },
+                { rawtext: [{ text: '§r§e' }, { translate: "mixer.lore.quality", with: [`${rank}`] }] },
+                { rawtext: [{ text: '§r§6' }, { translate: "cooking.minigame.result.level_technique", with: [`${minigameResult.levelTechnique}`] }] },
+                { rawtext: [{ text: '§r§d' }, { translate: "cooking.minigame.result.route_bonus", with: [`${minigameResult.routeBonus}`] }] },
+                { rawtext: [{ text: '§r§a==============' }] },
+            ]);
+
+            const leftover = inv.addItem(item);
+            if (leftover) {
+                player.dimension.spawnItem(leftover, player.location);
+            }
         }
 
-        player.onScreenDisplay.setActionBar(
-            {
-                rawtext: [
-                    { translate: "mixer.reward.prefix" },
-                    { text: ` ${rank} ` },
-                    { translate: "mixer.reward.money" },
-                    { text: `+${finalReward}${config.MoneyName}` },
-                    { translate: "mixer.reward.xp" },
-                    { text: `${job.getXp()}/${job.getXpRequired(level)}` }
-                ]
-            }
-        );
-    }
+        mixerSessions.delete(player.id);
+    })) return;
+
+    player.stopSound('mixer.idle');
+    player.stopSound('mixer.fast');
+    player.stopSound('mixer.slow');
+    player.stopSound('mixer.pulse');
+    player.playSound('mixer.complete', player.location);
+
 }

@@ -1,3 +1,10 @@
+import { resolveArtisanFilterPreference } from "@/shared/ui/artisan-filter-preferences.js";
+import { artisanFilterLabel, filterArtisanRecipeIds, type ArtisanRecipeFilter } from "@/domain/recipes/artisan-filter.js";
+import { addCraftableFilterButton, craftableOnly, toggleCraftableOnly, filterCraftableRecipeIds, CRAFTABLE_FILTER_SLOT } from "@/shared/ui/craftable-filter.js";
+import { openArtisanRecipeFilter } from "@/shared/ui/artisan-recipe-filter.js";
+import { cancelArtisanCraft, runArtisanCraft } from "@/domain/jobs/pending-artisan-rewards.js";
+import { gateGoodUsageRawtext, recipeListName, recipeTitleParts } from "@/domain/recipes/recipe-display.js";
+import { CraftingModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { ItemStack, Player, world } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
 import { ChemistryRecipes } from "@/content/chemical/chemical-recipe.js";
@@ -6,26 +13,57 @@ import jobs_config from "@/config/jobs.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { getRandomInteger, langChangeItemName } from "@/shared/utils/minecraft.js";
-import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { getGameplayRandomValue } from "@/shared/utils/gameplay-random.js";
 import {
     cleanRecipeSearchQuery,
     filterUnlockedRecipesForSearch,
     isRecipeSearchActive,
     sortRecipeIdsByLevel,
 } from "@/domain/recipes/recipe-list.js";
-import { ModalFormData } from "@minecraft/server-ui";
-import config from "@/config/server.js";
+
+import { addLastCraftedRecipeButton, getLastCraftedRecipeId, rememberLastCraftedRecipe } from "@/shared/ui/last-crafted-recipe.js";
+import {
+    ACCIDENT_RISK_THRESHOLD,
+    CRITICAL_RISK_THRESHOLD,
+    calculateAccidentChance,
+    calculateBreakthroughChance,
+    calculateEmergencyStabilization,
+    calculateOutputYield,
+    calculateReactionControlError,
+    calculateReactionRiskFactors,
+    calculateReactionSafety,
+    clamp,
+    getReactionControlTargets,
+    isTemperatureReaction,
+    meetsBreakthroughConditions,
+} from "@/domain/chemical/reaction-safety.js";
+import {
+    CHEMISTRY_REFINEMENT,
+    calculateChemistryActionBudget,
+    getChemistryRefinementCap,
+    calculateProtocolBreakthroughChance,
+    calculateResearchYieldBonus,
+    createReactionProtocol,
+    evaluateProtocolAction,
+    getChemistryResearchTechnique,
+    getChemistryRankMultiplier,
+    getEligibleReactionPulses,
+    getIncompleteProtocolDisposition,
+    isReactionPulseContained,
+} from "@/domain/chemical/reaction-protocol.js";
+import {
+    capRankByRecipeMastery,
+    getRecipeMasteryProfile,
+} from "@/domain/professions/recipe-mastery.js";
+import { calculateDistillationTemperature } from "@/domain/chemical/reaction-actions.js";
 
 /* ===============================
    Init
 ================================ */
 let buff: any;
-let playerDB: any;
 
 world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
-    playerDB = new DynamicProperties("player");
 });
 
 /* ===============================
@@ -153,41 +191,105 @@ function fill(form: any, slots: any, itemId: any, name = " ", lore = []) {
     });
 }
 
-function isDangerousCondition(lab: any, recipe: any) {
-    const type = recipe.reactionType;
+const ACTION_INSTABILITY: Record<string, number> = {
+    add_reagent: 8,
+    stir: -8,
+    add_catalyst: 10,
+    increase_voltage: 12,
+    decrease_voltage: -8,
+    add_acid: 9,
+    add_base: 9,
+    heat: 12,
+    cool: -7,
+    filter: -14,
+    centrifuge: 10,
+    distill: 12,
+    measure_purity: -10,
+    crystallize: 8,
+};
 
-    if (type === "electrolysis") {
-        return lab.voltage > recipe.optimalVoltage[1] + 5 || lab.actions >= lab.maxActions - 1;
-    } else if (type === "neutralization") {
-        return Math.abs(lab.pH - 7) > 5 || lab.actions >= lab.maxActions - 1;
-    } else if (type === "oxidation" || type === "reduction" || type === "polymerization") {
-        return lab.temperature > recipe.optimalTemperature[1] + 80 || lab.actions >= lab.maxActions - 1;
-    } else if (type === "precipitation") {
-        return Math.abs(lab.pH - (recipe.targetPH ?? 7)) > 4
-            || lab.actions >= lab.maxActions - 1;
-    } else if (type === "decomposition") {
-        return lab.temperature > recipe.optimalTemperature[1] + 150
-            || lab.actions >= lab.maxActions - 1;
-    } else if (type === "fermentation") {
-        return lab.temperature > recipe.optimalTemperature[1] + 20
-            || lab.actions >= lab.maxActions - 1;
+function refreshReactionSafety(lab: any, recipe: any, trackPrecision = true) {
+    const safety = calculateReactionSafety(lab, recipe);
+    lab.risk = safety.risk;
+    lab.stability = safety.stability;
+
+    if (!trackPrecision) return;
+
+    const precise = calcConditionScore(lab, recipe) >= 10
+        && lab.precision >= 0.7
+        && lab.risk <= 25;
+    if (precise) {
+        lab.safePrecisionStreak += 1;
+    } else if (lab.risk > 35 || calcConditionScore(lab, recipe) < 8) {
+        lab.safePrecisionStreak = 0;
     }
-
-    return lab.actions >= lab.maxActions - 1;
 }
 
-function calcMaxActions(player: any, recipe: any) {
-    const lv = new JobLevel(player, "chemist").getLevel();
-    return recipe.baseActions + Math.min(
-        Math.floor((lv - recipe.requiredLevel) / 3),
-        recipe.requiredLevel * 1.5
-    )
+function isDangerousCondition(lab: any) {
+    return lab.risk >= 55 || lab.actions >= lab.maxActions - 1;
+}
+
+function registerAccident(player: any, lab: any, recipe: any, forced = false) {
+    if (!forced && lab.risk < ACCIDENT_RISK_THRESHOLD) {
+        if (lab.risk < 45) lab.dangerSteps = 0;
+        return false;
+    }
+
+    const chance = calculateAccidentChance(lab.risk, lab.dangerSteps);
+    if (!forced && Math.random() >= chance) {
+        lab.dangerSteps += 1;
+        return false;
+    }
+
+    lab.accidents += 1;
+    lab.dangerSteps = 0;
+    lab.yieldPenalty = clamp(lab.yieldPenalty + 0.2 + lab.risk / 500, 0, 0.8);
+    lab.contamination = clamp(lab.contamination + 18, 0, 100);
+    lab.progress = Math.max(0, lab.progress - 10);
+    lab.score -= 6;
+    lab.instability = clamp(lab.instability + 12, 0, 100);
+    lab.protocolCombo = 0;
+    lab.insightCombo = 0;
+    lab.phase = "accident";
+    refreshReactionSafety(lab, recipe, false);
+
+    player.stopSound("chemistry.bubbling");
+    player.stopSound("chemistry.electric");
+    player.playSound("random.explode", player.location);
+    player.applyDamage(Math.min(4, 1 + lab.accidents));
+    player.sendMessage({
+        rawtext: [{ translate: "chemistry.accident.message", with: [`${lab.risk}%`] }]
+    });
+    return true;
+}
+
+function isBreakthroughReady(lab: any, recipe: any) {
+    const protocolReady = lab.protocolIndex >= lab.protocol.length - 1
+        && lab.insight >= 2;
+    return protocolReady
+        && meetsBreakthroughConditions(lab, calcConditionScore(lab, recipe));
+}
+
+function calcMaxActions(
+    recipe: any,
+    chemistLevel: number,
+    supportedActionKeys: readonly string[],
+    protocol: readonly any[]
+) {
+    return calculateChemistryActionBudget({
+        baseActions: recipe.baseActions,
+        requiredLevel: recipe.requiredLevel,
+        chemistLevel,
+        reactionType: recipe.reactionType,
+        supportedActions: supportedActionKeys,
+        protocol,
+    });
 }
 
 function reactionVariance(player: any, recipe: any) {
     const lv = new JobLevel(player, "chemist").getLevel();
     const diff = lv - recipe.requiredLevel;
-    return getRandomInteger(
+    return getGameplayRandomValue(
         -Math.max(1, 10 - Math.floor(diff / 3)),
         Math.max(1, 10 - Math.floor(diff / 3))
     );
@@ -200,9 +302,11 @@ function catalystSuccessRate(lab: any, recipe: any) {
     if (type === "electrolysis") {
         const optV = (recipe.optimalVoltage[0] + recipe.optimalVoltage[1]) / 2;
         if (Math.abs(lab.voltage - optV) > 3) rate -= 0.15;
-    } else if (type === "neutralization") {
-        if (Math.abs(lab.pH - 7) > 2) rate -= 0.2;
-    } else if (type === "oxidation" || type === "reduction" || type === "polymerization") {
+    } else if (type === "neutralization" || type === "precipitation") {
+        if (Math.abs(lab.pH - (recipe.targetPH ?? 7)) > 2) rate -= 0.2;
+    }
+
+    if (isTemperatureReaction(recipe)) {
         const optT = (recipe.optimalTemperature[0] + recipe.optimalTemperature[1]) / 2;
         if (Math.abs(lab.temperature - optT) > 40) rate -= 0.15;
     }
@@ -218,13 +322,16 @@ const RANK_QUALITY_TABLE = {
     "IMPOSSIBLE": 10,
     "EXTRA": 9,
     "LEGEND": 8,
+    "LEGENDARY": 8,
+    "MYTHICAL": 10,
+    "MASTERWORK": 9,
     "SSS": 7,
     "SS": 6,
     "S": 5,
     "A": 4,
-    "B A": 3,
-    "C B": 2,
-    "D C": 1,
+    "B": 3,
+    "C": 2,
+    "D": 1,
     "E": 0,
     "F": 0,
 };
@@ -239,8 +346,9 @@ function getItemQuality(item: any) {
 
         for (const part of line.rawtext) {
             if (part.with && part.with.length > 0) {
-                const rank = part.with[0];
-                if (rank in RANK_QUALITY_TABLE) {
+                const rawRank = part.with[0];
+                const rank = (typeof rawRank === "string" ? rawRank : rawRank?.text)?.trim()?.toUpperCase();
+                if (rank && rank in RANK_QUALITY_TABLE) {
                     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
                     return RANK_QUALITY_TABLE[rank];
                 }
@@ -267,9 +375,9 @@ const ChemistryActions = [
             lab.phase = "reacting";
 
             if (recipe.reactionType === "electrolysis") {
-                lab.voltage += getRandomInteger(1, 3);
+                lab.voltage += getGameplayRandomValue(1, 3);
             } else if (recipe.reactionType === "neutralization") {
-                lab.pH += getRandomInteger(-2, 2) * 0.5;
+                lab.pH += getGameplayRandomValue(-2, 2) * 0.5;
             }
 
             player.stopSound('chemistry.bubbling');
@@ -286,7 +394,7 @@ const ChemistryActions = [
         cost: 1,
         run(lab: any, recipe: any, ctx: any, player: any) {
             lab.phase = "reacting";
-            lab.progress += getRandomInteger(8, 12);
+            lab.progress += getGameplayRandomValue(8, 12);
             lab.stirringSpeed += 10;
             lab.contamination -= 5;
             player.playSound('chemistry.stir', player.location);
@@ -360,7 +468,16 @@ const ChemistryActions = [
             if (recipe.reactionType !== "electrolysis") return;
 
             lab.phase = "reacting";
-            lab.voltage += getRandomInteger(2, 4) + ctx.reactionVariance();
+            const target = (recipe.optimalVoltage[0] + recipe.optimalVoltage[1]) / 2;
+            const variance = ctx.reactionVariance() * 0.15;
+            const normalStep = Math.max(1, getGameplayRandomValue(2, 4) + variance);
+            const approachStep = lab.voltage < recipe.optimalVoltage[0]
+                ? Math.min(
+                    target - lab.voltage,
+                    Math.max(normalStep, (target - lab.voltage) * 0.7)
+                )
+                : normalStep;
+            lab.voltage += approachStep;
             lab.progress += 10;
             player.stopSound('chemistry.pour');
             player.stopSound('chemistry.bubbling');
@@ -378,7 +495,15 @@ const ChemistryActions = [
             if (recipe.reactionType !== "electrolysis") return;
 
             lab.phase = "reacting";
-            lab.voltage -= getRandomInteger(2, 3);
+            const target = (recipe.optimalVoltage[0] + recipe.optimalVoltage[1]) / 2;
+            const normalStep = getGameplayRandomValue(2, 3);
+            const approachStep = lab.voltage > recipe.optimalVoltage[1]
+                ? Math.min(
+                    lab.voltage - target,
+                    Math.max(normalStep, (lab.voltage - target) * 0.7)
+                )
+                : normalStep;
+            lab.voltage -= approachStep;
             lab.voltage = Math.max(0, lab.voltage);
             lab.progress += 5;
             player.playSound('chemistry.adjust', player.location);
@@ -394,10 +519,18 @@ const ChemistryActions = [
         unlockLv: 5,
         cost: 1,
         run(lab: any, recipe: any, ctx: any, player: any) {
-            if (recipe.reactionType !== "neutralization") return;
+            if (recipe.reactionType !== "neutralization" && recipe.reactionType !== "precipitation") return;
 
             lab.phase = "reacting";
-            lab.pH -= getRandomInteger(1, 3) * 0.5;
+            const target = recipe.targetPH ?? 7;
+            const normalStep = getGameplayRandomValue(1, 3) * 0.5;
+            const approachStep = lab.pH > target + 0.25
+                ? Math.min(
+                    lab.pH - target,
+                    Math.max(normalStep, (lab.pH - target) * 0.7)
+                )
+                : normalStep;
+            lab.pH -= approachStep;
             lab.pH = Math.max(0, lab.pH);
             lab.progress += 8;
             player.playSound('chemistry.acid', player.location);
@@ -411,10 +544,18 @@ const ChemistryActions = [
         unlockLv: 5,
         cost: 1,
         run(lab: any, recipe: any, ctx: any, player: any) {
-            if (recipe.reactionType !== "neutralization") return;
+            if (recipe.reactionType !== "neutralization" && recipe.reactionType !== "precipitation") return;
 
             lab.phase = "reacting";
-            lab.pH += getRandomInteger(1, 3) * 0.5;
+            const target = recipe.targetPH ?? 7;
+            const normalStep = getGameplayRandomValue(1, 3) * 0.5;
+            const approachStep = lab.pH < target - 0.25
+                ? Math.min(
+                    target - lab.pH,
+                    Math.max(normalStep, (target - lab.pH) * 0.7)
+                )
+                : normalStep;
+            lab.pH += approachStep;
             lab.pH = Math.min(14, lab.pH);
             lab.progress += 8;
             player.playSound('chemistry.base', player.location);
@@ -430,10 +571,18 @@ const ChemistryActions = [
         unlockLv: 8,
         cost: 1,
         run(lab: any, recipe: any, ctx: any, player: any) {
-            if (recipe.reactionType !== "oxidation" && recipe.reactionType !== "reduction" && recipe.reactionType !== "decomposition" && recipe.reactionType !== 'fermentation') return;
+            if (!isTemperatureReaction(recipe)) return;
 
             lab.phase = "reacting";
-            lab.temperature += getRandomInteger(40, 80) + ctx.reactionVariance();
+            const target = (recipe.optimalTemperature[0] + recipe.optimalTemperature[1]) / 2;
+            const normalStep = Math.max(20, getGameplayRandomValue(40, 80) + ctx.reactionVariance() * 0.5);
+            const approachStep = lab.temperature < recipe.optimalTemperature[0]
+                ? Math.min(
+                    target - lab.temperature,
+                    Math.max(normalStep, (target - lab.temperature) * 0.65)
+                )
+                : normalStep;
+            lab.temperature += approachStep;
             lab.progress += 12;
             player.stopSound('chemistry.bubbling');
             player.stopSound('chemistry.electric');
@@ -448,10 +597,23 @@ const ChemistryActions = [
         unlockLv: 8,
         cost: 1,
         run(lab: any, recipe: any, ctx: any, player: any) {
-            if (recipe.reactionType !== "oxidation" && recipe.reactionType !== "reduction" && recipe.reactionType !== "decomposition" && recipe.reactionType !== 'fermentation') return;
+            if (!isTemperatureReaction(recipe)) return;
 
             lab.phase = "reacting";
-            lab.temperature -= getRandomInteger(30, 60);
+            const target = (recipe.optimalTemperature[0] + recipe.optimalTemperature[1]) / 2;
+            const normalStep = getGameplayRandomValue(30, 60);
+            const approachStep = lab.temperature > recipe.optimalTemperature[1]
+                ? Math.min(
+                    lab.temperature - target,
+                    Math.max(normalStep, (lab.temperature - target) * 0.65)
+                )
+                : recipe.optimalTemperature[1] < 0 && lab.temperature > target
+                    ? Math.min(
+                        lab.temperature - target,
+                        Math.max(normalStep, (lab.temperature - target) * 0.65)
+                    )
+                    : normalStep;
+            lab.temperature -= approachStep;
             lab.progress += 5;
             player.playSound('chemistry.cool', player.location);
         }
@@ -467,10 +629,10 @@ const ChemistryActions = [
         cost: 2,
         run(lab: any, recipe: any, ctx: any, player: any) {
             lab.phase = "purifying";
-            lab.contamination -= getRandomInteger(20, 30);
+            lab.contamination -= getGameplayRandomValue(20, 30);
             lab.contamination = Math.max(0, lab.contamination);
             lab.progress += 8;
-            lab.score += 1;
+            lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.filter;
             player.playSound('chemistry.filter', player.location);
         }
     },
@@ -483,11 +645,11 @@ const ChemistryActions = [
         cost: 2,
         run(lab: any, recipe: any, ctx: any, player: any) {
             lab.phase = "separating";
-            lab.contamination -= getRandomInteger(15, 25);
+            lab.contamination -= getGameplayRandomValue(15, 25);
             lab.contamination = Math.max(0, lab.contamination);
             lab.stirringSpeed += 50;
             lab.progress += 15;
-            lab.score += 1;
+            lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.centrifuge;
             player.playSound('chemistry.centrifuge', player.location);
         }
     },
@@ -500,14 +662,11 @@ const ChemistryActions = [
         cost: 3,
         run(lab: any, recipe: any, ctx: any, player: any) {
             lab.phase = "purifying";
-            lab.contamination -= getRandomInteger(25, 40);
+            lab.contamination -= getGameplayRandomValue(25, 40);
             lab.contamination = Math.max(0, lab.contamination);
             lab.progress += 10;
-            lab.score += 2;
-
-            if (recipe.reactionType === "oxidation" || recipe.reactionType === "reduction") {
-                lab.temperature += 20;
-            }
+            lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.distill;
+            lab.temperature = calculateDistillationTemperature(lab.temperature);
 
             player.playSound('chemistry.distill', player.location);
         }
@@ -523,7 +682,7 @@ const ChemistryActions = [
             lab.phase = "analyzing";
             const add = Math.random() * 0.3;
             lab.precision = Math.min(1, lab.precision + add);
-            lab.score += 0.5;
+            lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.measure;
             player.playSound('chemistry.measure', player.location);
         }
     },
@@ -544,29 +703,277 @@ const ChemistryActions = [
             lab.precision -= 0.1;
             lab.contamination -= 10;
             lab.progress += 20;
-            lab.score += 1.5;
+            lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.crystallize;
             player.playSound('chemistry.crystallize', player.location);
+        }
+    },
+    {
+        key: "emergency_stabilize",
+        slot: 38,
+        name: "chemistry.action.emergency_stabilize",
+        icon: "minecraft:water_bucket",
+        unlockLv: 1,
+        cost: 2,
+        run(lab: any, recipe: any, ctx: any, player: any) {
+            lab.phase = "stabilizing";
+            lab.emergencyUses += 1;
+            lab.dangerSteps = 0;
+            lab.protocolCombo = 0;
+            lab.insightCombo = 0;
+            Object.assign(lab, calculateEmergencyStabilization(lab, recipe));
+
+            player.stopSound("chemistry.bubbling");
+            player.stopSound("chemistry.electric");
+            player.stopSound("chemistry.heat");
+            player.playSound("chemistry.cool", player.location);
+            player.sendMessage({ translate: "chemistry.stabilize.message" });
         }
     }
 ];
 
+const CONDITION_ACTIONS = new Set([
+    "increase_voltage", "decrease_voltage", "add_acid", "add_base", "heat", "cool",
+]);
+
+function getCatalystLimit(recipe: any) {
+    return recipe.maxCatalysts ?? Object.keys(recipe.catalysts ?? {}).length;
+}
+
+function isActionRelevant(actionKey: string, recipe: any) {
+    if (actionKey === "add_catalyst") {
+        return getCatalystLimit(recipe) > 0 && Object.keys(recipe.catalysts ?? {}).length > 0;
+    }
+    if (actionKey === "increase_voltage" || actionKey === "decrease_voltage") {
+        return recipe.reactionType === "electrolysis";
+    }
+    if (actionKey === "add_acid" || actionKey === "add_base") {
+        return recipe.reactionType === "neutralization" || recipe.reactionType === "precipitation";
+    }
+    if (actionKey === "heat" || actionKey === "cool") {
+        return isTemperatureReaction(recipe);
+    }
+    return true;
+}
+
+function getSupportedActionKeys(player: any, recipe: any) {
+    const level = new JobLevel(player, "chemist").getLevel();
+    return ChemistryActions
+        .filter(action => level >= action.unlockLv && isActionRelevant(action.key, recipe))
+        .map(action => action.key);
+}
+
+function getActionUnavailableReason(player: any, lab: any, recipe: any, action: any) {
+    if (!isActionRelevant(action.key, recipe)) return "reaction";
+    if (lab.actions + action.cost > lab.maxActions) return "budget";
+    if (action.key !== "add_catalyst") return undefined;
+
+    if (lab.usedCatalysts.length >= getCatalystLimit(recipe)) return "catalyst_limit";
+    const hasCatalyst = Object.keys(recipe.catalysts ?? {})
+        .some(catalyst => hasAll(player, { [catalyst]: 1 }));
+    return hasCatalyst ? undefined : "catalyst_missing";
+}
+
+function isProtocolStageSatisfied(stageKey: string, lab: any, recipe: any) {
+    if (stageKey === "voltage_control" || stageKey === "ph_control"
+        || stageKey === "dual_control" || stageKey === "thermal_control") {
+        return calcConditionScore(lab, recipe) >= 8;
+    }
+    if (stageKey === "reaction") return lab.progress >= 55;
+    return true;
+}
+
+function registerProtocolViolation(lab: any, outcome = "out_of_order") {
+    lab.protocolCombo = 0;
+    lab.protocolMistakes += 1;
+    lab.controlStreak = 0;
+    lab.instability = clamp(lab.instability + 8, -30, 100);
+    lab.score -= 1.5;
+    lab.lastProtocolOutcome = outcome;
+}
+
+function applyProtocolAction(
+    lab: any,
+    recipe: any,
+    actionKey: string,
+    controlErrorBefore: number,
+    interruptedByPulse = false
+) {
+    if (actionKey === "emergency_stabilize" || interruptedByPulse) return;
+
+    const stage = lab.protocol[lab.protocolIndex];
+    if (!stage) return;
+    const controlErrorAfter = calculateReactionControlError(lab, recipe);
+    const preciseControl = CONDITION_ACTIONS.has(actionKey)
+        && controlErrorAfter + 0.01 < controlErrorBefore;
+    const controlMistake = CONDITION_ACTIONS.has(actionKey)
+        && controlErrorAfter > controlErrorBefore + 0.01;
+    const satisfied = isProtocolStageSatisfied(stage.key, lab, recipe);
+    const evaluation = evaluateProtocolAction(
+        lab.protocol,
+        lab.protocolIndex,
+        actionKey,
+        satisfied && !controlMistake
+    );
+
+    if (evaluation.outcome === "completed") {
+        lab.protocolIndex = evaluation.nextStageIndex;
+        lab.protocolCombo += 1;
+        lab.bestProtocolCombo = Math.max(lab.bestProtocolCombo, lab.protocolCombo);
+        const gainedInsight = (lab.protocolCombo >= 3 ? 2 : 1) + lab.researchTechnique.insightBonus;
+        lab.insight += gainedInsight;
+        lab.score += 1 + Math.min(2, lab.protocolCombo * 0.25);
+        lab.precision = clamp(lab.precision + 0.03 + lab.researchTechnique.precisionBonus, 0, 1);
+        lab.instability = clamp(lab.instability - 3, -30, 100);
+        lab.controlStreak = preciseControl ? lab.controlStreak + 1 : 0;
+        lab.lastProtocolOutcome = "completed";
+        return;
+    }
+
+    if (evaluation.outcome === "progress") {
+        if (controlMistake) {
+            registerProtocolViolation(lab, "control_mistake");
+            return;
+        }
+        if (preciseControl) {
+            lab.controlStreak += 1;
+            lab.precision = clamp(lab.precision + 0.025 + lab.researchTechnique.precisionBonus, 0, 1);
+            lab.score += 0.35;
+            lab.instability = clamp(lab.instability - 2, -30, 100);
+            if (lab.controlStreak % 2 === 0) lab.insight += 1;
+            lab.lastProtocolOutcome = "precision";
+        } else {
+            lab.lastProtocolOutcome = "progress";
+        }
+        return;
+    }
+
+    if (evaluation.outcome === "revisit" && preciseControl) {
+        lab.controlStreak += 1;
+        lab.insight += 1;
+        lab.precision = clamp(lab.precision + 0.02 + lab.researchTechnique.precisionBonus, 0, 1);
+        lab.refinement = (lab.refinement ?? 0) + CHEMISTRY_REFINEMENT.preciseRevisit;
+        lab.instability = clamp(lab.instability - 2, -30, 100);
+        lab.lastProtocolOutcome = "insight";
+        return;
+    }
+
+    // Repeating separation work after the separation stage is extra purification,
+    // not an out-of-order step; its points go to the mastery-capped refinement pool.
+    if (evaluation.outcome === "revisit"
+        && lab.protocol.some((entry: any) => entry.key === "separation" && entry.acceptedActions.includes(actionKey))) {
+        lab.lastProtocolOutcome = "progress";
+        return;
+    }
+
+    registerProtocolViolation(lab, evaluation.outcome);
+}
+
+function createPulseForSession(lab: any, recipe: any) {
+    const eligible = getEligibleReactionPulses(recipe.reactionType, lab.supportedActionKeys);
+    if (eligible.length === 0) return undefined;
+
+    const pulse = { ...eligible[Math.floor(Math.random() * eligible.length)] };
+    if (pulse.kind === "voltage_surge") {
+        lab.voltage += getGameplayRandomValue(4, 7);
+        lab.instability += 7;
+    } else if (pulse.kind === "ph_acidic_drift") {
+        lab.pH = Math.max(0, lab.pH - getGameplayRandomValue(3, 5) * 0.5);
+        lab.instability += 6;
+    } else if (pulse.kind === "ph_alkaline_drift") {
+        lab.pH = Math.min(14, lab.pH + getGameplayRandomValue(3, 5) * 0.5);
+        lab.instability += 6;
+    } else if (pulse.kind === "thermal_runaway") {
+        const span = Math.max(20, recipe.optimalTemperature[1] - recipe.optimalTemperature[0]);
+        lab.temperature += Math.max(60, Math.round(span * 0.45));
+        lab.instability += 8;
+    } else if (pulse.kind === "contamination_bloom") {
+        lab.contamination = clamp(lab.contamination + getGameplayRandomValue(15, 25), 0, 100);
+        lab.instability += 5;
+    }
+    lab.instability = clamp(lab.instability, -30, 100);
+    return pulse;
+}
+
+function maybeTriggerReactionPulse(lab: any, recipe: any) {
+    if (lab.activePulse || lab.progress < 20 || lab.phase === "failed") return false;
+    if (lab.actions >= lab.maxActions - 1) return false;
+
+    const chance = clamp(
+        0.08 + lab.researchTechnique.pulseChanceBonus + lab.risk * 0.0008,
+        0.08,
+        0.2
+    );
+    if (Math.random() >= chance) return false;
+
+    const pulse = createPulseForSession(lab, recipe);
+    if (!pulse) return false;
+    lab.activePulse = pulse;
+    lab.lastPulseOutcome = "triggered";
+    refreshReactionSafety(lab, recipe, false);
+    return true;
+}
+
+function resolveActivePulse(lab: any, actionKey: string) {
+    const pulse = lab.activePulse;
+    if (!pulse) return false;
+
+    lab.activePulse = undefined;
+    if (isReactionPulseContained(pulse, actionKey)) {
+        if (actionKey === "emergency_stabilize") {
+            lab.insightCombo = 0;
+            lab.lastPulseOutcome = "stabilized";
+            return true;
+        }
+        lab.pulsesContained += 1;
+        lab.insightCombo += 1;
+        lab.bestInsightCombo = Math.max(lab.bestInsightCombo, lab.insightCombo);
+        lab.insight += lab.insightCombo >= 3 ? 2 : 1;
+        lab.score += 2;
+        lab.precision = clamp(lab.precision + 0.04 + lab.researchTechnique.precisionBonus, 0, 1);
+        lab.instability = clamp(lab.instability - 10, -30, 100);
+        lab.yieldPenalty = clamp(
+            lab.yieldPenalty - lab.researchTechnique.containmentRecovery,
+            0,
+            0.8
+        );
+        lab.lastPulseOutcome = "contained";
+        return true;
+    }
+
+    lab.insightCombo = 0;
+    lab.protocolCombo = 0;
+    lab.pulseMisses += 1;
+    lab.score -= 2;
+    lab.instability = clamp(lab.instability + 14, -30, 100);
+    lab.contamination = clamp(lab.contamination + 8, 0, 100);
+    lab.yieldPenalty = clamp(lab.yieldPenalty + 0.08, 0, 0.8);
+    lab.lastPulseOutcome = "missed";
+    return true;
+}
+
 /* ===============================
    UI
 ================================ */
-export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
-    const form = new ChestFormData("large")
+export function openRecipeSelect(player: any, page = 0, searchQuery = "", filter: ArtisanRecipeFilter | undefined = undefined) {
+    if (chemistrySessions.has(player.id)) {
+        openLaboratory(player);
+        return;
+    }
+
+    const form = new ChestFormData("large").enableLoreLineBreaks()
         .setTitle({ rawtext: [{ translate: "chemistry.title.laboratory" }] });
 
     const lv = new JobLevel(player, "chemist").getLevel();
     const cleanSearchQuery = cleanRecipeSearchQuery(searchQuery);
     const searchActive = isRecipeSearchActive(cleanSearchQuery);
     const recipes = ChemistryRecipes as Record<string, any>;
-    const recipeIds = filterUnlockedRecipesForSearch(
-        sortRecipeIdsByLevel(Object.keys(recipes), recipes),
+    const selectedFilter = resolveArtisanFilterPreference(player, false, filter);
+    const recipeIds = filterCraftableRecipeIds(filterUnlockedRecipesForSearch(
+        filterArtisanRecipeIds(sortRecipeIdsByLevel(Object.keys(recipes), recipes), recipes, selectedFilter, false),
         recipes,
         cleanSearchQuery,
         lv
-    );
+    ), recipes, player, lv);
 
     fill(form,
         [
@@ -577,6 +984,7 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
         "minecraft:black_stained_glass_pane"
     );
 
+    addCraftableFilterButton(form, player, recipeIds.length);
     const totalPages = Math.max(1, Math.ceil(recipeIds.length / RECIPES_PER_PAGE));
     const safePage = Math.min(Math.max(0, page), totalPages - 1);
     const start = safePage * RECIPES_PER_PAGE;
@@ -586,6 +994,7 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
         // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
         const r = recipes[id];
         const slot = RECIPE_SLOTS[i];
+        const mastery = getRecipeMasteryProfile(lv, r.requiredLevel);
 
         const materials = [];
         for (const key of Object.keys(r.ingredients)) {
@@ -655,6 +1064,10 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
                 break;
         }
 
+        const usageText = r.name === "mc:ammonium_sulfate"
+            ? [{ text: "\n§a" }, { translate: "chemical.fertilizer.lore" }]
+            : gateGoodUsageRawtext(r.result);
+
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         form.setButton(slot, {
             iconPath: lv >= r.requiredLevel
@@ -662,7 +1075,7 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
                 ? itemIdToPath[r.name]
                 : itemIdToPath["minecraft:barrier"],
             name: lv >= r.requiredLevel
-                ? langChangeItemName(r.name)
+                ? recipeListName(r)
                 : "chemistry.locked",
             lore: lv >= r.requiredLevel
                 ? [{
@@ -678,8 +1091,21 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
                         { translate: "chemistry.catalysts" },
                         { text: ":" },
                         ...catalysts,
+                        ...usageText,
                     ]
-                }]
+                }, {
+                    rawtext: [
+                        { text: "§6" },
+                        { translate: "artisan.mastery.cap", with: [mastery.maxRank] },
+                    ]
+                }, ...(mastery.nextRank && mastery.levelsToNext !== undefined
+                    ? [{
+                        rawtext: [
+                            { text: "§7" },
+                            { translate: "artisan.mastery.next", with: [mastery.nextRank, String(mastery.levelsToNext)] },
+                        ]
+                    }]
+                    : [{ rawtext: [{ text: "§e" }, { translate: "artisan.mastery.maxed" }] }])]
                 : [{
                     rawtext: [
                         { translate: "chemistry.unlock_level" },
@@ -729,27 +1155,55 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
     form.setButton(49, {
         iconPath: itemIdToPath["minecraft:paper"],
         name: `§ePage ${safePage + 1}/${totalPages}`,
+        lore: [{ rawtext: [{ text: `§b${artisanFilterLabel(selectedFilter, false)}\n§7${recipeIds.length}件` }] }],
         editedName: true
     });
+
+    form!.setButton(48, {
+        iconPath: itemIdToPath["minecraft:hopper"],
+        name: "§bジャンルで絞り込み",
+        lore: [{ rawtext: [{ text: "§7" + artisanFilterLabel(selectedFilter, false) }] }],
+        editedName: true
+    });
+
+    if (!craftableOnly(player) || recipeIds.includes(getLastCraftedRecipeId(player.id, "chemistry") ?? "")) addLastCraftedRecipeButton(form, player.id, "chemistry", recipes);
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
         if (r.canceled) return;
 
+        if (r.selection === CRAFTABLE_FILTER_SLOT) {
+            toggleCraftableOnly(player);
+            openRecipeSelect(player, 0, cleanSearchQuery, selectedFilter);
+            return;
+        }
+
+        if (r.selection === 46) {
+            const lastRecipeId = getLastCraftedRecipeId(player.id, "chemistry");
+            if (lastRecipeId && (!craftableOnly(player) || recipeIds.includes(lastRecipeId)) && recipes[lastRecipeId] && lv >= recipes[lastRecipeId].requiredLevel) {
+                openQuantitySelect(player, lastRecipeId);
+            }
+            return;
+        }
+
         if (r.selection === 45) {
-            openRecipeSelect(player, safePage - 1, cleanSearchQuery);
+            openRecipeSelect(player, safePage - 1, cleanSearchQuery, selectedFilter);
             return;
         }
         if (r.selection === 53) {
-            openRecipeSelect(player, safePage + 1, cleanSearchQuery);
+            openRecipeSelect(player, safePage + 1, cleanSearchQuery, selectedFilter);
+            return;
+        }
+        if (r.selection === 48) {
+            openArtisanRecipeFilter(player, selectedFilter, false, next => openRecipeSelect(player, 0, cleanSearchQuery, next));
             return;
         }
         if (r.selection === 47) {
-            openRecipeSearch(player, cleanSearchQuery);
+            openRecipeSearch(player, cleanSearchQuery, selectedFilter);
             return;
         }
         if (r.selection === 51 && searchActive) {
-            openRecipeSelect(player);
+            openRecipeSelect(player, 0, "", selectedFilter);
             return;
         }
 
@@ -761,7 +1215,7 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
 
         const recipe = recipes[recipeId];
         if (!recipe || lv < recipe.requiredLevel) {
-            openRecipeSelect(player, safePage, cleanSearchQuery);
+            openRecipeSelect(player, safePage, cleanSearchQuery, selectedFilter);
             return;
         }
 
@@ -769,14 +1223,14 @@ export function openRecipeSelect(player: any, page = 0, searchQuery = "") {
     });
 }
 
-function openRecipeSearch(player: any, searchQuery = "") {
+function openRecipeSearch(player: any, searchQuery = "", filter: ArtisanRecipeFilter = {}) {
     const form = new ModalFormData()
         .title({ text: "レシピ検索" })
         .textField({ text: "検索語句" }, { text: "ID・素材・完成品" }, { defaultValue: searchQuery });
 
     form.show(player).then(r => {
         if (r.canceled) return;
-        openRecipeSelect(player, 0, String(r.formValues?.[0] ?? ""));
+        openRecipeSelect(player, 0, String(r.formValues?.[0] ?? ""), filter);
     });
 }
 
@@ -837,6 +1291,10 @@ function startReaction(player: any, recipeId: any, quantity: any) {
     if (!checkIngredients(player, scaledIngredients)) return;
 
     const materialQuality = calcAverageMaterialQuality(player, scaledIngredients);
+    const supportedActionKeys = getSupportedActionKeys(player, recipe);
+    const protocol = createReactionProtocol(recipe.reactionType, supportedActionKeys);
+    const chemistLevel = new JobLevel(player, "chemist").getLevel();
+    const researchTechnique = getChemistryResearchTechnique(chemistLevel);
 
     const initialState = {
         recipeId,
@@ -844,8 +1302,9 @@ function startReaction(player: any, recipeId: any, quantity: any) {
         scaledIngredients,
         progress: 0,
         actions: 0,
-        maxActions: calcMaxActions(player, recipe),
+        maxActions: calcMaxActions(recipe, chemistLevel, supportedActionKeys, protocol),
         score: 0,
+        refinement: 0,
         phase: "preparation",
         contamination: 100,
         usedCatalysts: [],
@@ -854,6 +1313,32 @@ function startReaction(player: any, recipeId: any, quantity: any) {
         catalystQuality: 0,
         catalystCount: 0,
         stirringSpeed: 0,
+        instability: 0,
+        stability: 100,
+        risk: 0,
+        dangerSteps: 0,
+        accidents: 0,
+        emergencyUses: 0,
+        yieldPenalty: 0,
+        safePrecisionStreak: 0,
+        breakthrough: false,
+        supportedActionKeys,
+        protocol,
+        protocolIndex: 0,
+        protocolCombo: 0,
+        bestProtocolCombo: 0,
+        protocolMistakes: 0,
+        lastProtocolOutcome: "none",
+        insight: 0,
+        insightCombo: 0,
+        bestInsightCombo: 0,
+        controlStreak: 0,
+        activePulse: undefined,
+        lastPulseOutcome: "none",
+        pulsesContained: 0,
+        pulseMisses: 0,
+        chemistLevel,
+        researchTechnique,
 
         voltage: 0,
         pH: 7,
@@ -862,9 +1347,261 @@ function startReaction(player: any, recipeId: any, quantity: any) {
         ctx: { reactionVariance: () => reactionVariance(player, recipe) }
     };
 
+    refreshReactionSafety(initialState, recipe, false);
+
+    cancelArtisanCraft(chemistrySessions.get(player.id));
     chemistrySessions.set(player.id, initialState);
 
     openLaboratory(player);
+}
+
+function getProtocolStageTranslation(stageKey: string) {
+    return `chemistry.protocol.stage.${stageKey}`;
+}
+
+function buildProtocolLore(lab: any) {
+    const lore: any[] = [];
+    lab.protocol.forEach((stage: any, index: number) => {
+        const marker = index < lab.protocolIndex
+            ? "§a✓ "
+            : index === lab.protocolIndex ? "§e▶ " : "§8○ ";
+        lore.push({
+            rawtext: [
+                { text: marker },
+                { translate: getProtocolStageTranslation(stage.key) },
+            ],
+        });
+    });
+    if (lab.lastProtocolOutcome !== "none") {
+        lore.push({
+            rawtext: [
+                { text: "\n§7" },
+                { translate: `chemistry.protocol.outcome.${lab.lastProtocolOutcome}` },
+            ],
+        });
+    }
+    return lore;
+}
+
+function getPulseIcon(pulse: any) {
+    if (!pulse) return "minecraft:glass_bottle";
+    if (pulse.kind === "voltage_surge") return "minecraft:redstone";
+    if (pulse.kind === "ph_acidic_drift") return "minecraft:fermented_spider_eye";
+    if (pulse.kind === "ph_alkaline_drift") return "minecraft:sugar";
+    if (pulse.kind === "thermal_runaway") return "minecraft:blaze_powder";
+    return "minecraft:slime_ball";
+}
+
+function buildPulseLore(lab: any) {
+    const lore: any[] = [];
+    if (lab.activePulse) {
+        lore.push(
+            { rawtext: [{ text: "§c" }, { translate: `chemistry.pulse.${lab.activePulse.kind}` }] },
+            { rawtext: [{ text: "§e" }, { translate: "chemistry.pulse.response_window" }] }
+        );
+    } else {
+        lore.push({ rawtext: [{ text: "§a" }, { translate: "chemistry.pulse.stable" }] });
+    }
+    if (lab.lastPulseOutcome !== "none" && lab.lastPulseOutcome !== "triggered") {
+        lore.push({
+            rawtext: [
+                { text: "§7" },
+                { translate: `chemistry.pulse.outcome.${lab.lastPulseOutcome}` },
+            ],
+        });
+    }
+    return lore;
+}
+
+function getCurrentBreakthroughChance(player: any, lab: any, recipe: any) {
+    const level = new JobLevel(player, "chemist").getLevel();
+    const baseChance = calculateBreakthroughChance(level, recipe.requiredLevel);
+    return calculateProtocolBreakthroughChance(
+        baseChance,
+        lab.insight,
+        Math.max(lab.bestProtocolCombo, lab.bestInsightCombo),
+        lab.pulsesContained,
+        lab.researchTechnique.breakthroughCap
+    );
+}
+
+function buildTechniqueLore(player: any, lab: any, recipe: any) {
+    const breakthroughChance = getCurrentBreakthroughChance(player, lab, recipe);
+    const mastery = getRecipeMasteryProfile(lab.chemistLevel, recipe.requiredLevel);
+    const lore: any[] = [
+        { rawtext: [{ translate: "chemistry.combo.protocol" }, { text: `: §b${lab.protocolCombo}` }] },
+        { rawtext: [{ translate: "chemistry.combo.insight" }, { text: `: §d${lab.insightCombo}` }] },
+        { rawtext: [{ translate: "chemistry.status.insight" }, { text: `: §d${lab.insight}` }] },
+        {
+            rawtext: [
+                { translate: "chemistry.status.breakthrough_chance" },
+                { text: `: §d${Math.round(breakthroughChance * 100)}%` },
+            ],
+        },
+        {
+            rawtext: [
+                { text: "\n§6" },
+                { translate: "chemistry.research.technique" },
+                { text: ` +${lab.researchTechnique.level}` },
+            ],
+        },
+        {
+            rawtext: [
+                { translate: "chemistry.research.yield_bonus" },
+                { text: `: +${Math.round(lab.researchTechnique.yieldBonusRate * 100)}%` },
+            ],
+        },
+        {
+            rawtext: [{
+                translate: "artisan.mastery.cap",
+                with: [mastery.maxRank],
+            }],
+        },
+    ];
+    if (mastery.nextRank && mastery.levelsToNext !== undefined) {
+        lore.push({
+            rawtext: [{
+                translate: "artisan.mastery.next",
+                with: [mastery.nextRank, `${mastery.levelsToNext}`],
+            }],
+        });
+    } else {
+        lore.push({ rawtext: [{ translate: "artisan.mastery.maxed" }] });
+    }
+    return lore;
+}
+
+function effectLine(label: string, value: string) {
+    return { rawtext: [{ text: "§7" }, { translate: label }, { text: `: ${value}` }] };
+}
+
+function buildActionEffectLore(actionKey: string, recipe: any) {
+    const lines: any[] = [];
+    if (actionKey === "add_reagent") {
+        lines.push(effectLine("chemistry.status.progress", "+12%"));
+    } else if (actionKey === "stir") {
+        lines.push(
+            effectLine("chemistry.status.progress", "+8〜12%"),
+            effectLine("chemistry.status.contamination", "-5%")
+        );
+    } else if (actionKey === "add_catalyst") {
+        lines.push(
+            effectLine("chemistry.action.effect.success", "+15% / -10%"),
+            effectLine("chemistry.action.effect.failure_contamination", "+8%")
+        );
+    } else if (actionKey === "increase_voltage") {
+        lines.push(
+            effectLine("chemistry.status.voltage", "+2〜4V"),
+            effectLine("chemistry.status.progress", "+10%")
+        );
+    } else if (actionKey === "decrease_voltage") {
+        lines.push(
+            effectLine("chemistry.status.voltage", "-2〜3V"),
+            effectLine("chemistry.status.progress", "+5%")
+        );
+    } else if (actionKey === "add_acid") {
+        lines.push(
+            effectLine("chemistry.status.ph", "§c▼"),
+            { rawtext: [{ text: "§7" }, { translate: "chemistry.action.effect.adaptive_control" }] }
+        );
+    } else if (actionKey === "add_base") {
+        lines.push(
+            effectLine("chemistry.status.ph", "§a▲"),
+            { rawtext: [{ text: "§7" }, { translate: "chemistry.action.effect.adaptive_control" }] }
+        );
+    } else if (actionKey === "heat") {
+        lines.push(
+            effectLine("chemistry.status.temperature", "§c▲"),
+            { rawtext: [{ text: "§7" }, { translate: "chemistry.action.effect.adaptive_control" }] },
+            effectLine("chemistry.status.progress", "+12%")
+        );
+    } else if (actionKey === "cool") {
+        lines.push(
+            effectLine("chemistry.status.temperature", "§b▼"),
+            { rawtext: [{ text: "§7" }, { translate: "chemistry.action.effect.adaptive_control" }] },
+            effectLine("chemistry.status.progress", "+5%")
+        );
+    } else if (actionKey === "filter") {
+        lines.push(effectLine("chemistry.status.contamination", "-20〜30%"));
+    } else if (actionKey === "centrifuge") {
+        lines.push(
+            effectLine("chemistry.status.contamination", "-15〜25%"),
+            effectLine("chemistry.status.progress", "+15%")
+        );
+    } else if (actionKey === "distill") {
+        lines.push(
+            effectLine("chemistry.status.contamination", "-25〜40%"),
+            effectLine("chemistry.status.temperature", "+20℃")
+        );
+    } else if (actionKey === "measure_purity") {
+        lines.push(effectLine("chemistry.status.precision", "+0〜30%"));
+    } else if (actionKey === "crystallize") {
+        lines.push(
+            effectLine("chemistry.status.progress", "+20%"),
+            effectLine("chemistry.status.contamination", "-10%")
+        );
+    } else if (actionKey === "emergency_stabilize") {
+        lines.push({ rawtext: [{ translate: "chemistry.action.emergency_stabilize.lore" }] });
+    }
+    if (CONDITION_ACTIONS.has(actionKey) && getReactionControlTargets({
+        voltage: 0,
+        pH: 7,
+        temperature: 20,
+    }, recipe).length === 0) {
+        lines.push({ rawtext: [{ translate: "chemistry.action.unavailable.reaction" }] });
+    }
+    return lines;
+}
+
+function buildCompletionLore(lab: any, recipe: any) {
+    const protocolReady = lab.phase !== "preparation"
+        && lab.protocolIndex >= lab.protocol.length - 1;
+    const rank = !protocolReady
+        ? "F"
+        : lab.risk >= CRITICAL_RISK_THRESHOLD
+        ? "CONTAMINATED"
+        : resolveMasteredChemistryRank(lab, recipe).rank;
+    const resolved = resolveResult(recipe.result);
+    const baseCount = lab.quantity * resolved.count;
+    const outputYield = calculateOutputYield(baseCount, lab.yieldPenalty, false);
+    const researchBonus = calculateResearchYieldBonus(
+        outputYield.penalizedCount,
+        lab.researchTechnique.yieldBonusRate,
+        lab.protocolIndex >= lab.protocol.length - 1
+    );
+    const output = protocolReady ? outputYield.totalCount + researchBonus : 0;
+    const completedStages = Math.min(lab.protocolIndex, lab.protocol.length);
+    const lore: any[] = [
+        { rawtext: [{ translate: "chemistry.complete.expected_rank" }, { text: `: §e${rank}` }] },
+        { rawtext: [{ translate: "chemistry.complete.expected_output" }, { text: `: §a${output}` }] },
+        {
+            rawtext: [
+                { translate: "chemistry.complete.protocol_progress" },
+                { text: `: ${completedStages}/${lab.protocol.length}` },
+            ],
+        },
+    ];
+    if (lab.activePulse) {
+        lore.push({ rawtext: [{ text: "§c" }, { translate: "chemistry.complete.unresolved_pulse" }] });
+    }
+    if (lab.phase === "preparation") {
+        lore.push({ rawtext: [{ text: "§c" }, { translate: "chemistry.complete.not_started" }] });
+    } else if (lab.protocolIndex < lab.protocol.length - 1) {
+        const requiredStage = lab.protocol[lab.protocolIndex];
+        lore.push(
+            { rawtext: [{ text: "§c" }, { translate: "chemistry.complete.early_failure" }] },
+            { rawtext: [
+                { text: "§e" },
+                { translate: "chemistry.complete.required_stage" },
+                { text: ": " },
+                { translate: getProtocolStageTranslation(requiredStage?.key ?? "reaction") },
+            ] }
+        );
+    }
+    if (lab.risk >= CRITICAL_RISK_THRESHOLD) {
+        lore.push({ rawtext: [{ text: "§c" }, { translate: "chemistry.complete.critical_risk" }] });
+    }
+    return lore;
 }
 
 function openLaboratory(player: any) {
@@ -874,12 +1611,12 @@ function openLaboratory(player: any) {
     const lv = new JobLevel(player, "chemist").getLevel();
     lab.temperature = Math.max(-273.15, lab.temperature);
 
-    const form = new ChestFormData("large").setTitle({ rawtext: [{ translate: langChangeItemName(recipe.name) }] });
+    const form = new ChestFormData("large").enableLoreLineBreaks().setTitle({ rawtext: recipeTitleParts(recipe) });
 
     fill(form, [...Array(9).keys()], "minecraft:black_stained_glass_pane");
     fill(form, [...Array(9).keys()].map(i => i + 45), "minecraft:black_stained_glass_pane");
 
-    const danger = isDangerousCondition(lab, recipe);
+    const danger = isDangerousCondition(lab);
     if (danger) {
         fill(form, [9, 10, 11, 12, 13, 14, 15, 16, 17],
             "minecraft:red_stained_glass_pane",
@@ -889,53 +1626,92 @@ function openLaboratory(player: any) {
         );
     }
 
+    // The three top panels expose state, not the correct next button.
+    // Protocol and pulse state live in the session, so merely reopening the UI
+    // never advances or rerolls the experiment.
+    // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form.setButton(0, {
+        iconPath: itemIdToPath["minecraft:book"],
+        name: "chemistry.protocol.title",
+        lore: buildProtocolLore(lab),
+        editedName: true,
+    });
+    // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form.setButton(4, {
+        iconPath: itemIdToPath[getPulseIcon(lab.activePulse) as keyof typeof itemIdToPath],
+        name: lab.activePulse ? "chemistry.pulse.alert" : "chemistry.pulse.title",
+        lore: buildPulseLore(lab),
+        editedName: true,
+        isGlint: Boolean(lab.activePulse),
+    });
+    // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form.setButton(8, {
+        iconPath: itemIdToPath["minecraft:experience_bottle"],
+        name: "chemistry.combo.title",
+        lore: buildTechniqueLore(player, lab, recipe),
+        editedName: true,
+        isGlint: lab.protocolCombo >= 3 || lab.insightCombo >= 2,
+    });
+
     const statusLore = [
         { rawtext: [{ text: '§9' }, { translate: "chemistry.status.phase" }, { text: `: ${lab.phase}\n` }] },
         { rawtext: [{ text: '§a' }, { translate: "chemistry.status.progress" }, { text: `: ${lab.progress}%\n` }] },
         { rawtext: [{ text: '§6' }, { translate: "chemistry.status.contamination" }, { text: `: ${Math.max(0, lab.contamination)}%\n` }] },
         { rawtext: [{ text: '§b' }, { translate: "chemistry.status.actions" }, { text: `: ${lab.actions}/${lab.maxActions}\n` }] },
         { rawtext: [{ text: '§e' }, { translate: "chemistry.status.amount" }, { text: `: ${lab.quantity}\n` }] },
+        { rawtext: [{ text: lab.stability >= 70 ? '§a' : lab.stability >= 40 ? '§e' : '§c' }, { translate: "chemistry.status.stability" }, { text: `: ${lab.stability}%\n` }] },
+        { rawtext: [{ text: lab.risk < 55 ? '§a' : lab.risk < 75 ? '§e' : '§c' }, { translate: "chemistry.status.risk" }, { text: `: ${lab.risk}%\n` }] },
+        { rawtext: [{ text: '§d' }, { translate: "chemistry.status.precision" }, { text: `: ${Math.round(lab.precision * 100)}%\n` }] },
+        { rawtext: [{ text: lab.instability <= 20 ? '§a' : lab.instability <= 50 ? '§e' : '§c' }, { translate: "chemistry.status.instability" }, { text: `: ${Math.max(0, Math.round(lab.instability))}%\n` }] },
     ];
 
-    if (recipe.reactionType === "electrolysis") {
+    const riskFactors = calculateReactionRiskFactors(lab, recipe).slice(0, 2);
+    for (const factor of riskFactors) {
+        statusLore.push({
+            rawtext: [
+                { text: "§7↳ " },
+                { translate: `chemistry.risk.cause.${factor.cause}` },
+                { text: ` +${Math.ceil(factor.value)}` },
+            ],
+        });
+    }
+
+    if (lab.accidents > 0 || lab.yieldPenalty > 0) {
         statusLore.push(
-            { rawtext: [{ text: '§c' }, { translate: "chemistry.status.voltage" }, { text: `: ${lab.voltage}V (${Math.floor((recipe.optimalVoltage[0] + recipe.optimalVoltage[1]) / 2)}V)\n` }] }
-        );
-    } else if (recipe.reactionType === "neutralization") {
-        statusLore.push(
-            { rawtext: [{ text: '§c' }, { translate: "chemistry.status.ph" }, { text: `: ${lab.pH.toFixed(1)} (${recipe.targetPH ?? 7})\n` }] }
-        );
-    } else if (
-        recipe.reactionType === "oxidation" ||
-        recipe.reactionType === "reduction" ||
-        recipe.reactionType === "polymerization" ||
-        recipe.reactionType === "fermentation"
-    ) {
-        statusLore.push(
-            {
-                rawtext: [{ text: '§c' }, { translate: "chemistry.status.temperature" },
-                { text: `: ${lab.temperature}℃ (${Math.floor((recipe.optimalTemperature[0] + recipe.optimalTemperature[1]) / 2)}℃)\n` }]
-            }
-        );
-    } else if (recipe.reactionType === "precipitation") {
-        statusLore.push(
-            {
-                rawtext: [{ text: '§c' }, { translate: "chemistry.status.ph" },
-                { text: `: ${lab.pH.toFixed(1)} (${recipe.targetPH ?? 7})\n` }]
-            },
-            {
-                rawtext: [{ text: '§c' }, { translate: "chemistry.status.temperature" },
-                { text: `: ${lab.temperature}℃\n` }]
-            }
+            { rawtext: [{ text: '§c' }, { translate: "chemistry.status.accidents" }, { text: `: ${lab.accidents}\n` }] },
+            { rawtext: [{ text: '§6' }, { translate: "chemistry.status.yield_penalty" }, { text: `: -${Math.round(lab.yieldPenalty * 100)}%\n` }] }
         );
     }
 
-
+    for (const target of getReactionControlTargets(lab, recipe)) {
+        const label = target.metric === "ph"
+            ? "chemistry.status.ph"
+            : target.metric === "voltage"
+                ? "chemistry.status.voltage"
+                : "chemistry.status.temperature";
+        const decimals = target.metric === "ph" ? 1 : 0;
+        const unit = target.metric === "voltage" ? "V" : target.metric === "temperature" ? "℃" : "";
+        statusLore.push({
+            rawtext: [
+                { text: target.direction === "hold" ? "§a" : "§c" },
+                { translate: label },
+                { text: `: ${target.current.toFixed(decimals)}${unit}  §7[` },
+                { translate: "chemistry.status.target" },
+                { text: ` ${target.min.toFixed(decimals)}〜${target.max.toFixed(decimals)}${unit}]\n` },
+            ],
+        });
+    }
 
     statusLore.push(
         // @ts-ignore TS(2322): Type '{ translate: string; with: string[]; }' is n... Remove this comment to see the full error message
-        { rawtext: [{ text: '§d' }, { translate: "chemistry.lore.purity", with: [`${calcRank(lab, recipe).rank}`] }] }
+        { rawtext: [{ text: '§d' }, { translate: "chemistry.lore.purity", with: [`${resolveMasteredChemistryRank(lab, recipe).rank}`] }] }
     );
+
+    if (isBreakthroughReady(lab, recipe)) {
+        statusLore.push(
+            { rawtext: [{ text: '§d' }, { translate: "chemistry.status.breakthrough_ready" }] }
+        );
+    }
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.setButton(18, {
@@ -955,12 +1731,27 @@ function openLaboratory(player: any) {
                 editedName: true
             });
         } else {
+            const unavailableReason = getActionUnavailableReason(player, lab, recipe, action);
+            const actionLore: any[] = [
+                { rawtext: [{ text: '§7' }, { translate: "chemistry.action.cost" }, { text: `: ${action.cost}` }] },
+                ...buildActionEffectLore(action.key, recipe),
+            ];
+            if (unavailableReason) {
+                actionLore.push({
+                    rawtext: [
+                        { text: "§c" },
+                        { translate: `chemistry.action.unavailable.${unavailableReason}` },
+                    ],
+                });
+            }
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
             form.setButton(action.slot, {
                 // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                iconPath: itemIdToPath[action.icon],
+                iconPath: unavailableReason
+                    ? itemIdToPath["minecraft:barrier"]
+                    : itemIdToPath[action.icon as keyof typeof itemIdToPath],
                 name: action.name,
-                lore: [{ rawtext: [{ text: '§7' }, { translate: "chemistry.action.cost" }, { text: `: ${action.cost}` }] }],
+                lore: actionLore,
                 editedName: true
             });
         }
@@ -968,14 +1759,20 @@ function openLaboratory(player: any) {
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.setButton(49, {
-        iconPath: itemIdToPath["minecraft:lime_dye"],
+        iconPath: itemIdToPath[lab.risk >= CRITICAL_RISK_THRESHOLD
+            ? "minecraft:red_dye"
+            : lab.protocolIndex >= lab.protocol.length - 1
+                ? "minecraft:lime_dye"
+                : "minecraft:yellow_dye"],
         name: "chemistry.button.complete",
+        lore: buildCompletionLore(lab, recipe),
         editedName: true
     });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
-        handleAction(player, r.selection || 0);
+        if (r.canceled || r.selection === undefined) return;
+        handleAction(player, r.selection);
     });
 }
 
@@ -984,10 +1781,31 @@ function openLaboratory(player: any) {
 ================================ */
 function handleAction(player: any, slot: any) {
     const lab = chemistrySessions.get(player.id);
+    if (!lab) return;
+    if (lab.artisanFinish) { finish(player); return; }
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = ChemistryRecipes[lab.recipeId];
 
-    if (slot === 49 && lab.phase != 'preparation') {
+    if (slot === 49) {
+        if (lab.phase === "preparation") {
+            openLaboratory(player);
+            return;
+        }
+
+        resolveActivePulse(lab, "complete");
+        const controlError = calculateReactionControlError(lab, recipe);
+        applyProtocolAction(lab, recipe, "complete", controlError);
+        lab.protocolCompleted = lab.protocolIndex >= lab.protocol.length;
+        if (!lab.protocolCompleted) {
+            lab.protocolAborted = true;
+            lab.phase = "failed";
+            lab.instability = 100;
+            lab.yieldPenalty = 1;
+            lab.score = Math.min(lab.score, 0);
+            lab.breakthrough = false;
+            lab.lastProtocolOutcome = "early_finish";
+        }
+        refreshReactionSafety(lab, recipe, false);
         finish(player);
         return;
     }
@@ -1003,20 +1821,37 @@ function handleAction(player: any, slot: any) {
         openLaboratory(player);
         return;
     }
-    if (lab.actions + action.cost > lab.maxActions) {
-        lab.phase = "failed";
-        finish(player);
+    if (getActionUnavailableReason(player, lab, recipe, action)) {
+        openLaboratory(player);
         return;
     }
 
+    const hadActivePulse = Boolean(lab.activePulse);
+    const pulseWasResolved = resolveActivePulse(lab, action.key);
+    const controlErrorBefore = calculateReactionControlError(lab, recipe);
     action.run(lab, recipe, lab.ctx, player);
     lab.actions += action.cost;
+    if (action.key !== "emergency_stabilize") {
+        const actionInstability = ACTION_INSTABILITY[action.key] ?? 0;
+        lab.instability = clamp(lab.instability * 0.72 + actionInstability, -30, 100);
+    }
 
-    lab.voltage = Math.floor(lab.voltage * 100) / 100;
+    lab.voltage = Math.max(0, Math.floor(lab.voltage * 100) / 100);
     lab.pH = Math.floor(lab.pH * 100) / 100;
     lab.temperature = Math.floor(lab.temperature * 100) / 100;
     lab.progress = Math.floor(lab.progress * 100) / 100;
-    lab.contamination = Math.max(0, Math.floor(lab.contamination * 100) / 100);
+    lab.contamination = clamp(Math.floor(lab.contamination * 100) / 100, 0, 100);
+
+    applyProtocolAction(lab, recipe, action.key, controlErrorBefore, pulseWasResolved);
+
+    refreshReactionSafety(lab, recipe);
+    let accident = false;
+    if (action.key !== "emergency_stabilize") {
+        accident = registerAccident(player, lab, recipe);
+    }
+    if (!hadActivePulse && !accident && action.key !== "emergency_stabilize") {
+        maybeTriggerReactionPulse(lab, recipe);
+    }
 
     openLaboratory(player);
 }
@@ -1070,6 +1905,7 @@ function calcEfficiencyBonus(lab: any, recipe: any) {
 
 function calcRank(lab: any, recipe: any) {
     let score = lab.score;
+    score += Math.min(lab.refinement ?? 0, getChemistryRefinementCap(lab.chemistLevel, recipe.requiredLevel));
 
     score += Math.min(5, Math.floor(lab.progress / 25));
 
@@ -1084,6 +1920,15 @@ function calcRank(lab: any, recipe: any) {
 
     if (lab.catalystCount > 0) {
         score += Math.floor(lab.catalystQuality / lab.catalystCount);
+    }
+
+    score -= lab.accidents * 10;
+    score -= Math.floor(lab.risk / 12);
+    score -= Math.round(lab.yieldPenalty * 10);
+    score -= lab.emergencyUses;
+
+    if (lab.protocolAborted) {
+        return { rank: "F", mul: 0.3 };
     }
 
     if (lab.phase === "failed") {
@@ -1105,57 +1950,112 @@ function calcRank(lab: any, recipe: any) {
     return { rank: "F", mul: 0.3 };
 }
 
+function resolveMasteredChemistryRank(lab: any, recipe: any) {
+    const raw = calcRank(lab, recipe);
+    const rank = capRankByRecipeMastery(
+        raw.rank,
+        lab.chemistLevel,
+        recipe.requiredLevel
+    );
+    return {
+        rawRank: raw.rank,
+        rank,
+        mul: getChemistryRankMultiplier(rank),
+    };
+}
+
 /* ===============================
    Finish
 ================================ */
+function settleReactionForFinish(player: any, lab: any, recipe: any) {
+    refreshReactionSafety(lab, recipe, false);
+
+    if (lab.risk >= CRITICAL_RISK_THRESHOLD) {
+        registerAccident(player, lab, recipe, true);
+        lab.phase = "failed";
+        lab.yieldPenalty = 1;
+        return;
+    }
+
+    if (lab.risk >= 55) {
+        const unsafePenalty = lab.risk >= 75 ? 0.35 : 0.2;
+        lab.yieldPenalty = Math.max(lab.yieldPenalty, unsafePenalty);
+        lab.score -= lab.risk >= 75 ? 5 : 3;
+    }
+
+    if (!isBreakthroughReady(lab, recipe)) return;
+
+    const level = new JobLevel(player, "chemist").getLevel();
+    const baseChance = calculateBreakthroughChance(level, recipe.requiredLevel);
+    const chance = calculateProtocolBreakthroughChance(
+        baseChance,
+        lab.insight,
+        Math.max(lab.bestProtocolCombo, lab.bestInsightCombo),
+        lab.pulsesContained,
+        lab.researchTechnique.breakthroughCap
+    );
+    if (Math.random() < chance) {
+        lab.breakthrough = true;
+        lab.score += 8;
+        player.playSound("random.levelup", player.location);
+        player.sendMessage({ translate: "chemistry.breakthrough.message" });
+    }
+}
+
 function finish(player: any) {
     const lab = chemistrySessions.get(player.id);
+    if (!lab || lab.artisanCraftStarted) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = ChemistryRecipes[lab.recipeId];
 
     if (!checkIngredients(player, lab.scaledIngredients)) {
-        chemistrySessions.delete(player.id);
+        cancelArtisanCraft(lab);
         return;
     }
 
-    consume(player, lab.scaledIngredients);
+    const { rank, mul, isWaste, itemId, outputYield, researchYieldBonus, totalCount } = lab.artisanFinish ??= (() => {
+        settleReactionForFinish(player, lab, recipe);
+        const incompleteDisposition = lab.protocolAborted
+            ? getIncompleteProtocolDisposition(lab.quantity)
+            : undefined;
+        const masteredResult = resolveMasteredChemistryRank(lab, recipe);
+        const rank = incompleteDisposition?.rank ?? masteredResult.rank;
+        const rankMultiplier = getChemistryRankMultiplier(rank);
+        const rewardMultiplier = incompleteDisposition?.rewardMultiplier ?? rankMultiplier;
+        const mul = rewardMultiplier * (lab.breakthrough ? 1.25 : 1);
 
-    const { rank, mul } = calcRank(lab, recipe);
+        const resolved = resolveResult(recipe.result);
 
-    const resolved = resolveResult(recipe.result);
+        const isWaste = Boolean(incompleteDisposition)
+            || (rank === "CONTAMINATED" && lab.phase === "failed");
 
-    const isWaste =
-        rank === "CONTAMINATED" && lab.phase === "failed";
+        const itemId = isWaste
+            ? "mc:chemical_waste"
+            : resolved.id;
 
-    const itemId = isWaste
-        ? "mc:chemical_waste"
-        : resolved.id;
-
-    const totalCount = isWaste
-        ? lab.quantity
-        : lab.quantity * resolved.count;
-
-    const items = createStacks(itemId, totalCount);
-
-    for (const item of items) {
-        item.setLore([
-            { rawtext: [{ text: '§r§a==============' }] },
-            { rawtext: [{ text: '§r§e' }, { translate: "chemistry.lore.purity", with: [`${rank}`] }] },
-            { rawtext: [{ text: '§r§a==============' }] },
-        ]);
-
-        player.dimension.spawnItem(item, player.location);
-    }
-
-    chemistrySessions.delete(player.id);
-
-    player.stopSound('chemistry.bubbling');
-    player.stopSound('chemistry.electric');
-    player.stopSound('chemistry.pour');
-    player.stopSound('chemistry.heat');
-    player.playSound('chemistry.complete', player.location);
-
-    if (jobs_config.validity && player.hasTag('mcjobs_chemist')) {
+        const baseCount = lab.quantity * resolved.count;
+        const outputYield = incompleteDisposition
+            ? {
+                penalizedCount: 0,
+                breakthroughBonus: 0,
+                totalCount: incompleteDisposition.productCount,
+                lostCount: baseCount,
+            }
+            : calculateOutputYield(baseCount, lab.yieldPenalty, lab.breakthrough);
+        const researchYieldBonus = isWaste
+            ? 0
+            : calculateResearchYieldBonus(
+                outputYield.penalizedCount,
+                lab.researchTechnique.yieldBonusRate,
+                Boolean(lab.protocolCompleted)
+            );
+        const totalCount = isWaste
+            ? incompleteDisposition?.wasteCount ?? lab.quantity
+            : outputYield.totalCount + researchYieldBonus;
+        return { rank, mul, isWaste, itemId, outputYield, researchYieldBonus, totalCount };
+    })();
+    if (!runArtisanCraft(player, lab, () => {
+        if (!jobs_config.validity || !player.hasTag('mcjobs_chemist')) return undefined;
         const job = new JobLevel(player, "chemist");
         const level = job.getLevel();
 
@@ -1174,32 +2074,57 @@ function finish(player: any) {
                 buff.getMultiplier("chemist") *
                 5
             ) / 100;
+        const xpReward = recipe.baseXp * mul * Math.min(lab.quantity, 25);
+        return { job: "chemist", money: reward, xp: xpReward, rank, display: "chemistry" };
+    }, () => {
+        consume(player, lab.scaledIngredients);
+        rememberLastCraftedRecipe(player.id, "chemistry", lab.recipeId);
 
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-        const finalReward = applyDailyLimit(
-            playerData,
-            "chemist",
-            reward,
-            jobs_config.dailyLimit.chemist
-        );
+        const items = createStacks(itemId, totalCount);
 
-        if (finalReward > 0) {
-            job.addXp(recipe.baseXp * mul);
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+        for (const item of items) {
+            const itemLore: any[] = [
+                { rawtext: [{ text: '§r§a==============' }] },
+                { rawtext: [{ text: '§r§e' }, { translate: "chemistry.lore.purity", with: [`${rank}`] }] },
+            ];
+            if (!isWaste && itemId === "mc:ammonium_sulfate") {
+                itemLore.push({ rawtext: [{ text: '§r§a' }, { translate: "chemical.fertilizer.lore" }] });
+            }
+            if (lab.breakthrough) {
+                itemLore.push({ rawtext: [{ text: '§r§d' }, { translate: "chemistry.lore.breakthrough" }] });
+            }
+            itemLore.push({ rawtext: [{ text: '§r§a==============' }] });
+            item.setLore(itemLore);
+
+            player.dimension.spawnItem(item, player.location);
         }
 
-        player.onScreenDisplay.setActionBar(
-            {
-                rawtext: [
-                    { translate: "chemistry.reward.prefix" },
-                    { text: ` ${rank} ` },
-                    { translate: "chemistry.reward.money" },
-                    { text: `+${finalReward}${config.MoneyName}` },
-                    { translate: "chemistry.reward.xp" },
-                    { text: `${job.getXp()}/${job.getXpRequired(level)}` }
-                ]
-            }
-        );
+        chemistrySessions.delete(player.id);
+    })) return;
+    const lostCount = outputYield.lostCount;
+    if (!isWaste && lostCount > 0) {
+        player.sendMessage({
+            rawtext: [{
+                translate: "chemistry.yield_penalty.message",
+                with: [`${lostCount}`]
+            }]
+        });
     }
+
+    player.sendMessage({
+        rawtext: [{
+            translate: "chemistry.research.result",
+            with: [
+                `${lab.researchTechnique.level}`,
+                `${researchYieldBonus}`,
+            ],
+        }],
+    });
+
+    player.stopSound('chemistry.bubbling');
+    player.stopSound('chemistry.electric');
+    player.stopSound('chemistry.pour');
+    player.stopSound('chemistry.heat');
+    player.playSound('chemistry.complete', player.location);
+
 }

@@ -1,20 +1,187 @@
-import { system, world, ItemStack, Player, Block, EnchantmentTypes } from '@minecraft/server';
+import { cancelGateTerrainInteraction } from "@/shared/integration/standalone.js";
+import { CommerceActionFormData as ActionFormData, CommerceModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
+import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
+import { system, world, ItemStack, Player, Block, EnchantmentTypes, type Entity } from '@minecraft/server';
+import { isUnsafeToPlay } from "@/shared/integration/standalone.js";
 import { DynamicProperties } from '@/shared/storage/dynamic-properties.js';
-import { ActionFormData, ModalFormData } from '@minecraft/server-ui';
+
 import { ChestFormData } from '@/shared/ui/chest-form.js';
-import { appendChestPresentationLore, getChestItemDataPresentation, getChestItemStackPresentation, readItemStackPotionData } from '@/shared/minecraft/item-presentation.js';
+import { appendChestPresentationLore, getChestItemDataPresentation, getChestItemStackPresentation, getPotionSummaryRawText, readItemStackPotionData } from '@/shared/minecraft/item-presentation.js';
 import config from '@/config/server.js';
-import { PlayerManager } from '@/domain/player/player-manager.js';
-import { CheckPermission, enchantIdToLang, langChangeItemName } from '@/shared/utils/minecraft.js';
+import { CheckPermission, CheckPermissionFromLocation, enchantIdToLang, langChangeItemName } from '@/shared/utils/minecraft.js';
+
+type ShopTransactionPermission = 'shopBuy' | 'shopSell';
+
+function canUseShopAt(player: Player, block: Block, permission: ShopTransactionPermission) {
+    if (!CheckPermissionFromLocation(player, block.x, block.z, block.dimension.id, permission)) return true;
+    player.sendMessage({ translate: `error.barrelshop.permission.${permission}` });
+    return false;
+}
 
 function normalizeMoney(value: any) {
-    return Math.floor((Number(value) || 0) * 100) / 100;
+    return Math.round((Number(value) || 0) * 100) / 100;
 }
 
 function parseMoneyInput(value: any) {
     const amount = Number(value);
-    if (!Number.isFinite(amount)) return undefined;
-    return normalizeMoney(amount);
+    if (!Number.isFinite(amount) || !Number.isSafeInteger(Math.round(amount * 100))) return undefined;
+    const scaled = amount * 100;
+    // Amount input keeps whole cents; wallet arithmetic rounds binary noise.
+    return Math.floor(scaled + Math.abs(scaled) * Number.EPSILON) / 100;
+}
+
+function shopMoneyCents(value: unknown): number {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || !Number.isSafeInteger(Math.round(value * 100))) throw Error('invalid_shop_money');
+    return Math.round(value * 100);
+}
+
+function shopNotify(player: Player, message: Parameters<Player['sendMessage']>[0]) {
+    try { if (player.isValid) player.sendMessage(message); } catch { }
+}
+
+function restoreShopWallet(database: DynamicProperties, key: string, money: number) {
+    const current = JSON.parse(database.get(key)!);
+    current.money = money;
+    return current;
+}
+
+function commitShopRecords(writes: { database: DynamicProperties; key: string; value: any; remove?: boolean; restore: () => any }[]) {
+    const applied: typeof writes = [];
+    try {
+        for (const write of writes) {
+            if (write.remove) write.database.delete(write.key); else write.database.set(write.key, write.value);
+            applied.push(write);
+        }
+    } catch (error) {
+        for (const write of applied.reverse()) {
+            try { write.database.set(write.key, write.restore()); }
+            catch (restoreError) { console.error('[BarrelShop] Failed to restore saved record', restoreError); }
+        }
+        throw error;
+    }
+}
+
+function withShopInventories(containers: any[], action: () => void, undoExternal?: () => void) {
+    const snapshots = containers.map(container => Array.from({ length: container.size }, (_, slot) => container.getItem(slot)));
+    try { action(); }
+    catch (error) {
+        try { undoExternal?.(); } catch (restoreError) { console.error('[BarrelShop] Failed to undo external delivery', restoreError); }
+        try {
+            for (const container of containers) container.clearAll();
+            containers.forEach((container, i) => snapshots[i].forEach((item, slot) => { if (item) container.setItem(slot, item); }));
+        } catch (restoreError) { console.error('[BarrelShop] Failed to restore inventories', restoreError); }
+        throw error;
+    }
+}
+
+function canManageShop(player: Player, shopData: any, ownerOnly = false): boolean {
+    if (!player.isValid || isUnsafeToPlay() || player.hasTag('status:loading') || player.hasTag('status:transferring')) return false;
+    if (shopData.owner === player.id || (!ownerOnly && Array.isArray(shopData.admins) && shopData.admins.includes(player.id))) return true;
+    shopNotify(player, { translate: 'no.permission' });
+    return false;
+}
+
+function canConfigureShopTreasury(player: Player, shopData: any): boolean {
+    try {
+        const players = new DynamicProperties('player');
+        const actor = JSON.parse(players.get(`player_${player.id}`)!);
+        const owner = JSON.parse(players.get(`player_${shopData.owner}`)!);
+        if (actor.country && actor.country === owner.country
+            && !CheckPermission(player, 'withDrawTreasurybudget') && !CheckPermission(shopData.owner, 'withDrawTreasurybudget')) return true;
+    } catch { }
+    shopNotify(player, { translate: 'no.permission' });
+    return false;
+}
+
+function moveShopMoney(player: Player, dbKey: string, direction: 'deposit' | 'prepaid' | 'sales', amount?: number): number | undefined {
+    try {
+        const shopDB = new DynamicProperties('barrelShop'), playerDB = new DynamicProperties('player');
+        const rawShop = shopDB.get(dbKey);
+        if (!rawShop) return undefined;
+        const shop = JSON.parse(rawShop);
+        if (!canManageShop(player, shop)) return undefined;
+        const walletKey = `player_${player.id}`;
+        const wallet = JSON.parse(playerDB.get(walletKey)!);
+        const beforeWallet = wallet.money, walletCents = shopMoneyCents(beforeWallet);
+        const available = direction === 'sales' ? shopMoneyCents(shop.money ?? 0) : shopMoneyCents(shop.buybackConfig.prepaidMoney ?? 0);
+        const amountCents = direction === 'sales' ? available : shopMoneyCents(amount);
+        if (direction !== 'sales' && amountCents < 1) throw Error('invalid_shop_amount');
+        if ((direction === 'deposit' ? walletCents : available) < amountCents) {
+            shopNotify(player, { translate: direction === 'deposit' ? 'error.notenough.money' : 'error.barrelshop.notenough.prepaid' });
+            return undefined;
+        }
+        const newWallet = walletCents + (direction === 'deposit' ? -amountCents : amountCents);
+        const newShop = available + (direction === 'deposit' ? amountCents : -amountCents);
+        if (!Number.isSafeInteger(newWallet) || !Number.isSafeInteger(newShop)) throw Error('shop_money_overflow');
+        wallet.money = newWallet / 100;
+        if (direction === 'sales') shop.money = newShop / 100;
+        else shop.buybackConfig.prepaidMoney = newShop / 100;
+        commitShopRecords([
+            { database: shopDB, key: dbKey, value: shop, restore: () => JSON.parse(rawShop) },
+            { database: playerDB, key: walletKey, value: wallet, restore: () => restoreShopWallet(playerDB, walletKey, beforeWallet) },
+        ]);
+        return amountCents / 100;
+    } catch (error) {
+        console.warn('[BarrelShop] Money movement aborted', error);
+        shopNotify(player, '§c資金の移動を完了できませんでした。続く場合は運営へ連絡してください。');
+        return undefined;
+    }
+}
+
+function refundRemovedShop(dbKey: string): boolean {
+    if (isUnsafeToPlay()) return false;
+    try {
+        const shopDB = new DynamicProperties('barrelShop'), players = new DynamicProperties('player');
+        const raw = shopDB.get(dbKey);
+        if (!raw) return true;
+        const shop = JSON.parse(raw), walletKey = `player_${shop.owner}`;
+        const wallet = JSON.parse(players.get(walletKey)!);
+        const beforeMoney = wallet.money;
+        const refundCents = shopMoneyCents(shop.money ?? 0) + shopMoneyCents(shop.buybackConfig?.prepaidMoney ?? shop.prepaidMoney ?? 0);
+        const finalCents = shopMoneyCents(beforeMoney) + refundCents;
+        if (!Number.isSafeInteger(finalCents)) throw Error('shop_refund_overflow');
+        wallet.money = finalCents / 100;
+        commitShopRecords([
+            { database: shopDB, key: dbKey, value: null, remove: true, restore: () => shop },
+            { database: players, key: walletKey, value: wallet, restore: () => restoreShopWallet(players, walletKey, beforeMoney) },
+        ]);
+        return true;
+    } catch (error) {
+        // Keep an indexed shop record so its funds remain recoverable.
+        console.warn('[BarrelShop] Removal refund aborted; retained shop record', error);
+        return false;
+    }
+}
+
+function buybackMetadata(item: any) {
+    const durability = item.getComponent('durability');
+    const enchantments = item.getComponent('enchantable')?.getEnchantments() ?? [];
+    const potion = readItemStackPotionData(item);
+    return {
+        typeId: item.typeId, nameTag: item.nameTag || null, lore: item.getRawLore(),
+        durability: durability ? { max: durability.maxDurability, now: durability.damage } : null,
+        enchantments: enchantments.map((e: any) => ({ id: e.type.id, level: e.level })).sort((a: any, b: any) => a.id.localeCompare(b.id)),
+        potion: potion ? [potion] : [],
+        dynamicProperties: item.getDynamicPropertyIds().sort().map((id: string) => ({ id, data: item.getDynamicProperty(id) })),
+        dyeColor: item.getComponent('dyeable')?.color,
+        durabilityUnbreakable: durability?.unbreakable ?? false,
+        keepOnDeath: item.keepOnDeath, lockMode: item.lockMode,
+        canDestroy: item.getCanDestroy().sort(), canPlaceOn: item.getCanPlaceOn().sort(),
+    };
+}
+
+function matchesBuybackItem(item: any, expected: any): boolean {
+    const actual = buybackMetadata(item);
+    const normalize = (data: any) => ({
+        typeId: data.typeId, nameTag: data.nameTag || null, lore: data.lore ?? [], durability: data.durability ?? null,
+        enchantments: [...(data.enchantments ?? [])].sort((a: any, b: any) => a.id.localeCompare(b.id)),
+        potion: (data.potion ?? []).map((p: any) => ({ id: p.id, deliveryType: p.deliveryType, durationTicks: p.durationTicks, amplifier: p.amplifier })),
+        dynamicProperties: data.dynamicProperties ?? [], dyeColor: data.dyeColor,
+        durabilityUnbreakable: data.durabilityUnbreakable ?? false,
+        keepOnDeath: data.keepOnDeath ?? false, lockMode: data.lockMode ?? 'none',
+        canDestroy: [...(data.canDestroy ?? [])].sort(), canPlaceOn: [...(data.canPlaceOn ?? [])].sort(),
+    });
+    return JSON.stringify(normalize(actual)) === JSON.stringify(normalize(expected));
 }
 
 function normalizePlayerName(name: any) {
@@ -55,25 +222,7 @@ system.beforeEvents.startup.subscribe((ev) => {
             const z = block.z;
             const dimId = dimension.id;
 
-            const barrelShopDB = new DynamicProperties('barrelShop');
-            const playerDB = new DynamicProperties('player');
-
-            const raw = barrelShopDB.get(`shop_${dimId}_${x}_${y}_${z}`);
-            if (raw) {
-                const barrelShopData = JSON.parse(raw);
-                const rawPlayerData = playerDB.get(`player_${barrelShopData.owner}`);
-                if (rawPlayerData) {
-                    const playerData = JSON.parse(rawPlayerData);
-                    playerData.money = normalizeMoney((playerData.money || 0) + (barrelShopData.money || 0));
-
-                    if (barrelShopData.prepaidMoney) {
-                        playerData.money = normalizeMoney((playerData.money || 0) + (barrelShopData.prepaidMoney || 0));
-                    }
-
-                    playerDB.set(`player_${barrelShopData.owner}`, JSON.stringify(playerData));
-                };
-            };
-            barrelShopDB.delete(`shop_${dimId}_${x}_${y}_${z}`);
+            refundRemovedShop(`shop_${dimId}_${x}_${y}_${z}`);
         }
     })
 });
@@ -81,6 +230,11 @@ system.beforeEvents.startup.subscribe((ev) => {
 world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     const { player, block, dimension } = ev;
     if (block.typeId != 'mc:shop_block') return;
+    if (isUnsafeToPlay()) {
+        dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
+        block.setType('minecraft:air');
+        return;
+    }
     const barrel = block.below();
     if (!barrel || barrel?.typeId != 'minecraft:barrel') {
         dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
@@ -93,6 +247,13 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     const x = block.x;
     const y = block.y;
     const z = block.z;
+    const dbKey = `shop_${dimId}_${x}_${y}_${z}`;
+    if (barrelShopDB.get(dbKey) !== undefined && !refundRemovedShop(dbKey)) {
+        dimension.spawnItem(new ItemStack('mc:shop_block'), { x: block.x, y: block.y, z: block.z });
+        block.setType('minecraft:air');
+        shopNotify(player, '§c以前の店の資金を返還できないため、設置を中止しました。運営へ連絡してください。');
+        return;
+    }
     const initialData = {
         owner: player.id,
         admins: [],
@@ -111,11 +272,13 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
         transactionLog: []
     };
 
-    barrelShopDB.set(`shop_${dimId}_${x}_${y}_${z}`, JSON.stringify(initialData));
+    barrelShopDB.set(dbKey, JSON.stringify(initialData));
     return;
 });
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+    if (cancelGateTerrainInteraction(ev)) return;
+    if (cancelIncident16BlockEvent(ev)) return;
     const { player, block, isFirstEvent } = ev;
     const dimId = block.dimension.id;
 
@@ -156,8 +319,10 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
             }
 
             if (shopData.mode === 'buyback') {
+                if (!canUseShopAt(player, shopBlock, 'shopSell')) return;
                 sellItemsToShopForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
             } else {
+                if (!canUseShopAt(player, shopBlock, 'shopBuy')) return;
                 buyMainForm(player, block, `shop_${dimId}_${x}_${y}_${z}`);
             }
             return;
@@ -207,6 +372,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
             sendBlockedShopMessage(player);
             return;
         }
+        const transactionPermission = shopData.mode === 'buyback' ? 'shopSell' : 'shopBuy';
+        if (!canUseShopAt(player, block, transactionPermission)) return;
         system.runTimeout(() => {
             if (shopData.mode === 'buyback') {
                 sellItemsToShopForm(player, barrel, `shop_${dimId}_${x}_${y}_${z}`);
@@ -228,21 +395,55 @@ function addTransactionLogToData(shopData: any, entry: any) {
     }
 }
 
+/** Potion effect and enchantments kept with a transaction so the history can tell potions and books apart. */
+function transactionLogItemDetail(data: any) {
+    const detail: { potion?: any[]; enchantments?: { id: string; level: number }[] } = {};
+    const potion = Array.isArray(data?.potion) ? data.potion[0] : undefined;
+    if (potion && typeof potion.id === 'string' && potion.id) {
+        detail.potion = [{ id: potion.id, deliveryType: potion.deliveryType, durationTicks: potion.durationTicks, amplifier: potion.amplifier }];
+    }
+    const enchantments = (Array.isArray(data?.enchantments) ? data.enchantments : [])
+        .filter((enchant: any) => typeof enchant?.id === 'string' && enchant.id && Number.isSafeInteger(enchant.level))
+        .map((enchant: any) => ({ id: enchant.id, level: enchant.level }));
+    if (enchantments.length > 0) detail.enchantments = enchantments;
+    return detail;
+}
+
+function transactionLogItemRawText(log: any) {
+    const potionName = getPotionSummaryRawText(log.itemName, log.potion);
+    const parts: any[] = potionName ? [...potionName] : [{ translate: langChangeItemName(log.itemName) }];
+    const enchantments = Array.isArray(log.enchantments) ? log.enchantments : [];
+    if (enchantments.length > 0) {
+        parts.push({ text: '§d (' });
+        enchantments.forEach((enchant: any, index: number) => {
+            const enchantId = String(enchant?.id ?? '').replace('minecraft:', '');
+            const langKey = (enchantIdToLang as Record<string, string>)[enchantId] || enchantId;
+            if (index > 0) parts.push({ text: ', ' });
+            parts.push({ text: langKey.includes('.curse.') ? '§c' : '§d' }, { translate: langKey }, { text: ' ' },
+                { translate: `enchantment.level.${enchant?.level}` });
+        });
+        parts.push({ text: '§d)§f' });
+    }
+    return parts;
+}
+
 function editMainForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData)) return;
 
     const playerDB = new DynamicProperties('player');
 
     const adminNames = [];
     for (const admin of shopData.admins) {
         // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-        const adminPlayerData = JSON.parse(playerDB.get(`player_${admin}`));
-        adminNames.push(adminPlayerData.name);
+        const adminPlayerData = safeParse(playerDB.get(`player_${admin}`));
+        adminNames.push(adminPlayerData.name ?? admin);
     };
 
     const form = new ActionFormData();
@@ -289,6 +490,7 @@ function editMainForm(player: any, dbKey: any, isOwner: any) {
     if (isOwner) form.button({ translate: 'form.button.barrelshop.admins' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             return;
         };
@@ -335,11 +537,14 @@ function editMainForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function toggleShopModeForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.title.barrelshop.modeselect' });
@@ -373,6 +578,7 @@ function toggleShopModeForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 2) {
             editMainForm(player, dbKey, isOwner);
             return;
@@ -382,6 +588,8 @@ function toggleShopModeForm(player: any, dbKey: any, isOwner: any) {
         if (!newRawShopData) return;
 
         const newShopData = JSON.parse(newRawShopData);
+
+        if (!canManageShop(player, newShopData)) return;
 
         if (rs.selection === 0) {
             newShopData.mode = 'sell';
@@ -403,11 +611,14 @@ function toggleShopModeForm(player: any, dbKey: any, isOwner: any) {
 }
 
 function buybackConfigForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.title.barrelshop.buybackconfig' });
@@ -430,6 +641,7 @@ function buybackConfigForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 4) {
             editMainForm(player, dbKey, isOwner);
             return;
@@ -453,11 +665,14 @@ function buybackConfigForm(player: any, dbKey: any, isOwner: any) {
 }
 
 function changeFundingSourceForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.title.barrelshop.selectfundingsource' });
@@ -492,6 +707,7 @@ function changeFundingSourceForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 3) {
             buybackConfigForm(player, dbKey, isOwner);
             return;
@@ -501,6 +717,8 @@ function changeFundingSourceForm(player: any, dbKey: any, isOwner: any) {
         if (!newRawShopData) return;
 
         const newShopData = JSON.parse(newRawShopData);
+
+        if (!canManageShop(player, newShopData)) return;
 
         if (rs.selection === 0) {
             newShopData.buybackConfig.fundingSource = 'owner';
@@ -514,10 +732,7 @@ function changeFundingSourceForm(player: any, dbKey: any, isOwner: any) {
                 player.sendMessage({ translate: 'cannnot.use.nojoin.country' });
                 return;
             };
-            if (CheckPermission(player, 'withDrawTreasurybudget')) {
-                player.sendMessage({ translate: 'no.permission' });
-                return;
-            };
+            if (!canConfigureShopTreasury(player, newShopData)) return;
             newShopData.buybackConfig.fundingSource = 'treasury';
         }
 
@@ -532,11 +747,14 @@ function changeFundingSourceForm(player: any, dbKey: any, isOwner: any) {
 }
 
 function setMinTreasuryAmountForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
 
     const form = new ModalFormData();
     form.title({ translate: 'form.title.barrelshop.treasuryconfig' });
@@ -554,6 +772,7 @@ function setMinTreasuryAmountForm(player: any, dbKey: any, isOwner: any) {
     );
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             buybackConfigForm(player, dbKey, isOwner);
             return;
@@ -563,6 +782,9 @@ function setMinTreasuryAmountForm(player: any, dbKey: any, isOwner: any) {
         if (!newRawShopData) return;
 
         const newShopData = JSON.parse(newRawShopData);
+
+        if (!canManageShop(player, newShopData)) return;
+        if (!canConfigureShopTreasury(player, newShopData)) return;
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         const minAmount = Math.max(parseMoneyInput(rs.formValues[0]) || 0, 0);
         newShopData.buybackConfig.minTreasuryAmount = minAmount;
@@ -573,6 +795,7 @@ function setMinTreasuryAmountForm(player: any, dbKey: any, isOwner: any) {
 }
 
 function depositPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const playerDB = new DynamicProperties('player');
     // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
     const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
@@ -593,6 +816,7 @@ function depositPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
     );
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             buybackConfigForm(player, dbKey, isOwner);
             return;
@@ -607,38 +831,21 @@ function depositPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
             return;
         }
 
-        // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-        const newPlayerData = JSON.parse(playerDB.get(`player_${player.id}`));
-
-        if (newPlayerData.money < depositAmount) {
-            player.sendMessage({ translate: 'error.notenough.money' });
-            buybackConfigForm(player, dbKey, isOwner);
-            return;
-        }
-
-        const barrelShopDB = new DynamicProperties('barrelShop');
-        const newRawShopData = barrelShopDB.get(dbKey);
-        if (!newRawShopData) return;
-
-        const newShopData = JSON.parse(newRawShopData);
-
-        newPlayerData.money = normalizeMoney(newPlayerData.money - depositAmount);
-        newShopData.buybackConfig.prepaidMoney = normalizeMoney((newShopData.buybackConfig.prepaidMoney || 0) + depositAmount);
-
-        playerDB.set(`player_${player.id}`, JSON.stringify(newPlayerData));
-        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
-
-        player.sendMessage({ translate: 'success.barrelshop.deposited', with: [`${depositAmount} ${config.MoneyName}`] });
+        if (moveShopMoney(player, dbKey, 'deposit', depositAmount) === undefined) return;
+        shopNotify(player, { translate: 'success.barrelshop.deposited', with: [`${depositAmount} ${config.MoneyName}`] });
         buybackConfigForm(player, dbKey, isOwner);
     });
 }
 
 function withdrawPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
     const prepaidMoney = normalizeMoney(shopData.buybackConfig.prepaidMoney || 0);
 
     const form = new ModalFormData();
@@ -657,6 +864,7 @@ function withdrawPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
     );
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             buybackConfigForm(player, dbKey, isOwner);
             return;
@@ -670,33 +878,14 @@ function withdrawPrepaidMoneyForm(player: any, dbKey: any, isOwner: any) {
             return;
         }
 
-        const newRawShopData = barrelShopDB.get(dbKey);
-        if (!newRawShopData) return;
-        const newShopData = JSON.parse(newRawShopData);
-        const currentPrepaid = normalizeMoney(newShopData.buybackConfig.prepaidMoney || 0);
-
-        if (currentPrepaid < withdrawAmount) {
-            player.sendMessage({ translate: 'error.barrelshop.notenough.prepaid' });
-            buybackConfigForm(player, dbKey, isOwner);
-            return;
-        }
-
-        const playerDB = new DynamicProperties('player');
-        // @ts-ignore TS(2345)
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-
-        newShopData.buybackConfig.prepaidMoney = normalizeMoney(currentPrepaid - withdrawAmount);
-        playerData.money = normalizeMoney((playerData.money || 0) + withdrawAmount);
-
-        barrelShopDB.set(dbKey, JSON.stringify(newShopData));
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-
-        player.sendMessage({ translate: 'success.barrelshop.withdrawprepaid', with: [`${withdrawAmount} ${config.MoneyName}`] });
+        if (moveShopMoney(player, dbKey, 'prepaid', withdrawAmount) === undefined) return;
+        shopNotify(player, { translate: 'success.barrelshop.withdrawprepaid', with: [`${withdrawAmount} ${config.MoneyName}`] });
         buybackConfigForm(player, dbKey, isOwner);
     });
 }
 
 function configureBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const form = new ActionFormData();
     form.title({ translate: 'form.title.barrelshop.configurebuyback' });
     form.body({ translate: 'barrelshop.configurebuyback.desc' });
@@ -705,6 +894,7 @@ function configureBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 2) {
             buybackConfigForm(player, dbKey, isOwner);
             return;
@@ -726,6 +916,7 @@ function configureBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
  * @returns 
  */
 function registerBuybackItemForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const equipment = player.getComponent('equippable');
     const mainhand = equipment.getEquipment('Mainhand');
 
@@ -752,6 +943,7 @@ function registerBuybackItemForm(player: any, dbKey: any, isOwner: any) {
     );
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             configureBuybackItemsForm(player, dbKey, isOwner);
             return;
@@ -771,6 +963,8 @@ function registerBuybackItemForm(player: any, dbKey: any, isOwner: any) {
         if (!rawShopData) return;
 
         const shopData = JSON.parse(rawShopData);
+
+        if (!canManageShop(player, shopData)) return;
         shopData.buybackConfig.buybackItems = shopData.buybackConfig.buybackItems || [];
 
         const enchantments = [];
@@ -802,6 +996,7 @@ function registerBuybackItemForm(player: any, dbKey: any, isOwner: any) {
         }
 
         shopData.buybackConfig.buybackItems.push({
+            ...buybackMetadata(mainhand),
             typeId: mainhand.typeId,
             amount: mainhand.amount,
             price: price,
@@ -819,11 +1014,14 @@ function registerBuybackItemForm(player: any, dbKey: any, isOwner: any) {
 }
 
 function viewBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
     const items = shopData.buybackConfig.buybackItems || [];
 
     const form = new ActionFormData();
@@ -858,6 +1056,7 @@ function viewBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
     }
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 0) {
             configureBuybackItemsForm(player, dbKey, isOwner);
             return;
@@ -869,6 +1068,8 @@ function viewBuybackItemsForm(player: any, dbKey: any, isOwner: any) {
         if (!newRawShopData) return;
 
         const newShopData = JSON.parse(newRawShopData);
+
+        if (!canManageShop(player, newShopData)) return;
         newShopData.buybackConfig.buybackItems.splice(itemIndex, 1);
 
         barrelShopDB.set(dbKey, JSON.stringify(newShopData));
@@ -926,7 +1127,7 @@ function buildBuybackLore(item: any) {
 
             const enchantId = enchant.id.replace("minecraft:", "");
             // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-            const langKey = enchantIdToLang[enchantId] || enchantId;
+            const langKey = (enchantIdToLang as Record<string, string>)[enchantId] || enchantId;
             const isCurse = langKey.includes(".curse.");
             const color = isCurse ? "§c" : "§7";
 
@@ -966,6 +1167,7 @@ function buildBuybackLore(item: any) {
 }
 
 function sellItemsToShopForm(player: any, barrel: any, dbKey: any) {
+    if (!canUseShopAt(player, barrel, 'shopSell')) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
@@ -1025,285 +1227,104 @@ function calculateAvailableSpace(container: any, itemStack: any) {
 
 
 function processSellToShop(player: any, barrel: any, dbKey: any, buybackItem: any) {
-    const playerContainer = player.getComponent('inventory').container;
-
-    const barrelContainer = barrel.getComponent('inventory')?.container;
-    if (!barrelContainer) {
-        player.sendMessage({ translate: 'error.barrelshop.nobarrelinventory' });
-        return;
-    }
-
-    const barrelShopDB = new DynamicProperties('barrelShop');
-    const rawShopData = barrelShopDB.get(dbKey);
-    if (!rawShopData) return;
-
-    let shopData;
+    if (!player?.isValid) return;
     try {
-        shopData = JSON.parse(rawShopData);
-    } catch {
-        console.warn(`Invalid shop JSON: ${dbKey}`);
-        return;
-    }
-
-    if (isBlockedPlayerName(shopData, player)) {
-        sendBlockedShopMessage(player);
-        return;
-    }
-
-    let foundItems = [];
-    for (let i = 0; i < playerContainer.size; i++) {
-        const item = playerContainer.getItem(i);
-        if (!item) continue;
-
-        if (item.typeId !== buybackItem.typeId) continue;
-
-        if (buybackItem.nameTag && item.nameTag !== buybackItem.nameTag) continue;
-
-        if (buybackItem.lore?.length > 0) {
-            const itemLore = item.getRawLore();
-            if (JSON.stringify(itemLore) !== JSON.stringify(buybackItem.lore)) continue;
+        if (isUnsafeToPlay() || player.hasTag('status:loading') || player.hasTag('status:transferring')) throw Error('shop_temporarily_unavailable');
+        barrel = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
+        if (barrel?.typeId !== 'minecraft:barrel' || !canUseShopAt(player, barrel, 'shopSell')) return;
+        const playerContainer = player.getComponent('inventory')?.container;
+        const barrelContainer = barrel.getComponent('inventory')?.container;
+        if (!playerContainer || !barrelContainer) return;
+        const barrelShopDB = new DynamicProperties('barrelShop');
+        const rawShopData = barrelShopDB.get(dbKey);
+        if (!rawShopData) return;
+        const shopData = JSON.parse(rawShopData);
+        if (shopData.mode !== 'buyback' || !Array.isArray(shopData.buybackConfig?.buybackItems)
+            || !buybackItem || !shopData.buybackConfig.buybackItems.some((row: any) => JSON.stringify(row) === JSON.stringify(buybackItem))) return;
+        if (isBlockedPlayerName(shopData, player)) { sendBlockedShopMessage(player); return; }
+        if (!Number.isSafeInteger(buybackItem.amount) || buybackItem.amount < 1) throw Error('invalid_buyback_amount');
+        const unitCents = shopMoneyCents(buybackItem.price);
+        if (unitCents < 1) throw Error('invalid_buyback_price');
+        const found: { slot: number; item: any }[] = [];
+        for (let slot = 0; slot < playerContainer.size; slot++) {
+            const item = playerContainer.getItem(slot);
+            if (item && matchesBuybackItem(item, buybackItem)) found.push({ slot, item });
         }
-
-        if (buybackItem.durability) {
-            // @ts-ignore TS(1313): The body of an 'if' statement cannot be the empty ... Remove this comment to see the full error message
-            if (item.getComponent('durability').damage != buybackItem.durability.now); continue
-        };
-
-        if (buybackItem.enchantments?.length > 0) {
-            const enchComp = item.getComponent('enchantable');
-            if (!enchComp?.isValid) continue;
-
-            const itemEnchants = enchComp.getEnchantments();
-            const requiredEnchants = buybackItem.enchantments;
-
-            if (itemEnchants.length !== requiredEnchants.length) continue;
-
-            const reqMatches = requiredEnchants.every((req: any) => itemEnchants.some((e: any) => e.type.id === req.id &&
-                e.level === req.level
-            )
-            );
-            if (!reqMatches) continue;
-
-            const itemMatches = itemEnchants.every((e: any) => requiredEnchants.some((req: any) => req.id === e.type.id &&
-                req.level === e.level
-            )
-            );
-            if (!itemMatches) continue;
-        }
-
-        foundItems.push({ slot: i, item });
-    }
-
-    if (foundItems.length === 0) {
-        player.sendMessage({ rawtext: [{ text: '§c' }, { translate: 'error.barrelshop.itemnotfound' }] });
-        return;
-    }
-
-    let totalFound = 0;
-    for (const found of foundItems) totalFound += found.item.amount;
-
-    const setsAvailable = Math.floor(totalFound / buybackItem.amount);
-
-    if (setsAvailable === 0) {
-        player.sendMessage({
-            rawtext: [
-                { text: '§c' },
-                {
-                    translate: 'error.barrelshop.notenoughitems',
-                    with: [`${buybackItem.amount}`]
-                }]
-        });
-        return;
-    }
-
-    const totalItemsToStore = buybackItem.amount * setsAvailable;
-    const totalPrice = normalizeMoney(buybackItem.price * setsAvailable);
-
-    const sellStack = new ItemStack(buybackItem.typeId, buybackItem.amount);
-
-    if (buybackItem.nameTag) sellStack.nameTag = buybackItem.nameTag;
-    if (buybackItem.lore) sellStack.setLore(buybackItem.lore);
-    if (buybackItem.durability) {
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        sellStack.getComponent('durability').damage = item.durability.now;
-    };
-
-    if (buybackItem.enchantments?.length > 0) {
-        const ench = sellStack.getComponent('enchantable');
-
-        if (ench?.isValid) {
-            for (const e of buybackItem.enchantments) {
-
-                const enchantType = EnchantmentTypes.get(e.id);
-                if (!enchantType) {
-                    console.warn(`Invalid enchantment: ${e.id}`);
-                    continue;
-                }
-
-                ench.addEnchantment({
-                    type: enchantType,
-                    level: e.level
-                });
+        const sets = Math.floor(found.reduce((count, row) => count + row.item.amount, 0) / buybackItem.amount);
+        if (sets < 1) { shopNotify(player, { translate: 'error.barrelshop.itemnotfound' }); return; }
+        const totalItems = sets * buybackItem.amount, totalCents = sets * unitCents;
+        if (!Number.isSafeInteger(totalCents)) throw Error('buyback_price_overflow');
+        const playerDB = new DynamicProperties('player');
+        const countryDB = new DynamicProperties('country');
+        const ownerKey = `player_${shopData.owner}`, sellerKey = `player_${player.id}`;
+        const ownerData = JSON.parse(playerDB.get(ownerKey)!);
+        const sellerData = JSON.parse(playerDB.get(sellerKey)!);
+        const ownerMoney = ownerData.money, sellerMoney = sellerData.money;
+        shopMoneyCents(ownerMoney); shopMoneyCents(sellerMoney);
+        const originalShop = JSON.parse(rawShopData);
+        const writes: Parameters<typeof commitShopRecords>[0] = [];
+        const source = shopData.buybackConfig.fundingSource;
+        if (source === 'owner') {
+            if (shopMoneyCents(ownerMoney) < totalCents) throw Error('insufficient_shop_money');
+            if (player.id !== shopData.owner) {
+                ownerData.money = (shopMoneyCents(ownerMoney) - totalCents) / 100;
+                writes.push({ database: playerDB, key: ownerKey, value: ownerData, restore: () => restoreShopWallet(playerDB, ownerKey, ownerMoney) });
             }
+        } else if (source === 'prepaid') {
+            const prepaid = shopMoneyCents(shopData.buybackConfig.prepaidMoney ?? 0);
+            if (prepaid < totalCents) throw Error('insufficient_shop_prepaid');
+            shopData.buybackConfig.prepaidMoney = (prepaid - totalCents) / 100;
+        } else if (source === 'treasury') {
+            if (!ownerData.country || CheckPermission(shopData.owner, 'withDrawTreasurybudget')) throw Error('shop_treasury_permission');
+            const countryKey = `country_${ownerData.country}`;
+            const countryData = JSON.parse(countryDB.get(countryKey)!);
+            const beforeMoney = countryData.money;
+            if (shopMoneyCents(beforeMoney) - totalCents < shopMoneyCents(shopData.buybackConfig.minTreasuryAmount ?? 0)) throw Error('insufficient_shop_treasury');
+            countryData.money = (shopMoneyCents(beforeMoney) - totalCents) / 100;
+            writes.push({ database: countryDB, key: countryKey, value: countryData, restore: () => ({ ...countryData, money: beforeMoney }) });
+        } else throw Error('invalid_shop_funding_source');
+        if (player.id !== shopData.owner || source !== 'owner') {
+            const finalCents = shopMoneyCents(sellerMoney) + totalCents;
+            if (!Number.isSafeInteger(finalCents)) throw Error('seller_money_overflow');
+            sellerData.money = finalCents / 100;
+            writes.push({ database: playerDB, key: sellerKey, value: sellerData, restore: () => restoreShopWallet(playerDB, sellerKey, sellerMoney) });
         }
-    }
-
-    const spaceAvailable = calculateAvailableSpace(barrelContainer, sellStack);
-    if (spaceAvailable < totalItemsToStore) {
-        player.sendMessage({
-            rawtext: [
-                { text: '§c' },
-                {
-                    translate: 'error.barrelshop.barrel_full',
-                    with: [`${spaceAvailable}`, `${totalItemsToStore}`]
-                }
-            ]
+        addTransactionLogToData(shopData, { timestamp: Date.now(), playerId: player.id, playerName: player.name,
+            action: 'sell', itemName: buybackItem.typeId, ...transactionLogItemDetail(buybackItem), amount: totalItems, price: totalCents / 100 });
+        writes.push({ database: barrelShopDB, key: dbKey, value: shopData, restore: () => originalShop });
+        withShopInventories([playerContainer, barrelContainer], () => {
+            let remaining = totalItems;
+            for (const row of found) {
+                if (remaining === 0) break;
+                const amount = Math.min(row.item.amount, remaining);
+                const moving = row.item.clone(); moving.amount = amount;
+                if (amount === row.item.amount) playerContainer.setItem(row.slot);
+                else { const leftover = row.item.clone(); leftover.amount -= amount; playerContainer.setItem(row.slot, leftover); }
+                if (barrelContainer.addItem(moving)) throw Error('shop_barrel_delivery_refused');
+                remaining -= amount;
+            }
+            if (remaining !== 0) throw Error('shop_inventory_changed');
+            commitShopRecords(writes);
         });
-        return;
+        shopNotify(player, { translate: 'success.barrelshop.sold', with: { rawtext: [
+            { rawtext: [{ translate: langChangeItemName(buybackItem.typeId) }, { text: ` x ${totalItems}` }] },
+            { text: `${totalCents / 100} ${config.MoneyName}` },
+        ] } });
+    } catch (error) {
+        console.warn('[BarrelShop] Buyback aborted', error);
+        shopNotify(player, '§c買取を完了できませんでした。所持品・店の空き・資金を確認し、続く場合は運営へ連絡してください。');
     }
-
-    const playerDB = new DynamicProperties('player');
-    const rawOwner = playerDB.get(`player_${shopData.owner}`);
-    if (!rawOwner) return;
-    const countryDB = new DynamicProperties('country');
-
-    const ownerData = JSON.parse(rawOwner);
-
-    let canAfford = false;
-    let fundSourceKey = '';
-
-    if (shopData.buybackConfig.fundingSource === 'owner') {
-        canAfford = ownerData.money >= totalPrice;
-        fundSourceKey = 'barrelshop.fundingsource.owner';
-
-    } else if (shopData.buybackConfig.fundingSource === 'prepaid') {
-        canAfford = (shopData.buybackConfig.prepaidMoney || 0) >= totalPrice;
-        fundSourceKey = 'barrelshop.fundingsource.prepaid';
-
-    } else if (shopData.buybackConfig.fundingSource === 'treasury') {
-        const rawCountryData = countryDB.get(`country_${ownerData.country}`);
-        if (rawCountryData) {
-            const countryData = JSON.parse(rawCountryData);
-            const minAmount = Math.max(shopData.buybackConfig.minTreasuryAmount || 0, 0);
-
-            canAfford = (countryData.money - totalPrice) >= minAmount;
-            fundSourceKey = 'barrelshop.fundingsource.treasury';
-        }
-    }
-
-    if (!canAfford) {
-        player.sendMessage({
-            rawtext: [{ text: '§c' }, {
-                translate: 'error.barrelshop.insufficientfunds',
-                with: { rawtext: [{ translate: fundSourceKey }] }
-            }]
-        });
-        return;
-    }
-
-    let itemsToRemove = totalItemsToStore;
-
-    for (const found of foundItems) {
-        if (itemsToRemove <= 0) break;
-
-        if (found.item.amount <= itemsToRemove) {
-            itemsToRemove -= found.item.amount;
-            playerContainer.setItem(found.slot);
-
-        } else {
-            const newItem = found.item.clone();
-            newItem.amount -= itemsToRemove;
-            playerContainer.setItem(found.slot, newItem);
-            itemsToRemove = 0;
-        }
-    }
-
-    let remaining = totalItemsToStore;
-
-    for (let i = 0; i < barrelContainer.size; i++) {
-        if (remaining <= 0) break;
-
-        const slotItem = barrelContainer.getItem(i);
-
-        if (!slotItem) {
-            const stack = sellStack.clone();
-            stack.amount = Math.min(stack.maxAmount, remaining);
-            barrelContainer.setItem(i, stack);
-            remaining -= stack.amount;
-            continue;
-        }
-
-        if (slotItem.isStackableWith(sellStack)) {
-            const addable = sellStack.maxAmount - slotItem.amount;
-            if (addable <= 0) continue;
-
-            const newItem = slotItem.clone();
-            const addAmount = Math.min(addable, remaining);
-
-            newItem.amount += addAmount;
-            barrelContainer.setItem(i, newItem);
-
-            remaining -= addAmount;
-        }
-    }
-
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const buyerData = JSON.parse(playerDB.get(`player_${player.id}`));
-    buyerData.money = normalizeMoney((buyerData.money || 0) + totalPrice);
-
-    if (shopData.buybackConfig.fundingSource === 'owner') {
-        if (player.id != shopData.owner) {
-            ownerData.money = normalizeMoney(ownerData.money - totalPrice);
-            playerDB.set(`player_${shopData.owner}`, JSON.stringify(ownerData));
-        };
-    } else if (shopData.buybackConfig.fundingSource === 'prepaid') {
-        shopData.buybackConfig.prepaidMoney =
-            normalizeMoney(Math.max(0, (shopData.buybackConfig.prepaidMoney || 0) - totalPrice));
-    } else if (shopData.buybackConfig.fundingSource === 'treasury') {
-        const rawCountryData = countryDB.get(`country_${ownerData.country}`);
-        if (rawCountryData) {
-            const countryData = JSON.parse(rawCountryData);
-            countryData.money = normalizeMoney(countryData.money - totalPrice);
-            countryDB.set(`country_${countryData.id}`, JSON.stringify(countryData));
-        };
-    };
-
-    if (player.id != shopData.owner) playerDB.set(`player_${player.id}`, JSON.stringify(buyerData));
-
-    addTransactionLogToData(shopData, {
-        timestamp: Date.now(),
-        playerId: player.id,
-        playerName: player.name,
-        action: 'sell',
-        itemName: buybackItem.typeId,
-        amount: totalItemsToStore,
-        price: totalPrice
-    });
-
-    barrelShopDB.set(dbKey, JSON.stringify(shopData));
-
-    player.sendMessage({
-        translate: 'success.barrelshop.sold',
-        with: {
-            rawtext: [
-                {
-                    rawtext: [
-                        { translate: langChangeItemName(buybackItem.typeId) },
-                        { text: ` x ${totalItemsToStore}` }
-                    ]
-                },
-                { text: `${totalPrice} ${config.MoneyName}` }
-            ]
-        }
-    });
 }
 
 function viewTransactionLogForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) return;
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
     const logs = shopData.transactionLog || [];
 
     const form = new ActionFormData();
@@ -1320,13 +1341,12 @@ function viewTransactionLogForm(player: any, dbKey: any, isOwner: any) {
             const date = new Date(log.timestamp);
             const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
             const actionKey = log.action === 'buy' ? 'barrelshop.action.buy' : 'barrelshop.action.sell';
-            const itemName = log.itemName;
 
             bodyText.push(
                 { text: `§f${dateStr}§r ` },
                 { text: log.action === 'buy' ? '§a' : '§c' },
                 { translate: actionKey },
-                { text: `§r\n§7${log.playerName}§r\n§f` }, { translate: langChangeItemName(itemName) }, { text: `x${log.amount}§r  ${log.action === 'buy' ? '§a' : '§c-'}${log.price} ${config.MoneyName}§r\n\n` }
+                { text: `§r\n§7${log.playerName}§r\n§f` }, ...transactionLogItemRawText(log), { text: ` x${log.amount}§r  ${log.action === 'buy' ? '§a' : '§c-'}${log.price} ${config.MoneyName}§r\n\n` }
             );
         }
 
@@ -1336,22 +1356,26 @@ function viewTransactionLogForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         editMainForm(player, dbKey, isOwner);
     });
 }
 
 function editNameForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData)) return;
 
     const form = new ModalFormData();
     form.title({ translate: 'form.button.barrelshop.editname' });
     form.textField({ translate: 'barrelshop.name.label' }, { translate: 'barrelshop.name.placeholder' }, { defaultValue: `${shopData.name}` });
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             editMainForm(player, dbKey, isOwner);
             return;
@@ -1361,6 +1385,7 @@ function editNameForm(player: any, dbKey: any, isOwner: any) {
             return;
         };
         const newShopData = JSON.parse(newRawShopData);
+        if (!canManageShop(player, newShopData)) return;
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         newShopData.name = `${rs.formValues[0]}`;
 
@@ -1372,30 +1397,24 @@ function editNameForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function salesForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData)) return;
 
-    const money = shopData.money;
-
-    const playerDB = new DynamicProperties('player');
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-
-    shopData.money = 0;
-    playerData.money = normalizeMoney(playerData.money + money);
-
-    playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-    barrelShopDB.set(dbKey, JSON.stringify(shopData));
+    const money = moveShopMoney(player, dbKey, 'sales');
+    if (money === undefined) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.button.barrelshop.sales' });
     form.body({ rawtext: [{ translate: 'barrelshop.sales.receive', with: [`${money}${config.MoneyName}`] }] });
     form.button({ translate: 'mc.button.back' });
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             editMainForm(player, dbKey, isOwner);
             return;
@@ -1406,6 +1425,7 @@ function salesForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function blockedPlayersForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
@@ -1413,6 +1433,8 @@ function blockedPlayersForm(player: any, dbKey: any, isOwner: any) {
     };
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
     const blockedPlayerNames = getBlockedPlayerNames(shopData);
 
     const form = new ActionFormData();
@@ -1431,6 +1453,7 @@ function blockedPlayersForm(player: any, dbKey: any, isOwner: any) {
     form.button({ translate: 'mc.button.back' });
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         const removeButtonIndex = blockedPlayerNames.length > 0 ? 1 : -1;
         const backButtonIndex = blockedPlayerNames.length > 0 ? 2 : 1;
 
@@ -1452,6 +1475,7 @@ function blockedPlayersForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function blockedPlayerAddForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const form = new ModalFormData();
     form.title({ translate: 'form.title.barrelshop.addblockedplayer' });
     form.textField(
@@ -1462,6 +1486,7 @@ function blockedPlayerAddForm(player: any, dbKey: any, isOwner: any) {
     form.submitButton({ translate: 'mc.button.add' });
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             blockedPlayersForm(player, dbKey, isOwner);
             return;
@@ -1483,6 +1508,8 @@ function blockedPlayerAddForm(player: any, dbKey: any, isOwner: any) {
         };
 
         const shopData = JSON.parse(rawShopData);
+
+        if (!canManageShop(player, shopData)) return;
         const blockedPlayerNames = getBlockedPlayerNames(shopData);
         if (blockedPlayerNames.some((name: any) => normalizePlayerName(name) === normalizedTargetName)) {
             player.sendMessage({ translate: 'error.barrelshop.blockedplayeralreadyexists' });
@@ -1499,6 +1526,7 @@ function blockedPlayerAddForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function blockedPlayerRemoveForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
@@ -1506,6 +1534,8 @@ function blockedPlayerRemoveForm(player: any, dbKey: any, isOwner: any) {
     };
 
     const shopData = JSON.parse(rawShopData);
+
+    if (!canManageShop(player, shopData)) return;
     const blockedPlayerNames = getBlockedPlayerNames(shopData);
 
     const form = new ActionFormData();
@@ -1517,6 +1547,7 @@ function blockedPlayerRemoveForm(player: any, dbKey: any, isOwner: any) {
     };
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled || rs.selection === 0) {
             blockedPlayersForm(player, dbKey, isOwner);
             return;
@@ -1534,6 +1565,7 @@ function blockedPlayerRemoveForm(player: any, dbKey: any, isOwner: any) {
             return;
         };
         const newShopData = JSON.parse(newRawShopData);
+        if (!canManageShop(player, newShopData)) return;
         const normalizedRemoveName = normalizePlayerName(removeName);
         newShopData.blockedPlayerNames = getBlockedPlayerNames(newShopData).filter((name: any) => normalizePlayerName(name) !== normalizedRemoveName);
 
@@ -1545,12 +1577,14 @@ function blockedPlayerRemoveForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function adminsForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData, true)) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.button.barrelshop.admins' });
@@ -1561,13 +1595,14 @@ function adminsForm(player: any, dbKey: any, isOwner: any) {
     const adminIds = [];
     for (const admin of shopData.admins) {
         // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-        const adminPlayerData = JSON.parse(playerDB.get(`player_${admin}`));
-        form.button(adminPlayerData.name)
-        adminNames.push(adminPlayerData.name);
+        const adminPlayerData = safeParse(playerDB.get(`player_${admin}`));
+        form.button(adminPlayerData.name ?? admin)
+        adminNames.push(adminPlayerData.name ?? admin);
         adminIds.push(admin);
     };
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             editMainForm(player, dbKey, isOwner);
             return;
@@ -1587,12 +1622,14 @@ function adminsForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function adminRemoveForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData, true)) return;
 
     const playerDB = new DynamicProperties('player');
 
@@ -1604,13 +1641,14 @@ function adminRemoveForm(player: any, dbKey: any, isOwner: any) {
     const adminIds: any = [];
     for (const admin of shopData.admins.filter((a: any) => a != player.id)) {
         // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-        const adminPlayerData = JSON.parse(playerDB.get(`player_${admin}`));
-        form.button(adminPlayerData.name);
-        adminNames.push(adminPlayerData.name);
+        const adminPlayerData = safeParse(playerDB.get(`player_${admin}`));
+        form.button(adminPlayerData.name ?? admin);
+        adminNames.push(adminPlayerData.name ?? admin);
         adminIds.push(admin);
     };
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             adminsForm(player, dbKey, isOwner);
             return;
@@ -1627,8 +1665,10 @@ function adminRemoveForm(player: any, dbKey: any, isOwner: any) {
                     return;
                 };
                 const newShopData = JSON.parse(newRawShopData);
+                if (!canManageShop(player, newShopData, true)) return;
                 // @ts-ignore TS(2532): Object is possibly 'undefined'.
                 const removeAdmin = adminIds[rs.selection - 1];
+                if (typeof removeAdmin !== 'string' || !newShopData.admins.includes(removeAdmin)) return;
                 newShopData.admins = newShopData.admins.filter((a: any) => a != removeAdmin);
 
                 barrelShopDB.set(dbKey, JSON.stringify(newShopData));
@@ -1642,12 +1682,14 @@ function adminRemoveForm(player: any, dbKey: any, isOwner: any) {
 };
 
 function adminAddForm(player: any, dbKey: any, isOwner: any) {
+    if (!player?.isValid) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
     const rawShopData = barrelShopDB.get(dbKey);
     if (!rawShopData) {
         return;
     };
     const shopData = JSON.parse(rawShopData);
+    if (!canManageShop(player, shopData, true)) return;
 
     const form = new ActionFormData();
     form.title({ translate: 'form.button.barrelshop.admins' });
@@ -1661,6 +1703,7 @@ function adminAddForm(player: any, dbKey: any, isOwner: any) {
     };
 
     form.show(player).then((rs) => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             adminsForm(player, dbKey, isOwner);
             return;
@@ -1677,8 +1720,10 @@ function adminAddForm(player: any, dbKey: any, isOwner: any) {
                     return;
                 };
                 const newShopData = JSON.parse(newRawShopData);
+                if (!canManageShop(player, newShopData, true)) return;
                 // @ts-ignore TS(2532): Object is possibly 'undefined'.
                 const newAdmin = playerIds[rs.selection - 1];
+                if (typeof newAdmin !== 'string' || !newAdmin || newAdmin === newShopData.owner) return;
                 newShopData.admins = newShopData.admins.filter((a: any) => a != newAdmin);
                 newShopData.admins.push(newAdmin);
 
@@ -1695,6 +1740,7 @@ function adminAddForm(player: any, dbKey: any, isOwner: any) {
 function buyMainForm(player: any, barrel: any, dbKey: any) {
     const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
+    if (!canUseShopAt(player, block, 'shopBuy')) return;
     const container = block.getComponent('inventory')?.container;
     if (!container) return;
     const barrelShopDB = new DynamicProperties('barrelShop');
@@ -1713,12 +1759,13 @@ function buyMainForm(player: any, barrel: any, dbKey: any) {
     for (let i = 0; i < container.size; i++) {
         const item = container.getItem(i);
         if (item) {
-            const loreArray = item.getRawLore();
+            const loreArray = [...item.getRawLore()];
 
             if (item.getComponent('enchantable')?.isValid) {
                 for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
-                    // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                    loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+                    const enchantId = enchant.type.id.replace(/^minecraft:/, '');
+            const langKey = (enchantIdToLang as Record<string, string>)[enchantId] || enchantId;
+            loreArray.push(...[{ text: `\n§r${langKey.includes('.curse.') ? '§c' : '§7'}` }, { translate: langKey }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
                 };
             };
 
@@ -1772,7 +1819,90 @@ function buyMainForm(player: any, barrel: any, dbKey: any) {
  * @param {number} index 
  * @returns 
  */
+function barrelPriceCents(item: any): number {
+    const price = item.getRawLore().find((line: any) => line?.translate === 'item.lore.price');
+    const input = Array.isArray(price?.with) ? price.with[0] : undefined;
+    if ((typeof input !== 'string' && typeof input !== 'number') || String(input).trim() === '') throw Error('invalid_barrel_price');
+    const value = Number(input), cents = shopMoneyCents(value);
+    if (value !== cents / 100) throw Error('invalid_barrel_price_precision');
+    return cents;
+}
+
+function completeShopPurchase(player: Player, barrel: any, dbKey: string, index: number, shown: any) {
+    if (!player.isValid) return;
+    try {
+        if (isUnsafeToPlay() || player.hasTag('status:loading') || player.hasTag('status:transferring')) throw Error('shop_temporarily_unavailable');
+        if (barrel.dimension?.id && barrel.dimension.id !== player.dimension.id) return;
+        const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
+        if (block?.above()?.typeId !== 'mc:shop_block') return;
+        if (block?.typeId !== 'minecraft:barrel' || !canUseShopAt(player, block, 'shopBuy')) return;
+        const stock = block.getComponent('inventory')?.container;
+        const inventory = player.getComponent('inventory')?.container;
+        if (!stock || !inventory || !Number.isSafeInteger(index) || index < 0 || index >= stock.size) return;
+        const item = stock.getItem(index);
+        if (!item || item.amount !== shown.amount || JSON.stringify(buybackMetadata(item)) !== JSON.stringify(buybackMetadata(shown))) return;
+        if (!Number.isSafeInteger(item.amount) || item.amount < 1) throw Error('invalid_barrel_item_amount');
+        const costCents = barrelPriceCents(item) * item.amount;
+        if (!Number.isSafeInteger(costCents)) throw Error('barrel_price_overflow');
+        const shops = new DynamicProperties('barrelShop'), players = new DynamicProperties('player');
+        const rawShop = shops.get(dbKey);
+        if (!rawShop) return;
+        const shop = JSON.parse(rawShop), originalShop = JSON.parse(rawShop);
+        if (shop.mode !== undefined && shop.mode !== 'sell') return;
+        if (shop.dimension !== undefined && shop.dimension !== player.dimension.id) return;
+        if (shop.location && (shop.location.x !== block.x || shop.location.z !== block.z || shop.location.y !== block.y + 1)) return;
+        if (isBlockedPlayerName(shop, player)) { sendBlockedShopMessage(player); return; }
+        const walletKey = `player_${player.id}`, wallet = JSON.parse(players.get(walletKey)!);
+        const beforeMoney = wallet.money, moneyCents = shopMoneyCents(beforeMoney);
+        if (moneyCents < costCents) { shopNotify(player, { translate: 'error.notenough.money' }); return; }
+        const writes: Parameters<typeof commitShopRecords>[0] = [];
+        const chunks = new DynamicProperties('chunk'), countries = new DynamicProperties('country');
+        const rawChunk = chunks.get(`chunk_${Math.floor(block.x / 16)}_${Math.floor(block.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`);
+        let taxCents = 0;
+        if (rawChunk) {
+            const chunk = JSON.parse(rawChunk);
+            const countryKey = `country_${chunk.countryId}`;
+            const rawCountry = chunk.countryId > 0 ? countries.get(countryKey) : undefined;
+            if (rawCountry) {
+                const country = JSON.parse(rawCountry), rate = country.consumptionTax ?? 0;
+                if (typeof rate !== 'number' || !Number.isFinite(rate) || rate < 0 || rate > 100) throw Error('invalid_consumption_tax');
+                taxCents = shopMoneyCents(parseMoneyInput((costCents / 10000) * rate));
+                if (taxCents > costCents) throw Error('barrel_tax_overflow');
+                if (taxCents > 0) {
+                    const finalCents = shopMoneyCents(country.money) + taxCents;
+                    if (!Number.isSafeInteger(finalCents)) throw Error('treasury_money_overflow');
+                    country.money = finalCents / 100;
+                    if (country.treasuryBudgetLog !== undefined && !Array.isArray(country.treasuryBudgetLog)) throw Error('invalid_treasury_log');
+                    country.treasuryBudgetLog = [...(country.treasuryBudgetLog ?? []).slice(-49), { timestamp: Date.now(), actor: player.name,
+                        action: 'add', amount: taxCents / 100, reason: 'Consumption TAX' }];
+                    writes.push({ database: countries, key: countryKey, value: country, restore: () => JSON.parse(rawCountry) });
+                }
+            }
+        }
+        const shopCents = shopMoneyCents(shop.money ?? 0) + costCents - taxCents;
+        if (!Number.isSafeInteger(shopCents)) throw Error('shop_money_overflow');
+        wallet.money = (moneyCents - costCents) / 100; shop.money = shopCents / 100;
+        addTransactionLogToData(shop, { timestamp: Date.now(), playerId: player.id, playerName: player.name, action: 'buy', itemName: item.typeId,
+            ...transactionLogItemDetail(buybackMetadata(item)), amount: item.amount, price: costCents / 100 });
+        writes.push({ database: players, key: walletKey, value: wallet, restore: () => restoreShopWallet(players, walletKey, beforeMoney) },
+            { database: shops, key: dbKey, value: shop, restore: () => originalShop });
+        const drops: Entity[] = [];
+        withShopInventories([stock, inventory], () => {
+            stock.setItem(index);
+            const remaining = inventory.addItem(item);
+            if (remaining) drops.push(player.dimension.spawnItem(remaining, player.location));
+            commitShopRecords(writes);
+        }, () => { for (const entity of drops) if (entity.isValid) entity.remove(); });
+        shopNotify(player, { translate: 'finish.bought' });
+    } catch (error) {
+        console.warn('[BarrelShop] Purchase aborted', error);
+        shopNotify(player, '§c購入を完了できませんでした。続く場合は運営へ連絡してください。');
+    }
+}
+
 function buyCheckForm(player: any, barrel: any, dbKey: any, index: any) {
+    if (!player?.isValid) return;
+    if (barrel.dimension?.id && barrel.dimension.id !== player.dimension.id) return;
     const block = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
     if (block?.typeId != 'minecraft:barrel') return;
     const container = block.getComponent('inventory')?.container;
@@ -1782,12 +1912,13 @@ function buyCheckForm(player: any, barrel: any, dbKey: any, index: any) {
     if (!item) return;
 
     const form = new ChestFormData('single');
-    const loreArray = item.getRawLore();
+    const loreArray = [...item.getRawLore()];
 
     if (item.getComponent('enchantable')?.isValid) {
         for (const enchant of item.getComponent('enchantable')?.getEnchantments()) {
-            // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-            loreArray.push(...[{ text: `\n§r${enchantIdToLang[enchant.type.id].includes('.curse.') ? '§c' : '§7'}` }, { translate: enchantIdToLang[enchant.type.id] || enchant.type.id }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
+            const enchantId = enchant.type.id.replace(/^minecraft:/, '');
+            const langKey = (enchantIdToLang as Record<string, string>)[enchantId] || enchantId;
+            loreArray.push(...[{ text: `\n§r${langKey.includes('.curse.') ? '§c' : '§7'}` }, { translate: langKey }, { text: ' ' }, { translate: `enchantment.level.${enchant.level}` }, { text: '§r' }]);
         };
     };
 
@@ -1805,6 +1936,7 @@ function buyCheckForm(player: any, barrel: any, dbKey: any, index: any) {
 
     const price = loreArray.find((v: any) => v?.translate === 'item.lore.price');
     if (price) {
+        try { barrelPriceCents(item); } catch { shopNotify(player, '§c商品の価格を確認できません。店主へ連絡してください。'); return; }
         form.setTitle(`${price.with[0]} x ${item.amount} = ${normalizeMoney(Number(price.with[0]) * item.amount)}${config.MoneyName}`);
         const presentation = getChestItemStackPresentation(item);
         form.setButton(13, {
@@ -1819,6 +1951,7 @@ function buyCheckForm(player: any, barrel: any, dbKey: any, index: any) {
     if (!price) return;
 
     form.show(player).then(rs => {
+        if (!player.isValid) return;
         if (rs.canceled) {
             buyMainForm(player, barrel, dbKey);
             return;
@@ -1829,94 +1962,7 @@ function buyCheckForm(player: any, barrel: any, dbKey: any, index: any) {
                 break;
             };
             case 13: {
-                const barrelShopDB = new DynamicProperties('barrelShop');
-                const rawShopData = barrelShopDB.get(dbKey);
-                if (!rawShopData) return;
-                const newBlock = player.dimension.getBlock({ x: barrel.x, y: barrel.y, z: barrel.z });
-                if (newBlock?.typeId != 'minecraft:barrel') return;
-                const newContainer = newBlock.getComponent('inventory')?.container;
-                if (!newContainer) return;
-
-                const newItem = newContainer.getItem(index);
-                if (!newItem) return;
-                if (newItem.amount != item.amount || newItem.typeId != item.typeId || JSON.stringify(newItem.getRawLore()) != JSON.stringify(item.getRawLore())) return;
-                const playerManager = new PlayerManager(player.id);
-                const playerDB = new DynamicProperties('player');
-                const playerData = playerManager.data
-                if ((Number(price.with[0]) * item.amount) > playerData.money) {
-                    player.sendMessage({ translate: 'error.notenough.money' });
-                    return;
-                };
-
-                let result = normalizeMoney(Number(price.with[0]) * item.amount)
-
-                const shopData = JSON.parse(rawShopData);
-                if (isBlockedPlayerName(shopData, player)) {
-                    sendBlockedShopMessage(player);
-                    return;
-                }
-
-                playerData.money = normalizeMoney(playerData.money - result);
-
-                const chunkDB = new DynamicProperties('chunk');
-                const countryDB = new DynamicProperties('country');
-                const rawChunkData = chunkDB.get(`chunk_${Math.floor(newBlock.x / 16)}_${Math.floor(newBlock.z / 16)}_${player.dimension.id.replace('minecraft:', '')}`)
-                let tax = 0;
-
-                if (rawChunkData) {
-                    const chunkData = JSON.parse(rawChunkData);
-                    if (chunkData?.countryId && chunkData?.countryId > 0) {
-                        const rawCountryData = countryDB.get(`country_${chunkData?.countryId}`);
-                        if (rawCountryData) {
-                            const countryData = JSON.parse(rawCountryData);
-                            tax = normalizeMoney((result / 100) * (countryData?.consumptionTax ?? 0));
-
-                            if (tax !== 0) {
-                                countryData.money = normalizeMoney(countryData.money + tax);
-
-                                countryData.treasuryBudgetLog ||= [];
-
-                                if (countryData.treasuryBudgetLog.length > 50) {
-                                    countryData.treasuryBudgetLog.shift();
-                                }
-
-                                countryData.treasuryBudgetLog.push({
-                                    timestamp: Date.now(),
-                                    actor: player.name,
-                                    action: 'add',
-                                    amount: tax,
-                                    reason: 'Consumption TAX'
-                                });
-
-                                countryDB.set(`country_${chunkData?.countryId}`, JSON.stringify(countryData));
-                            }
-                        };
-                    };
-                };
-                shopData.money = normalizeMoney(shopData.money + (result - tax));
-
-                playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-
-                addTransactionLogToData(shopData, {
-                    timestamp: Date.now(),
-                    playerId: player.id,
-                    playerName: player.name,
-                    action: 'buy',
-                    itemName: item.typeId,
-                    amount: item.amount,
-                    price: result
-                });
-
-                barrelShopDB.set(dbKey, JSON.stringify(shopData));
-
-                newContainer.setItem(index);
-                const playerContainer = player.getComponent('inventory').container;
-                if (playerContainer.emptySlotsCount == 0) {
-                    player.dimension.spawnItem(newItem, player.location);
-                } else {
-                    playerContainer.addItem(newItem);
-                };
-                player.sendMessage({ translate: 'finish.bought' });
+                completeShopPurchase(player, barrel, dbKey, index, item);
                 break;
             };
             default: {

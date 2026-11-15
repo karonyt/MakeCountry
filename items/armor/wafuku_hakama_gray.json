@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:wafuku_hakama_gray",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "wafuku_hakama_gray",
+      "minecraft:wearable": {
+        "slot": "slot.armor.legs",
+        "protection": 1,
+        "dispensable": true
+      },
+      "minecraft:durability": {
+        "max_durability": 225
+      },
+      "minecraft:enchantable": {
+        "slot": "armor_legs",
+        "value": 12
+      }
+    }
+  }
+}

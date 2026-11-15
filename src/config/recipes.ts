@@ -1,4 +1,7 @@
+import { WAFUKU_RECIPE_CONFIG } from '@/content/wafuku/data.js';
+
 export const recipe_config = [
+    ...WAFUKU_RECIPE_CONFIG,
     { id: 'mc:rice_seed_recipe', lv: 0 },
 
     { id: 'mc:cutting_board_recipe', lv: 2 },
@@ -35,6 +38,7 @@ export const recipe_config = [
     { id: 'mc:absinthe_recipe', lv: 100 },
     { id: 'mc:barley_recipe', lv: 100 },
     { id: 'mc:black_chocolate_recipe', lv: 100 },
+    { id: 'mc:black_tea_recipe', lv: 100 },
     { id: 'mc:bluehawaii_shavedice', lv: 100 },
     { id: 'mc:bread_material_recipe', lv: 4 },
     { id: 'mc:buns_recipe', lv: 100 },
@@ -73,6 +77,9 @@ export const recipe_config = [
     { id: 'mc:fry_stew_recipe', lv: 100 },
     { id: 'mc:glowberry_shavedice_recipe', lv: 100 },
     { id: 'mc:green_tea_recipe', lv: 100 },
+    { id: 'mc:suit_recipe', lv: 100 },
+    { id: 'mc:suit_pants_recipe', lv: 100 },
+    { id: 'mc:suit_shoes_recipe', lv: 100 },
     { id: 'mc:gyudon_recipe', lv: 100 },
     { id: 'mc:gyudon_egg_recipe', lv: 100 },
     { id: 'mc:hamburger_recipe', lv: 100 },

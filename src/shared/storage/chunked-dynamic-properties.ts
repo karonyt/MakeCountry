@@ -1,3 +1,4 @@
+import { splitUtf8 } from "@/shared/storage/utf8-chunks.js";
 import { world } from "@minecraft/server";
 
 // =====================
@@ -62,19 +63,7 @@ function safeStringify(v: any): string {
 // chunk削除
 // =====================
 function deleteChunks(id: string) {
-    const pattern = `DyProp_${id}_dy`;
-    const lenKey = `DyProp_${id}_len`;
-
-    const length =
-        chunkCache.get(id) ??
-        (world.getDynamicProperty(lenKey) as number ?? 0);
-
-    for (let i = 0; i < length; i++) {
-        world.setDynamicProperty(`${pattern}${i}`, undefined);
-    }
-
-    world.setDynamicProperty(lenKey, 0);
-    chunkCache.set(id, 0);
+    writeChunks(id, '');
 }
 
 // =====================
@@ -87,22 +76,37 @@ function writeChunks(id: string, value: string) {
     const oldLength =
         chunkCache.get(id) ??
         (world.getDynamicProperty(lenKey) as number ?? 0);
-
-    const newLength = Math.ceil(value.length / CHUNK_SIZE);
-
-    for (let i = 0; i < newLength; i++) {
-        world.setDynamicProperty(
-            `${pattern}${i}`,
-            value.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
-        );
+    if (!Number.isSafeInteger(oldLength) || oldLength < 0) throw Error('invalid_dynamic_property_length');
+    const chunks = splitUtf8(value, CHUNK_SIZE);
+    const newLength = chunks.length;
+    const previousLength = world.getDynamicProperty(lenKey);
+    const previous = Array.from({ length: oldLength }, (_, i) => world.getDynamicProperty(`${pattern}${i}`));
+    try {
+        for (let i = 0; i < newLength; i++) {
+            world.setDynamicProperty(`${pattern}${i}`, chunks[i]);
+        }
+        for (let i = newLength; i < oldLength; i++) {
+            world.setDynamicProperty(`${pattern}${i}`, undefined);
+        }
+        world.setDynamicProperty(lenKey, newLength);
+        chunkCache.set(id, newLength);
+        valueCache.delete(id);
+    } catch (error) {
+        // The logical cache must never conceal partially written native chunks.
+        valueCache.delete(id);
+        chunkCache.delete(id);
+        let restored = true;
+        for (let i = 0; i < Math.max(oldLength, newLength); i++) {
+            try {
+                if (world.getDynamicProperty(`${pattern}${i}`) !== previous[i]) world.setDynamicProperty(`${pattern}${i}`, previous[i]);
+            } catch { restored = false; }
+        }
+        try {
+            if (world.getDynamicProperty(lenKey) !== previousLength) world.setDynamicProperty(lenKey, previousLength);
+        } catch { restored = false; }
+        if (!restored) console.warn(`[DynamicProperties] failed to restore ${id} after a native write failure`);
+        throw error;
     }
-
-    for (let i = newLength; i < oldLength; i++) {
-        world.setDynamicProperty(`${pattern}${i}`, undefined);
-    }
-
-    world.setDynamicProperty(lenKey, newLength);
-    chunkCache.set(id, newLength);
 }
 
 // =====================
@@ -120,22 +124,23 @@ function readChunks(id: string): string | undefined {
     if (length === undefined) {
         const len = world.getDynamicProperty(lenKey);
 
-        if (typeof len === "number") {
+        if (len !== undefined) {
+            if (typeof len !== 'number' || !Number.isSafeInteger(len) || len < 0) throw Error('invalid_dynamic_property_length');
             length = len;
             chunkCache.set(id, length);
         }
     }
+
+    // Zero is an explicit deletion, not an invitation to revive legacy chunks.
+    if (length === 0) return undefined;
 
     if (length !== undefined && length > 0) {
         const parts: string[] = [];
 
         for (let i = 0; i < length; i++) {
             const val = world.getDynamicProperty(`${pattern}${i}`);
-            if (val === undefined) {
-                length = undefined;
-                break;
-            }
-            parts.push(val as string);
+            if (typeof val !== 'string' || val.length === 0) throw Error('incomplete_dynamic_property_chunks');
+            parts.push(val);
         }
 
         if (length !== undefined) {
@@ -161,7 +166,8 @@ function readChunks(id: string): string | undefined {
         for (let i = 0; i < 10000; i++) {
             const val = world.getDynamicProperty(`${oldPattern}${i}`);
             if (val === undefined) break;
-            parts.push(val as string);
+            if (typeof val !== 'string' || val.length === 0) throw Error('invalid_legacy_dynamic_property_chunk');
+            parts.push(val);
         }
 
         if (parts.length > 0) {
@@ -186,12 +192,14 @@ function jsonKey(id: string, key: string) {
 // =====================
 // 差分更新（安全版）
 // =====================
-function updateJsonDiff(id: string, newObj: any) {
-    const oldRaw = readChunks(id);
-    let oldObj: any = {};
+function updateJsonDiff(id: string, newObj: any, oldRaw = readChunks(id), journal?: Map<string, string | undefined>) {
+    let oldObj: any = Object.create(null);
 
     try {
-        if (oldRaw) oldObj = JSON.parse(oldRaw);
+        if (oldRaw) {
+            const parsed = JSON.parse(oldRaw);
+            if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) oldObj = parsed;
+        }
     } catch { }
 
     const allKeys = new Set([
@@ -200,11 +208,14 @@ function updateJsonDiff(id: string, newObj: any) {
     ]);
 
     for (const key of allKeys) {
-        const oldVal = safeStringify(oldObj[key]);
-        const newVal = safeStringify(newObj[key]);
+        const oldVal = safeStringify(Object.prototype.hasOwnProperty.call(oldObj, key) ? oldObj[key] : undefined);
+        const hasNew = Object.prototype.hasOwnProperty.call(newObj, key);
+        const newVal = safeStringify(hasNew ? newObj[key] : undefined);
 
         if (oldVal !== newVal) {
-            if (!(key in newObj)) {
+            const subId = jsonKey(id, key);
+            if (journal) journal.set(subId, readChunks(subId));
+            if (!hasNew) {
                 deleteChunks(jsonKey(id, key));
             } else {
                 writeChunks(jsonKey(id, key), JSON.stringify(newObj[key]));
@@ -233,8 +244,20 @@ export function setDynamicProperty(id: string, value?: string) {
     }
 
     if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-        updateJsonDiff(id, parsed);
-        writeChunks(id, value);
+        const journal = new Map<string, string | undefined>();
+        const oldRaw = readChunks(id);
+        try {
+            updateJsonDiff(id, parsed, oldRaw, journal);
+            writeChunks(id, value);
+        } catch (error) {
+            // A root object and all changed field chunks form one logical write.
+            valueCache.delete(id);
+            for (const [subId, previous] of journal) {
+                try { writeChunks(subId, previous ?? ''); }
+                catch { console.warn(`[DynamicProperties] failed to restore ${subId} after an object write failure`); }
+            }
+            throw error;
+        }
         valueCache.set(id, value);
         return;
     }
@@ -262,9 +285,9 @@ export function getDynamicProperty(id: string): string | undefined {
     }
 
     if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-        const result: any = {};
+        const result: any = Object.create(null);
 
-        for (const key in parsed) {
+        for (const key of Object.keys(parsed)) {
             const sub = readChunks(jsonKey(id, key));
 
             if (sub !== undefined) {
@@ -318,7 +341,7 @@ function repairDynamicProperty(id: string): string | undefined {
         return baseRaw;
     }
 
-    const result: any = {};
+    const result: any = Object.create(null);
 
     // ベースキー全部走査
     for (const key of Object.keys(baseObj)) {

@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:dense_compress_soul_sand"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_soul_sand"
+      }
+    },
+    "result": {
+      "item": "mc:dense_soul_sand",
+      "count": 1
+    }
+  }
+}

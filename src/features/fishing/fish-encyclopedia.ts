@@ -1,10 +1,12 @@
 import { Player, system } from "@minecraft/server";
-import { FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
+import { ActionForm as ActionFormData, ModalForm as ModalFormData } from "@/shared/ui/form-class.js";
 import fishingConfig from "@/config/fishing.js";
 import { itemIdToPath } from "@/config/textures.js";
 import { getFishManager } from "@/domain/fishing/fishing.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
+import { usesClassicFormUI } from "@/shared/ui/form-class.js";
 
 type Season = "spring" | "summer" | "autumn" | "winter";
 type Period = "morning" | "afternoon" | "evening" | "night";
@@ -28,9 +30,15 @@ type FishBookEntry = {
 
 const seasons: Season[] = ["spring", "summer", "autumn", "winter"];
 const periods: Period[] = ["morning", "afternoon", "evening", "night"];
-const pageSize = 45;
-const fishStartSlot = 9;
+const pageSize = 8;
+const fishStartButton = 4;
+const classicPageSize = 45;
+const classicFishStartSlot = 9;
 const unknownFishTexture = "textures/ui/fish_silhouette";
+const fishBookUiToken = "§f§i§s§h§b§o§o§k§r";
+const fishListUiToken = "§f§i§s§h§l§i§s§t§r";
+const fishDetailUiToken = "§f§i§s§h§d§e§t§a§i§l§r";
+const fishSearchUiToken = "§f§i§s§h§s§e§a§r§c§h§r";
 const searchModes: FishBookSearchMode[] = ["all", "fish", "angler", "obtained", "unobtained", "recorded"];
 
 const habitatOrder = [
@@ -53,90 +61,58 @@ let cachedEntries: FishBookEntry[] | undefined;
 const playerDb = new DynamicProperties("player");
 
 export function showFishEncyclopedia(player: Player, page = 0, filter?: FishBookSearchFilter) {
+    if (usesClassicFormUI(player)) {
+        showClassicFishEncyclopedia(player, page, filter);
+        return;
+    }
     const allEntries = getFishBookEntries();
     const entries = getVisibleEntries(player, allEntries, filter);
     const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
     const safePage = Math.min(Math.max(page, 0), totalPages - 1);
     const pageEntries = entries.slice(safePage * pageSize, (safePage + 1) * pageSize);
     const fishManager = getFishManager();
-    const form = new ChestFormData("large");
-    form.setTitle([
-        { translate: filter ? "fish.encyclopedia.search.title" : "fish.encyclopedia.title" },
-        ...(filter?.query ? [{ text: `: ${filter.query}` }] : []),
-        { text: ` ${safePage + 1}/${totalPages}` },
-    ]);
+    const form = new ActionFormData({ preserveLayout: true })
+        .title({
+            rawtext: [
+                { text: fishBookUiToken },
+                { text: fishListUiToken },
+                { translate: "fish.encyclopedia.title" },
+            ],
+        })
+        .body(bookProgressText(player, allEntries.length, safePage, totalPages))
+        .button(
+            safePage > 0 ? " " : "",
+            safePage > 0 ? "textures/ui/arrow_left" : undefined,
+        )
+        .button(
+            safePage + 1 < totalPages ? " " : "",
+            safePage + 1 < totalPages ? "textures/ui/arrow_right" : undefined,
+        )
+        .button({ translate: "fish.encyclopedia.search.open" }, "textures/items/compass_item")
+        .button(
+            filter ? { translate: "fish.encyclopedia.search.clear" } : "",
+            filter ? "textures/items/redstone_dust" : undefined,
+        );
 
-    form.setButton(0, {
-        name: "mc.button.close",
-        iconPath: "textures/blocks/barrier",
-        lore: ["fish.encyclopedia.close.lore"],
-        editedName: true,
-    });
-
-    if (safePage > 0) {
-        form.setButton(3, {
-            name: "fish.encyclopedia.previous",
-            iconPath: "textures/ui/arrow_left",
-            lore: ["fish.encyclopedia.previous.lore"],
-            editedName: true,
-        });
-    }
-
-    form.setButton(4, {
-        name: "fish.encyclopedia.page",
-        iconPath: "textures/items/book_normal",
-        lore: pageInfoLore(player, entries.length, allEntries.length, safePage, totalPages, filter),
-        editedName: true,
-    });
-
-    if (safePage + 1 < totalPages) {
-        form.setButton(5, {
-            name: "fish.encyclopedia.next",
-            iconPath: "textures/ui/arrow_right",
-            lore: ["fish.encyclopedia.next.lore"],
-            editedName: true,
-        });
-    }
-
-    form.setButton(7, {
-        name: "fish.encyclopedia.search.open",
-        iconPath: "textures/items/compass_item",
-        lore: ["fish.encyclopedia.search.open.lore"],
-        editedName: true,
-        isGlint: !!filter,
-    });
-
-    if (filter) {
-        form.setButton(8, {
-            name: "fish.encyclopedia.search.clear",
-            iconPath: "minecraft:redstone",
-            lore: ["fish.encyclopedia.search.clear.lore"],
-            editedName: true,
-        });
-    }
-
-    if (pageEntries.length === 0) {
-        form.setButton(22, {
-            name: "fish.encyclopedia.search.no_results",
-            iconPath: "minecraft:paper",
-            lore: ["fish.encyclopedia.search.no_results.lore"],
-            editedName: true,
-        });
-    }
-
-    for (let i = 0; i < pageEntries.length; i++) {
+    for (let i = 0; i < pageSize; i++) {
         const entry = pageEntries[i];
+        if (!entry) {
+            form.button("");
+            continue;
+        }
+
         const record = fishManager.getPlayerFishRecord(player.id, entry.typeId);
         const obtained = record.obtained;
 
-        form.setButton(fishStartSlot + i, {
-            name: obtained ? entry.name.replace('minecraft:', '') : "fish.encyclopedia.unknown",
-            iconPath: obtained ? getFishIcon(entry.typeId) : getFishSilhouetteIcon(entry.typeId),
-            stackAmount: Math.min(Math.max(record.count, 1), 64),
-            lore: fishLore(entry, player.id, obtained),
-            editedName: true,
-            isGlint: obtained,
-        });
+        form.button(
+            {
+                rawtext: [
+                    { translate: obtained ? entry.name : "fish.encyclopedia.unknown" },
+                    { text: `\n§8${obtained ? formatSize(record.maxSize) : "0.00cm"}` },
+                ],
+            },
+            obtained ? getFishIcon(entry.typeId) : getFishSilhouetteIcon(entry.typeId),
+        );
     }
 
     form.show(player).then(rs => {
@@ -149,36 +125,87 @@ export function showFishEncyclopedia(player: Player, page = 0, filter?: FishBook
 
         switch (rs?.selection) {
             case 0:
+                if (safePage > 0) showFishEncyclopedia(player, safePage - 1, filter);
                 return;
-            case 3:
-                showFishEncyclopedia(player, safePage - 1, filter);
+            case 1:
+                if (safePage + 1 < totalPages) showFishEncyclopedia(player, safePage + 1, filter);
                 return;
-            case 5:
-                showFishEncyclopedia(player, safePage + 1, filter);
-                return;
-            case 7:
+            case 2:
                 showFishSearchForm(player, filter, safePage);
                 return;
-            case 8:
+            case 3:
                 if (filter) showFishEncyclopedia(player);
                 return;
             default:
-                if (typeof rs?.selection === "number" && rs.selection >= fishStartSlot) {
-                    const entry = pageEntries[rs.selection - fishStartSlot];
+                if (typeof rs?.selection === "number" && rs.selection >= fishStartButton) {
+                    const entry = pageEntries[rs.selection - fishStartButton];
                     if (entry) showFishDetail(player, entry, safePage, filter);
                 }
         }
     });
 }
 
-function showFishDetail(player: Player, entry: FishBookEntry, page: number, filter?: FishBookSearchFilter) {
+function showClassicFishEncyclopedia(player: Player, page = 0, filter?: FishBookSearchFilter) {
+    const allEntries = getFishBookEntries();
+    const entries = getVisibleEntries(player, allEntries, filter);
+    const totalPages = Math.max(1, Math.ceil(entries.length / classicPageSize));
+    const safePage = Math.min(Math.max(page, 0), totalPages - 1);
+    const pageEntries = entries.slice(safePage * classicPageSize, (safePage + 1) * classicPageSize);
+    const fishManager = getFishManager();
+    const form = new ChestFormData("large");
+    form.setTitle([
+        { translate: filter ? "fish.encyclopedia.search.title" : "fish.encyclopedia.title" },
+        ...(filter?.query ? [{ text: `: ${filter.query}` }] : []),
+        { text: ` ${safePage + 1}/${totalPages}` },
+    ]);
+    form.setButton(0, { name: "mc.button.close", iconPath: "textures/blocks/barrier", lore: ["fish.encyclopedia.close.lore"], editedName: true });
+    if (safePage > 0) form.setButton(3, { name: "fish.encyclopedia.previous", iconPath: "textures/ui/arrow_left", lore: ["fish.encyclopedia.previous.lore"], editedName: true });
+    form.setButton(4, {
+        name: "fish.encyclopedia.page",
+        iconPath: "textures/items/book_normal",
+        lore: classicPageInfoLore(player, entries.length, allEntries.length, safePage, totalPages, filter),
+        editedName: true,
+    });
+    if (safePage + 1 < totalPages) form.setButton(5, { name: "fish.encyclopedia.next", iconPath: "textures/ui/arrow_right", lore: ["fish.encyclopedia.next.lore"], editedName: true });
+    form.setButton(7, { name: "fish.encyclopedia.search.open", iconPath: "textures/items/compass_item", lore: ["fish.encyclopedia.search.open.lore"], editedName: true, isGlint: !!filter });
+    if (filter) form.setButton(8, { name: "fish.encyclopedia.search.clear", iconPath: "minecraft:redstone", lore: ["fish.encyclopedia.search.clear.lore"], editedName: true });
+    if (pageEntries.length === 0) form.setButton(22, { name: "fish.encyclopedia.search.no_results", iconPath: "minecraft:paper", lore: ["fish.encyclopedia.search.no_results.lore"], editedName: true });
+
+    pageEntries.forEach((entry, index) => {
+        const record = fishManager.getPlayerFishRecord(player.id, entry.typeId);
+        const obtained = record.obtained;
+        form.setButton(classicFishStartSlot + index, {
+            name: obtained ? entry.name.replace("minecraft:", "") : "fish.encyclopedia.unknown",
+            iconPath: obtained ? getFishIcon(entry.typeId) : getFishSilhouetteIcon(entry.typeId),
+            stackAmount: Math.min(Math.max(record.count, 1), 64),
+            lore: fishLore(entry, player.id, obtained),
+            editedName: true,
+            isGlint: obtained,
+        });
+    });
+
+    form.show(player).then(rs => {
+        if (rs?.canceled) {
+            if (rs.cancelationReason === FormCancelationReason.UserBusy) system.runTimeout(() => showFishEncyclopedia(player, safePage, filter), 10);
+            return;
+        }
+        if (rs.selection === 0) return;
+        if (rs.selection === 3 && safePage > 0) return void showFishEncyclopedia(player, safePage - 1, filter);
+        if (rs.selection === 5 && safePage + 1 < totalPages) return void showFishEncyclopedia(player, safePage + 1, filter);
+        if (rs.selection === 7) return void showFishSearchForm(player, filter, safePage);
+        if (rs.selection === 8 && filter) return void showFishEncyclopedia(player);
+        if (typeof rs.selection === "number" && rs.selection >= classicFishStartSlot) {
+            const entry = pageEntries[rs.selection - classicFishStartSlot];
+            if (entry) showClassicFishDetail(player, entry, safePage, filter);
+        }
+    });
+}
+
+function showClassicFishDetail(player: Player, entry: FishBookEntry, page: number, filter?: FishBookSearchFilter) {
     const record = getFishManager().getPlayerFishRecord(player.id, entry.typeId);
     const obtained = record.obtained;
     const form = new ChestFormData("small");
-    form.setTitle([
-        { translate: obtained ? entry.name : "fish.encyclopedia.unknown" },
-    ]);
-
+    form.setTitle([{ translate: obtained ? entry.name : "fish.encyclopedia.unknown" }]);
     form.setButton(4, {
         name: obtained ? entry.name : "fish.encyclopedia.unknown",
         iconPath: obtained ? getFishIcon(entry.typeId) : getFishSilhouetteIcon(entry.typeId),
@@ -187,20 +214,34 @@ function showFishDetail(player: Player, entry: FishBookEntry, page: number, filt
         editedName: true,
         isGlint: obtained,
     });
-
-    form.setButton(18, {
-        name: "mc.button.back",
-        iconPath: "textures/ui/arrow_left",
-        lore: ["fish.encyclopedia.back.lore"],
-        editedName: true,
+    form.setButton(18, { name: "mc.button.back", iconPath: "textures/ui/arrow_left", lore: ["fish.encyclopedia.back.lore"], editedName: true });
+    form.setButton(26, { name: "mc.button.close", iconPath: "minecraft:barrier", lore: ["fish.encyclopedia.close.lore"], editedName: true });
+    form.show(player).then(rs => {
+        if (rs?.canceled) {
+            if (rs.cancelationReason === FormCancelationReason.UserBusy) system.runTimeout(() => showClassicFishDetail(player, entry, page, filter), 10);
+            return;
+        }
+        if (rs.selection === 18) showFishEncyclopedia(player, page, filter);
     });
+}
 
-    form.setButton(26, {
-        name: "mc.button.close",
-        iconPath: "minecraft:barrier",
-        lore: ["fish.encyclopedia.close.lore"],
-        editedName: true,
-    });
+function showFishDetail(player: Player, entry: FishBookEntry, page: number, filter?: FishBookSearchFilter) {
+    const record = getFishManager().getPlayerFishRecord(player.id, entry.typeId);
+    const obtained = record.obtained;
+    const form = new ActionFormData({ preserveLayout: true })
+        .title({
+            rawtext: [
+                { text: fishBookUiToken },
+                { text: fishDetailUiToken },
+                { translate: obtained ? entry.name : "fish.encyclopedia.unknown" },
+            ],
+        })
+        .body({ rawtext: fishLore(entry, player.id, obtained) })
+        .button(
+            { translate: obtained ? entry.name : "fish.encyclopedia.unknown" },
+            obtained ? getFishIcon(entry.typeId) : getFishSilhouetteIcon(entry.typeId),
+        )
+        .button({ translate: "mc.button.back" }, "textures/ui/arrow_left");
 
     form.show(player).then(rs => {
         if (rs?.canceled) {
@@ -210,20 +251,21 @@ function showFishDetail(player: Player, entry: FishBookEntry, page: number, filt
             return;
         }
 
-        if (rs?.selection === 18) showFishEncyclopedia(player, page, filter);
+        if (rs?.selection === 0) showFishDetail(player, entry, page, filter);
+        if (rs?.selection === 1) showFishEncyclopedia(player, page, filter);
     });
 }
 
 function showFishSearchForm(player: Player, currentFilter: FishBookSearchFilter | undefined, page: number) {
     const modeIndex = Math.max(0, searchModes.indexOf(currentFilter?.mode ?? "all"));
-    const form = new ModalFormData()
-        .title({ translate: "fish.encyclopedia.search.form.title" })
+    const form = new ModalFormData({ preserveLayout: true })
+        .title({ rawtext: [{ text: fishSearchUiToken }, { translate: "fish.encyclopedia.search.form.title" }] })
         .textField(
             { translate: "fish.encyclopedia.search.query" },
             { translate: "fish.encyclopedia.search.placeholder" },
             { defaultValue: currentFilter?.query ?? "" },
         )
-        .dropdown(
+        .singleSelect(
             { translate: "fish.encyclopedia.search.mode" },
             searchModes.map(mode => ({ translate: searchModeTranslateKey(mode) })),
             { defaultValueIndex: modeIndex },
@@ -388,48 +430,43 @@ function fishLore(entry: FishBookEntry, playerId: string, obtained: boolean) {
 
 function addLine(lore: RawTextPart[], labelKey: string, value: RawTextPart[]) {
     lore.push(
-        { text: `${lore.length === 0 ? "" : "\n"}§r§7` },
+        { text: `${lore.length === 0 ? "" : "\n"}§r§8` },
         { translate: labelKey },
-        { text: ": §f" },
+        { text: ": §0" },
         ...value,
     );
 }
 
-function pageInfoLore(player: Player, visibleTotal: number, total: number, page: number, totalPages: number, filter?: FishBookSearchFilter) {
+function classicPageInfoLore(player: Player, visibleTotal: number, total: number, page: number, totalPages: number, filter?: FishBookSearchFilter) {
+    const obtained = getFishBookEntries().reduce((count, entry) =>
+        count + (getFishManager().getPlayerFishRecord(player.id, entry.typeId).obtained ? 1 : 0), 0);
+    const lore: RawTextPart[] = [
+        { text: "§r§7" }, { translate: "fish.encyclopedia.lore.page" }, { text: `: §f${page + 1}/${totalPages}` },
+        { text: "\n§r§7" }, { translate: "fish.encyclopedia.lore.progress" }, { text: `: §f${obtained}/${total}` },
+    ];
+    if (filter) {
+        lore.push(
+            { text: "\n§r§7" }, { translate: "fish.encyclopedia.search.results" }, { text: `: §f${visibleTotal}/${total}` },
+            { text: "\n§r§7" }, { translate: "fish.encyclopedia.search.mode" }, { text: ": §f" }, { translate: searchModeTranslateKey(filter.mode) },
+        );
+        if (filter.query) lore.push(
+            { text: "\n§r§7" }, { translate: "fish.encyclopedia.search.query" }, { text: `: §f${filter.query}` },
+        );
+    }
+    return lore;
+}
+
+function bookProgressText(player: Player, total: number, page: number, totalPages: number) {
     const obtained = getFishBookEntries().reduce((count, entry) => {
         return count + (getFishManager().getPlayerFishRecord(player.id, entry.typeId).obtained ? 1 : 0);
     }, 0);
+    const percentage = total > 0 ? Math.round((obtained / total) * 100) : 0;
 
-    const lore: RawTextPart[] = [
-        { text: "§r§7" },
-        { translate: "fish.encyclopedia.lore.page" },
-        { text: `: §f${page + 1}/${totalPages}` },
-        { text: "\n§r§7" },
-        { translate: "fish.encyclopedia.lore.progress" },
-        { text: `: §f${obtained}/${total}` },
-    ];
-
-    if (filter) {
-        lore.push(
-            { text: "\n§r§7" },
-            { translate: "fish.encyclopedia.search.results" },
-            { text: `: §f${visibleTotal}/${total}` },
-            { text: "\n§r§7" },
-            { translate: "fish.encyclopedia.search.mode" },
-            { text: ": §f" },
-            { translate: searchModeTranslateKey(filter.mode) },
-        );
-
-        if (filter.query) {
-            lore.push(
-                { text: "\n§r§7" },
-                { translate: "fish.encyclopedia.search.query" },
-                { text: `: §f${filter.query}` },
-            );
-        }
-    }
-
-    return lore;
+    return {
+        rawtext: [
+            { text: `発見 ${obtained}/${total} (${percentage}%)　ページ ${page + 1}/${totalPages}` },
+        ],
+    };
 }
 
 function translatedList(keys: string[], order = keys) {

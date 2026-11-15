@@ -7,9 +7,11 @@ import {
     rangeScore,
     targetScore,
     type SimpleStationAction,
+    type SimpleStationCompletionGoal,
     type SimpleStationSession,
     type SimpleStationStatus
 } from "@/features/forms/default/cooking/simple-station-core.js";
+import { getSimpleStationMinigame } from "@/features/forms/default/cooking/simple-station-minigames.js";
 
 const sessions = new Map<string, SimpleStationSession>();
 
@@ -154,11 +156,16 @@ const actions: SimpleStationAction[] = [
 ];
 
 const statuses: SimpleStationStatus[] = [
-    { name: "cooking.status.temperature", color: "§c", value: (session) => `${session.temperature}°C` },
-    { name: "cooking.status.sear", color: "§6", value: (session) => `${session.sear}%` },
-    { name: "cooking.status.evenness", color: "§a", value: (session) => `${session.evenness}%` },
-    { name: "cooking.status.oil", color: "§e", value: (session) => `${session.oil}%` },
-    { name: "cooking.status.smoke", color: "§7", value: (session) => `${session.smoke}%` },
+    { name: "cooking.status.temperature", color: "§c", value: (session) => `${session.temperature}°C\n` },
+    { name: "cooking.status.sear", color: "§6", value: (session) => `${session.sear}%\n` },
+    { name: "cooking.status.evenness", color: "§a", value: (session) => `${session.evenness}%\n` },
+    { name: "cooking.status.oil", color: "§e", value: (session) => `${session.oil}%\n` },
+    { name: "cooking.status.smoke", color: "§7", value: (session) => `${session.smoke}%\n` },
+];
+
+const completionGoals: SimpleStationCompletionGoal[] = [
+    { id: "sear", label: "cooking.status.sear", target: 60, suffix: "%", value: (session) => session.sear },
+    { id: "evenness", label: "cooking.status.evenness", target: 50, suffix: "%", value: (session) => session.evenness },
 ];
 
 const config = {
@@ -167,6 +174,8 @@ const config = {
     sessions,
     actions,
     statuses,
+    completionGoals,
+    ...getSimpleStationMinigame("iron_board"),
     openRecipeSelect,
     openCooking,
     createSession() {
@@ -189,7 +198,7 @@ const config = {
     },
 };
 
-export function openRecipeSelect(player: Player, page = 0, categoryId = "all", searchQuery = "") {
+export function openRecipeSelect(player: Player, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
     openSimpleStationRecipeSelect(player, config, page, categoryId, searchQuery);
 }
 

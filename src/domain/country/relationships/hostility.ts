@@ -41,8 +41,12 @@ export function addHostilityFunction(countryId: any, countryData: any, id: any, 
     }
     countryData.hostility = countryData.hostility.filter((r: any) => r != countryId);
     targetCountryData.hostility = targetCountryData.hostility.filter((r: any) => r != id);
+    countryData.hostilityCountryPermissions = countryData.hostilityCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.hostilityCountryPermissions = targetCountryData.hostilityCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
     countryData.hostility.push(countryId);
     targetCountryData.hostility.push(id);
+    countryData.neutralityCountryPermissions = countryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.neutralityCountryPermissions = targetCountryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);

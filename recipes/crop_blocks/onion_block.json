@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:onion_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:onion"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:onion"
+      }
+    ],
+    "result": {
+      "item": "mc:onion_block",
+      "count": 1
+    }
+  }
+}
+

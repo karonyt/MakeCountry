@@ -5,8 +5,13 @@ import { CountryManager } from "@/domain/country/country-manager.js";
 import { PlayerManager } from "@/domain/player/player-manager.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import config from "@/config/server.js";
+import { reportJobAchievement } from "@/shared/integration/standalone.js";
+import { forwardDungeonCatch } from "./dungeon-catch-bridge.js";
+import { findDeepwaterRig, consumeDeepwaterRig } from '@/domain/fishing/deepwater-rig.js';
 
 playerFishingAfterEvent.subscribe((ev: any) => {
+    // Dungeon catches are handled by the pack owning the gate and its loot.
+    if (forwardDungeonCatch(ev, config.world)) return;
     const fishManager = getFishManager();
     const { player, itemStack, itemEntity, dimension } = ev;
     if (!player || !itemStack || !itemEntity || !dimension) return;
@@ -18,11 +23,17 @@ playerFishingAfterEvent.subscribe((ev: any) => {
 
     if (!countryData || (countryData.lv < national_tier_level.releaseSpeciallFishing && national_tier_level.enabled)) return
 
-    const fish = fishManager.fishing(itemEntity.location, dimension, player);
+    const rigSlot = findDeepwaterRig(player, dimension, itemEntity.location);
+    const fish = fishManager.fishing(itemEntity.location, dimension, player, rigSlot !== undefined);
 
     if (!fish) return;
+    if (rigSlot !== undefined) consumeDeepwaterRig(player, rigSlot);
 
     sendFishCatchSyncEvent(player, fish);
+    // 出現重み 1〜2 の魚は、各釣り場でも最も希少な層。
+    if (Number(fish.weight) > 0 && Number(fish.weight) <= 2) {
+        reportJobAchievement(player, "rare_fish");
+    }
 
     //world.sendMessage(`${dimension.getBiome(itemEntity.location).id}`)
 

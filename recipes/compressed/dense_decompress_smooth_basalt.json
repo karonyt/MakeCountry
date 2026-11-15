@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:dense_decompress_smooth_basalt"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:dense_smooth_basalt"
+      }
+    },
+    "result": {
+      "item": "mc:compressed_smooth_basalt",
+      "count": 9
+    }
+  }
+}

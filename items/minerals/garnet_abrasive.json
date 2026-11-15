@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:garnet_abrasive",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "garnet_abrasive",
+      "minecraft:display_name": {
+        "value": "item.mc:garnet_abrasive"
+      }
+    }
+  }
+}

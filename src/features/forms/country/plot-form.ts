@@ -1,5 +1,8 @@
+import { isPermissionEnabled, permissionsFromToggles } from "@/domain/country/permissions.js";
+import { PlotActionForm as ActionForm, PlotModalForm as ModalForm } from "@/shared/ui/purpose-forms.js";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionForm, ModalForm } from "@/shared/ui/form-class.js";
+import { parsePrice, plotOffer, plotPurchase } from "@/domain/country/plot-service.js";
+
 const ActionFormData = ActionForm;
 const ModalFormData = ModalForm;
 import { CheckPermissionFromLocation, GetAndParsePropertyData, GetPlayerChunkPropertyId, isDecimalNumberZeroOK, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
@@ -17,6 +20,10 @@ const landPermissions = [
     `setHome`,
     `blockUse`,
     `entityUse`,
+    `gateUse`,
+    `lavaUse`,
+    `shopBuy`,
+    `shopSell`,
     `noTarget`,
     `publicHomeUse`,
 ];
@@ -570,40 +577,14 @@ export function plotBuyForm(player: any, chunkId: any) {
             };
             return;
         };
-        switch (rs.selection) {
-            case 0: {
-                plotMainForm(player);
-            };
-            case 1: {
-                const newChunkData = GetAndParsePropertyData(`${chunkId}`);
-                if (!newChunkData) {
-                    return;
-                };
-                let newPlot = newChunkData?.plot;
-                if (!newPlot) {
-                    return;
-                };
-                if (!newPlot?.is_selling) {
-                    return;
-                };
-                const playerData = GetAndParsePropertyData(`player_${player.id}`);
-                let money = playerData?.money ?? 0;
-                if (money < (newPlot?.price ?? 0)) {
-                    //金が足りない時
-                    player.sendMessage({ translate: `error.notenough.money` });
-                    return;
-                };
-                newPlot.is_selling = false;
-                newPlot.owner = player.id;
-                playerData.money -= newPlot?.price;
-                newChunkData.plot = newPlot;
-                StringifyAndSavePropertyData(`player_${player.id}`, playerData);
-                StringifyAndSavePropertyData(`${chunkId}`, newChunkData);
-                player.sendMessage({ translate: `finish.bought` });
-                const [c, x, z, d] = chunkId.split('_');
-                const countryId = GetAndParsePropertyData(chunkId)?.countryId;
-            };
-        };
+        if (rs.selection === 0) {
+            plotMainForm(player);
+            return;
+        }
+        // 買えるかどうかの確かめと代金の行き先は plot-service に寄せてある (/plot buy と同じ)。
+        // 以前はここで買い手から引くだけで代金が消え、しかも「戻る」がそのまま購入へ落ちていた
+        const offer = plotOffer(player, GetPlayerChunkPropertyId(player));
+        player.sendMessage("ok" in offer ? offer.message : plotPurchase(player, offer).message);
     });
 };
 
@@ -651,33 +632,14 @@ export function plotGroupBuyForm(player: any, plotgroupId: any) {
             };
             return;
         };
-        switch (rs.selection) {
-            case 0: {
-                plotMainForm(player);
-            };
-            case 1: {
-                let newPlot = GetAndParsePropertyData(`plotgroup_${plotgroupId}`);
-                if (!newPlot) {
-                    return;
-                };
-                if (!newPlot?.is_selling) {
-                    return;
-                };
-                const playerData = GetAndParsePropertyData(`player_${player.id}`);
-                let money = playerData?.money ?? 0;
-                if (money < (newPlot?.price ?? 0)) {
-                    //金が足りない時
-                    player.sendMessage({ translate: `error.notenough.money` });
-                    return;
-                };
-                newPlot.is_selling = false;
-                newPlot.owner = player.id;
-                playerData.money -= newPlot?.price;
-                StringifyAndSavePropertyData(`player_${player.id}`, playerData);
-                StringifyAndSavePropertyData(`plotgroup_${plotgroupId}`, newPlot);
-                player.sendMessage({ translate: `finish.bought` });
-            };
-        };
+        if (rs.selection === 0) {
+            plotMainForm(player);
+            return;
+        }
+        // 買えるかどうかの確かめと代金の行き先は plot-service に寄せてある (/plot buy と同じ)。
+        // 以前はここで買い手から引くだけで代金が消え、しかも「戻る」がそのまま購入へ落ちていた
+        const offer = plotOffer(player, GetPlayerChunkPropertyId(player));
+        player.sendMessage("ok" in offer ? offer.message : plotPurchase(player, offer).message);
     });
 };
 
@@ -1143,7 +1105,7 @@ function rolePermissionsEditForm(player: any, chunkId: any, targetData: any, plo
     if (!plot?.roles) plot.roles = [];
     let target = plot.roles.find((d: any) => d.id == targetData?.id) ?? { id: targetData?.id, permissions: [] };
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, target?.permissions.includes(permission));
+        form.toggle({ translate: `permission.${permission}` }, isPermissionEnabled(target?.permissions, permission));
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then((rs: any) => {
@@ -1155,12 +1117,7 @@ function rolePermissionsEditForm(player: any, chunkId: any, targetData: any, plo
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions = [];
-        for (let i = 0; i < values.length; i++) {
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         target.permissions = newLandPermissions;
         const index = chunkData?.plot?.roles.findIndex((d: any) => d.id == target.id);
         if (index != -1) {
@@ -1405,7 +1362,7 @@ function countryPermissionsEditForm(player: any, chunkId: any, targetData: any, 
     if (!plot?.countries) plot.countries = [];
     let target = plot.countries.find((d: any) => d.id == targetData?.id) ?? { id: targetData?.id, permissions: [] };
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, target?.permissions.includes(permission));
+        form.toggle({ translate: `permission.${permission}` }, isPermissionEnabled(target?.permissions, permission));
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then((rs: any) => {
@@ -1417,12 +1374,7 @@ function countryPermissionsEditForm(player: any, chunkId: any, targetData: any, 
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions = [];
-        for (let i = 0; i < values.length; i++) {
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         target.permissions = newLandPermissions;
         const index = chunkData?.plot?.countries.findIndex((d: any) => d.id == target.id);
         if (index != -1) {
@@ -1645,7 +1597,7 @@ function playerPermissionsEditForm(player: any, chunkId: any, targetData: any, p
     if (!plot?.players) plot.players = [];
     let target = plot.players.find((d: any) => d.id == targetData?.id) ?? { id: targetData?.id, permissions: [] };
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, target?.permissions.includes(permission));
+        form.toggle({ translate: `permission.${permission}` }, isPermissionEnabled(target?.permissions, permission));
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then((rs: any) => {
@@ -1657,12 +1609,7 @@ function playerPermissionsEditForm(player: any, chunkId: any, targetData: any, p
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions = [];
-        for (let i = 0; i < values.length; i++) {
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         target.permissions = newLandPermissions;
         const index = chunkData?.plot?.players.findIndex((d: any) => d.id == target.id);
         if (index != -1) {
@@ -1711,7 +1658,7 @@ function plotEditPermissionsForm(player: any, chunkId: any, plotAdmin = false) {
     };
     if (!plot?.permissions) plot.permissions = [];
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, plot?.permissions.includes(permission));
+        form.toggle({ translate: `permission.${permission}` }, isPermissionEnabled(plot?.permissions, permission));
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then((rs: any) => {
@@ -1724,12 +1671,7 @@ function plotEditPermissionsForm(player: any, chunkId: any, plotAdmin = false) {
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions = [];
-        for (let i = 0; i < values.length; i++) {
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         plot.permissions = newLandPermissions;
         StringifyAndSavePropertyData(`${dypId}`, chunkData);
         if (plotAdmin) {
@@ -1810,13 +1752,10 @@ function plotEditSettingFormPlotAdmin(player: any, chunkId: any) {
         if (newPlotName == ``) {
             newPlotName = `new Plot`;
         };
-        let price = rs.formValues[3];
-        if (!isDecimalNumberZeroOK(price) && Number(price) > 100000000000) {
-            price = `0`;
-        };
-        if (Number(price) < 0) {
-            price = `0`;
-        };
+        // 値段は 0 以上の整数だけ。読めない値は前の値段のままにして、そう伝える
+        const parsedPrice = parsePrice(rs.formValues[3]);
+        if (parsedPrice === null) player.sendMessage("§c[プロット] 値段は 0 以上の整数で入れてください。値段は変えていません。");
+        let price = `${parsedPrice ?? plot?.price ?? 0}`;
         plot.group = undefined;
         plot.name = newPlotName;
         plot.price = Math.floor(Number(price));
@@ -1875,13 +1814,10 @@ function plotEditSettingFormPlotOwner(player: any, chunkId: any) {
             newPlotName = `new Plot`;
         };
         //値段チェック
-        let price = rs.formValues[1];
-        if (isDecimalNumberZeroOK(price)) {
-            price = `0`;
-        };
-        if (Number(price) < 0) {
-            price = `0`;
-        };
+        // 以前は「正しい値なら 0 にする」と逆になっていて、持ち主が付けた値段が必ず 0 になっていた
+        const parsedPrice = parsePrice(rs.formValues[1]);
+        if (parsedPrice === null) player.sendMessage("§c[プロット] 値段は 0 以上の整数で入れてください。値段は変えていません。");
+        let price = `${parsedPrice ?? plot?.price ?? 0}`;
         plot.name = newPlotName;
         plot.price = Math.floor(Number(price));
         plot.is_selling = rs.formValues[2];

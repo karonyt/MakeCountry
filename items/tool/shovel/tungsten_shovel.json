@@ -1,0 +1,32 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:tungsten_shovel",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "tungsten_shovel",
+      "minecraft:durability": {
+        "max_durability": 4200
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:damage": 8,
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": {
+              "tags": "q.any_tag('minecraft:is_shovel_item_destructible')"
+            },
+            "speed": 25
+          }
+        ]
+      },
+      "mc:ranktool": {}
+    }
+  }
+}

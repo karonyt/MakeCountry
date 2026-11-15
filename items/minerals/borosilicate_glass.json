@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:borosilicate_glass",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "borosilicate_glass",
+      "minecraft:display_name": {
+        "value": "item.mc:borosilicate_glass"
+      }
+    }
+  }
+}

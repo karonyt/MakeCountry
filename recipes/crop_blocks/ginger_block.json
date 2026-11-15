@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:ginger_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:ginger"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:ginger"
+      }
+    ],
+    "result": {
+      "item": "mc:ginger_block",
+      "count": 1
+    }
+  }
+}
+

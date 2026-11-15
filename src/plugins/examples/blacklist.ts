@@ -1,12 +1,12 @@
 import { world } from "@minecraft/server";
 
+// サンプル: 参加時に指定したプレイヤーをキックする
 const blackList = [
-    'teruko2022',
+    'ExamplePlayerName',
 ];
 
-const blackListXuid = [
-    '2535466281074450',
-    '2535426288675628'
+const blackListXuid: string[] = [
+    // '0000000000000000',
 ];
 
 world.afterEvents.playerSpawn.subscribe((ev) => {

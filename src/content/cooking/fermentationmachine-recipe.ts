@@ -115,83 +115,6 @@ export const FermentationMachineRecipes = {
                     "mc:barley": 1
             }
     },
-    "alcohol_barley_wine": {
-            "name": "mc:alcohol_barley_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_barley_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:barley": 1
-            }
-    },
-    "alcohol_basil_ale": {
-            "name": "mc:alcohol_basil_ale",
-            "result": [
-                    {
-                            "id": "mc:alcohol_basil_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:basil": 1
-            }
-    },
-    "alcohol_basil_wine": {
-            "name": "mc:alcohol_basil_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_basil_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:basil": 1
-            }
-    },
-    "alcohol_carrot_aged": {
-            "name": "mc:alcohol_carrot_aged",
-            "result": [
-                    {
-                            "id": "mc:alcohol_carrot_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:carrot": 1,
-                    "minecraft:sugar": 1
-            }
-    },
     "alcohol_carrot_spirit": {
             "name": "mc:alcohol_carrot_spirit",
             "result": [
@@ -229,46 +152,6 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "mc:coffee": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_coffee_spirit": {
-            "name": "mc:alcohol_coffee_spirit",
-            "result": [
-                    {
-                            "id": "mc:alcohol_coffee_spirit",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:coffee": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_green_tea_liqueur": {
-            "name": "mc:alcohol_green_tea_liqueur",
-            "result": [
-                    {
-                            "id": "mc:alcohol_green_tea_liqueur",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:green_tea": 1,
                     "minecraft:sugar": 1
             }
     },
@@ -310,102 +193,6 @@ export const FermentationMachineRecipes = {
                     "mc:green_tea": 1
             }
     },
-    "alcohol_matcha_wine": {
-            "name": "mc:alcohol_matcha_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_matcha_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:green_tea": 1
-            }
-    },
-    "alcohol_rice_ale": {
-            "name": "mc:alcohol_rice_ale",
-            "result": [
-                    {
-                            "id": "mc:alcohol_rice_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:rice": 1
-            }
-    },
-    "alcohol_rice_wine": {
-            "name": "mc:alcohol_rice_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_rice_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:rice": 1
-            }
-    },
-    "alcohol_sugarcane_aged": {
-            "name": "mc:alcohol_sugarcane_aged",
-            "result": [
-                    {
-                            "id": "mc:alcohol_sugarcane_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 492,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:sugar_cane": 2,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_apple_wine": {
-            "name": "mc:alcohol_apple_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_apple_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 493,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:apple": 1
-            }
-    },
     "alcohol_barley_liqueur": {
             "name": "mc:alcohol_barley_liqueur",
             "result": [
@@ -426,11 +213,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_barley_spirit": {
-            "name": "mc:alcohol_barley_spirit",
+    "alcohol_barley_wine": {
+            "name": "mc:alcohol_barley_wine",
             "result": [
                     {
-                            "id": "mc:alcohol_barley_spirit",
+                            "id": "mc:alcohol_barley_wine",
                             "count": 1
                     },
                     {
@@ -442,15 +229,14 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:barley": 1,
-                    "minecraft:sugar": 1
+                    "mc:barley": 1
             }
     },
-    "alcohol_basil_liqueur": {
-            "name": "mc:alcohol_basil_liqueur",
+    "alcohol_basil_ale": {
+            "name": "mc:alcohol_basil_ale",
             "result": [
                     {
-                            "id": "mc:alcohol_basil_liqueur",
+                            "id": "mc:alcohol_basil_ale",
                             "count": 1
                     },
                     {
@@ -462,7 +248,45 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:basil": 1,
+                    "mc:basil": 1
+            }
+    },
+    "alcohol_basil_wine": {
+            "name": "mc:alcohol_basil_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_basil_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 493,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:basil": 1
+            }
+    },
+    "alcohol_carrot_aged": {
+            "name": "mc:alcohol_carrot_aged",
+            "result": [
+                    {
+                            "id": "mc:alcohol_carrot_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 493,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:carrot": 1,
                     "minecraft:sugar": 1
             }
     },
@@ -471,6 +295,26 @@ export const FermentationMachineRecipes = {
             "result": [
                     {
                             "id": "mc:alcohol_coffee_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 493,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:coffee": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_coffee_spirit": {
+            "name": "mc:alcohol_coffee_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_coffee_spirit",
                             "count": 1
                     },
                     {
@@ -505,11 +349,11 @@ export const FermentationMachineRecipes = {
                     "mc:grated_ginger": 1
             }
     },
-    "alcohol_green_tea_aged": {
-            "name": "mc:alcohol_green_tea_aged",
+    "alcohol_green_tea_liqueur": {
+            "name": "mc:alcohol_green_tea_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_green_tea_aged",
+                            "id": "mc:alcohol_green_tea_liqueur",
                             "count": 1
                     },
                     {
@@ -565,11 +409,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_matcha_spirit": {
-            "name": "mc:alcohol_matcha_spirit",
+    "alcohol_matcha_wine": {
+            "name": "mc:alcohol_matcha_wine",
             "result": [
                     {
-                            "id": "mc:alcohol_matcha_spirit",
+                            "id": "mc:alcohol_matcha_wine",
                             "count": 1
                     },
                     {
@@ -581,27 +425,7 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:green_tea": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_peanut_wine": {
-            "name": "mc:alcohol_peanut_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_peanut_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 493,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:peanut": 1
+                    "mc:green_tea": 1
             }
     },
     "alcohol_potato_ale": {
@@ -623,11 +447,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:potato": 1
             }
     },
-    "alcohol_rice_liqueur": {
-            "name": "mc:alcohol_rice_liqueur",
+    "alcohol_rice_ale": {
+            "name": "mc:alcohol_rice_ale",
             "result": [
                     {
-                            "id": "mc:alcohol_rice_liqueur",
+                            "id": "mc:alcohol_rice_ale",
                             "count": 1
                     },
                     {
@@ -639,8 +463,26 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:rice": 1,
-                    "minecraft:sugar": 1
+                    "mc:rice": 1
+            }
+    },
+    "alcohol_rice_wine": {
+            "name": "mc:alcohol_rice_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_rice_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 493,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:rice": 1
             }
     },
     "alcohol_shiso_ale": {
@@ -662,11 +504,11 @@ export const FermentationMachineRecipes = {
                     "mc:shiso_leaf": 1
             }
     },
-    "alcohol_shiso_wine": {
-            "name": "mc:alcohol_shiso_wine",
+    "alcohol_sugarcane_aged": {
+            "name": "mc:alcohol_sugarcane_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_shiso_wine",
+                            "id": "mc:alcohol_sugarcane_aged",
                             "count": 1
                     },
                     {
@@ -678,7 +520,8 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:shiso_leaf": 1
+                    "minecraft:sugar_cane": 2,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_wheat_ale": {
@@ -686,25 +529,6 @@ export const FermentationMachineRecipes = {
             "result": [
                     {
                             "id": "mc:alcohol_wheat_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 493,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:wheat": 1
-            }
-    },
-    "alcohol_wheat_wine": {
-            "name": "mc:alcohol_wheat_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_wheat_wine",
                             "count": 1
                     },
                     {
@@ -738,11 +562,30 @@ export const FermentationMachineRecipes = {
                     "minecraft:apple": 1
             }
     },
-    "alcohol_barley_aged": {
-            "name": "mc:alcohol_barley_aged",
+    "alcohol_apple_wine": {
+            "name": "mc:alcohol_apple_wine",
             "result": [
                     {
-                            "id": "mc:alcohol_barley_aged",
+                            "id": "mc:alcohol_apple_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 494,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:apple": 1
+            }
+    },
+    "alcohol_barley_spirit": {
+            "name": "mc:alcohol_barley_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_barley_spirit",
                             "count": 1
                     },
                     {
@@ -778,11 +621,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_basil_spirit": {
-            "name": "mc:alcohol_basil_spirit",
+    "alcohol_basil_liqueur": {
+            "name": "mc:alcohol_basil_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_basil_spirit",
+                            "id": "mc:alcohol_basil_liqueur",
                             "count": 1
                     },
                     {
@@ -856,11 +699,31 @@ export const FermentationMachineRecipes = {
                     "mc:grated_ginger": 1
             }
     },
-    "alcohol_matcha_aged": {
-            "name": "mc:alcohol_matcha_aged",
+    "alcohol_green_tea_aged": {
+            "name": "mc:alcohol_green_tea_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_matcha_aged",
+                            "id": "mc:alcohol_green_tea_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 494,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:green_tea": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_matcha_spirit": {
+            "name": "mc:alcohol_matcha_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_matcha_spirit",
                             "count": 1
                     },
                     {
@@ -881,6 +744,25 @@ export const FermentationMachineRecipes = {
             "result": [
                     {
                             "id": "mc:alcohol_peanut_ale",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 494,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:peanut": 1
+            }
+    },
+    "alcohol_peanut_wine": {
+            "name": "mc:alcohol_peanut_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_peanut_wine",
                             "count": 1
                     },
                     {
@@ -934,31 +816,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:potato": 1
             }
     },
-    "alcohol_rice_aged": {
-            "name": "mc:alcohol_rice_aged",
+    "alcohol_rice_liqueur": {
+            "name": "mc:alcohol_rice_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_rice_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 494,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:rice": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_rice_spirit": {
-            "name": "mc:alcohol_rice_spirit",
-            "result": [
-                    {
-                            "id": "mc:alcohol_rice_spirit",
+                            "id": "mc:alcohol_rice_liqueur",
                             "count": 1
                     },
                     {
@@ -993,11 +855,11 @@ export const FermentationMachineRecipes = {
                     "mc:sesame_seed_powder": 1
             }
     },
-    "alcohol_shiso_liqueur": {
-            "name": "mc:alcohol_shiso_liqueur",
+    "alcohol_shiso_wine": {
+            "name": "mc:alcohol_shiso_wine",
             "result": [
                     {
-                            "id": "mc:alcohol_shiso_liqueur",
+                            "id": "mc:alcohol_shiso_wine",
                             "count": 1
                     },
                     {
@@ -1009,15 +871,14 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:shiso_leaf": 1,
-                    "minecraft:sugar": 1
+                    "mc:shiso_leaf": 1
             }
     },
-    "alcohol_shiso_spirit": {
-            "name": "mc:alcohol_shiso_spirit",
+    "alcohol_wheat_wine": {
+            "name": "mc:alcohol_wheat_wine",
             "result": [
                     {
-                            "id": "mc:alcohol_shiso_spirit",
+                            "id": "mc:alcohol_wheat_wine",
                             "count": 1
                     },
                     {
@@ -1029,28 +890,7 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:shiso_leaf": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_wheat_spirit": {
-            "name": "mc:alcohol_wheat_spirit",
-            "result": [
-                    {
-                            "id": "mc:alcohol_wheat_spirit",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 494,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:wheat": 1,
-                    "minecraft:sugar": 1
+                    "minecraft:wheat": 1
             }
     },
     "alcohol_apple_liqueur": {
@@ -1073,11 +913,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_apple_spirit": {
-            "name": "mc:alcohol_apple_spirit",
+    "alcohol_barley_aged": {
+            "name": "mc:alcohol_barley_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_apple_spirit",
+                            "id": "mc:alcohol_barley_aged",
                             "count": 1
                     },
                     {
@@ -1089,7 +929,27 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "minecraft:apple": 1,
+                    "mc:barley": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_basil_spirit": {
+            "name": "mc:alcohol_basil_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_basil_spirit",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 495,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:basil": 1,
                     "minecraft:sugar": 1
             }
     },
@@ -1110,45 +970,6 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "minecraft:sweet_berries": 2
-            }
-    },
-    "alcohol_chocolate_ale": {
-            "name": "mc:alcohol_chocolate_ale",
-            "result": [
-                    {
-                            "id": "mc:alcohol_chocolate_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 495,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:milk_chocolate": 1
-            }
-    },
-    "alcohol_ginger_aged": {
-            "name": "mc:alcohol_ginger_aged",
-            "result": [
-                    {
-                            "id": "mc:alcohol_ginger_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 495,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:grated_ginger": 1,
-                    "minecraft:sugar": 1
             }
     },
     "alcohol_ginger_spirit": {
@@ -1190,11 +1011,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:glow_berries": 2
             }
     },
-    "alcohol_glowberry_wine": {
-            "name": "mc:alcohol_glowberry_wine",
+    "alcohol_matcha_aged": {
+            "name": "mc:alcohol_matcha_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_glowberry_wine",
+                            "id": "mc:alcohol_matcha_aged",
                             "count": 1
                     },
                     {
@@ -1206,26 +1027,8 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "minecraft:glow_berries": 2
-            }
-    },
-    "alcohol_honey_ale": {
-            "name": "mc:alcohol_honey_ale",
-            "result": [
-                    {
-                            "id": "mc:alcohol_honey_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 495,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:honey_bottle": 1
+                    "mc:green_tea": 1,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_milk_ale": {
@@ -1233,25 +1036,6 @@ export const FermentationMachineRecipes = {
             "result": [
                     {
                             "id": "mc:alcohol_milk_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 495,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:milk": 1
-            }
-    },
-    "alcohol_milk_wine": {
-            "name": "mc:alcohol_milk_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_milk_wine",
                             "count": 1
                     },
                     {
@@ -1306,6 +1090,46 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
+    "alcohol_rice_aged": {
+            "name": "mc:alcohol_rice_aged",
+            "result": [
+                    {
+                            "id": "mc:alcohol_rice_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 495,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:rice": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_rice_spirit": {
+            "name": "mc:alcohol_rice_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_rice_spirit",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 495,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:rice": 1,
+                    "minecraft:sugar": 1
+            }
+    },
     "alcohol_sesame_wine": {
             "name": "mc:alcohol_sesame_wine",
             "result": [
@@ -1345,11 +1169,51 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_wheat_aged": {
-            "name": "mc:alcohol_wheat_aged",
+    "alcohol_shiso_liqueur": {
+            "name": "mc:alcohol_shiso_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_wheat_aged",
+                            "id": "mc:alcohol_shiso_liqueur",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 495,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:shiso_leaf": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_shiso_spirit": {
+            "name": "mc:alcohol_shiso_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_shiso_spirit",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 495,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:shiso_leaf": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_wheat_liqueur": {
+            "name": "mc:alcohol_wheat_liqueur",
+            "result": [
+                    {
+                            "id": "mc:alcohol_wheat_liqueur",
                             "count": 1
                     },
                     {
@@ -1365,11 +1229,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_wheat_liqueur": {
-            "name": "mc:alcohol_wheat_liqueur",
+    "alcohol_wheat_spirit": {
+            "name": "mc:alcohol_wheat_spirit",
             "result": [
                     {
-                            "id": "mc:alcohol_wheat_liqueur",
+                            "id": "mc:alcohol_wheat_spirit",
                             "count": 1
                     },
                     {
@@ -1405,6 +1269,26 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
+    "alcohol_apple_spirit": {
+            "name": "mc:alcohol_apple_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_apple_spirit",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 496,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:apple": 1,
+                    "minecraft:sugar": 1
+            }
+    },
     "alcohol_berry_liqueur": {
             "name": "mc:alcohol_berry_liqueur",
             "result": [
@@ -1425,11 +1309,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_berry_spirit": {
-            "name": "mc:alcohol_berry_spirit",
+    "alcohol_chocolate_ale": {
+            "name": "mc:alcohol_chocolate_ale",
             "result": [
                     {
-                            "id": "mc:alcohol_berry_spirit",
+                            "id": "mc:alcohol_chocolate_ale",
                             "count": 1
                     },
                     {
@@ -1441,8 +1325,7 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "minecraft:sweet_berries": 2,
-                    "minecraft:sugar": 1
+                    "mc:milk_chocolate": 1
             }
     },
     "alcohol_chocolate_wine": {
@@ -1464,11 +1347,11 @@ export const FermentationMachineRecipes = {
                     "mc:milk_chocolate": 1
             }
     },
-    "alcohol_glowberry_liqueur": {
-            "name": "mc:alcohol_glowberry_liqueur",
+    "alcohol_ginger_aged": {
+            "name": "mc:alcohol_ginger_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_glowberry_liqueur",
+                            "id": "mc:alcohol_ginger_aged",
                             "count": 1
                     },
                     {
@@ -1480,8 +1363,46 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "minecraft:glow_berries": 2,
+                    "mc:grated_ginger": 1,
                     "minecraft:sugar": 1
+            }
+    },
+    "alcohol_glowberry_wine": {
+            "name": "mc:alcohol_glowberry_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_glowberry_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 496,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:glow_berries": 2
+            }
+    },
+    "alcohol_honey_ale": {
+            "name": "mc:alcohol_honey_ale",
+            "result": [
+                    {
+                            "id": "mc:alcohol_honey_ale",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 496,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:honey_bottle": 1
             }
     },
     "alcohol_honey_wine": {
@@ -1501,44 +1422,6 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "minecraft:honey_bottle": 1
-            }
-    },
-    "alcohol_kelp_wine": {
-            "name": "mc:alcohol_kelp_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_kelp_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 496,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:kelp": 1
-            }
-    },
-    "alcohol_melon_wine": {
-            "name": "mc:alcohol_melon_wine",
-            "result": [
-                    {
-                            "id": "mc:alcohol_melon_wine",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 496,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:melon_slice": 2
             }
     },
     "alcohol_mikan_ale": {
@@ -1578,6 +1461,25 @@ export const FermentationMachineRecipes = {
                     "mc:yeast": 1,
                     "mc:milk": 1,
                     "minecraft:sugar": 1
+            }
+    },
+    "alcohol_milk_wine": {
+            "name": "mc:alcohol_milk_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_milk_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 496,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:milk": 1
             }
     },
     "alcohol_mushroom_ale": {
@@ -1637,25 +1539,6 @@ export const FermentationMachineRecipes = {
                     "mc:yeast": 1,
                     "mc:peanut": 1,
                     "minecraft:sugar": 1
-            }
-    },
-    "alcohol_pineapple_ale": {
-            "name": "mc:alcohol_pineapple_ale",
-            "result": [
-                    {
-                            "id": "mc:alcohol_pineapple_ale",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 496,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "mc:pineapple_cut": 1
             }
     },
     "alcohol_potato_aged": {
@@ -1718,11 +1601,31 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_berry_aged": {
-            "name": "mc:alcohol_berry_aged",
+    "alcohol_wheat_aged": {
+            "name": "mc:alcohol_wheat_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_berry_aged",
+                            "id": "mc:alcohol_wheat_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 496,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:wheat": 1,
+                    "minecraft:sugar": 1
+            }
+    },
+    "alcohol_berry_spirit": {
+            "name": "mc:alcohol_berry_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_berry_spirit",
                             "count": 1
                     },
                     {
@@ -1798,11 +1701,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_glowberry_spirit": {
-            "name": "mc:alcohol_glowberry_spirit",
+    "alcohol_glowberry_liqueur": {
+            "name": "mc:alcohol_glowberry_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_glowberry_spirit",
+                            "id": "mc:alcohol_glowberry_liqueur",
                             "count": 1
                     },
                     {
@@ -1877,11 +1780,49 @@ export const FermentationMachineRecipes = {
                     "minecraft:kelp": 1
             }
     },
+    "alcohol_kelp_wine": {
+            "name": "mc:alcohol_kelp_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_kelp_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 497,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:kelp": 1
+            }
+    },
     "alcohol_melon_ale": {
             "name": "mc:alcohol_melon_ale",
             "result": [
                     {
                             "id": "mc:alcohol_melon_ale",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 497,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:melon_slice": 2
+            }
+    },
+    "alcohol_melon_wine": {
+            "name": "mc:alcohol_melon_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_melon_wine",
                             "count": 1
                     },
                     {
@@ -2014,11 +1955,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:brown_mushroom": 1
             }
     },
-    "alcohol_pineapple_wine": {
-            "name": "mc:alcohol_pineapple_wine",
+    "alcohol_pineapple_ale": {
+            "name": "mc:alcohol_pineapple_ale",
             "result": [
                     {
-                            "id": "mc:alcohol_pineapple_wine",
+                            "id": "mc:alcohol_pineapple_ale",
                             "count": 1
                     },
                     {
@@ -2033,11 +1974,11 @@ export const FermentationMachineRecipes = {
                     "mc:pineapple_cut": 1
             }
     },
-    "alcohol_sesame_aged": {
-            "name": "mc:alcohol_sesame_aged",
+    "alcohol_berry_aged": {
+            "name": "mc:alcohol_berry_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_sesame_aged",
+                            "id": "mc:alcohol_berry_aged",
                             "count": 1
                     },
                     {
@@ -2045,11 +1986,11 @@ export const FermentationMachineRecipes = {
                             "count": 1
                     }
             ],
-            "requiredLevel": 497,
+            "requiredLevel": 498,
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:sesame_seed_powder": 1,
+                    "minecraft:sweet_berries": 2,
                     "minecraft:sugar": 1
             }
     },
@@ -2073,11 +2014,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_corn_ale": {
-            "name": "mc:alcohol_corn_ale",
+    "alcohol_glowberry_spirit": {
+            "name": "mc:alcohol_glowberry_spirit",
             "result": [
                     {
-                            "id": "mc:alcohol_corn_ale",
+                            "id": "mc:alcohol_glowberry_spirit",
                             "count": 1
                     },
                     {
@@ -2089,7 +2030,8 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:sweet_corn": 1
+                    "minecraft:glow_berries": 2,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_honey_aged": {
@@ -2109,26 +2051,6 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "minecraft:honey_bottle": 1,
-                    "minecraft:sugar": 1
-            }
-    },
-    "alcohol_kelp_aged": {
-            "name": "mc:alcohol_kelp_aged",
-            "result": [
-                    {
-                            "id": "mc:alcohol_kelp_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 498,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:kelp": 1,
                     "minecraft:sugar": 1
             }
     },
@@ -2312,6 +2234,25 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
+    "alcohol_pineapple_wine": {
+            "name": "mc:alcohol_pineapple_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_pineapple_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 498,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:pineapple_cut": 1
+            }
+    },
     "alcohol_pumpkin_ale": {
             "name": "mc:alcohol_pumpkin_ale",
             "result": [
@@ -2331,11 +2272,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:pumpkin": 1
             }
     },
-    "alcohol_pumpkin_wine": {
-            "name": "mc:alcohol_pumpkin_wine",
+    "alcohol_sesame_aged": {
+            "name": "mc:alcohol_sesame_aged",
             "result": [
                     {
-                            "id": "mc:alcohol_pumpkin_wine",
+                            "id": "mc:alcohol_sesame_aged",
                             "count": 1
                     },
                     {
@@ -2347,7 +2288,8 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "minecraft:pumpkin": 1
+                    "mc:sesame_seed_powder": 1,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_strawberry_ale": {
@@ -2464,11 +2406,11 @@ export const FermentationMachineRecipes = {
                     "minecraft:cactus": 1
             }
     },
-    "alcohol_corn_liqueur": {
-            "name": "mc:alcohol_corn_liqueur",
+    "alcohol_corn_ale": {
+            "name": "mc:alcohol_corn_ale",
             "result": [
                     {
-                            "id": "mc:alcohol_corn_liqueur",
+                            "id": "mc:alcohol_corn_ale",
                             "count": 1
                     },
                     {
@@ -2480,15 +2422,14 @@ export const FermentationMachineRecipes = {
             "ingredients": {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
-                    "mc:sweet_corn": 1,
-                    "minecraft:sugar": 1
+                    "mc:sweet_corn": 1
             }
     },
-    "alcohol_corn_spirit": {
-            "name": "mc:alcohol_corn_spirit",
+    "alcohol_corn_liqueur": {
+            "name": "mc:alcohol_corn_liqueur",
             "result": [
                     {
-                            "id": "mc:alcohol_corn_spirit",
+                            "id": "mc:alcohol_corn_liqueur",
                             "count": 1
                     },
                     {
@@ -2521,6 +2462,26 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "mc:sweet_corn": 1
+            }
+    },
+    "alcohol_kelp_aged": {
+            "name": "mc:alcohol_kelp_aged",
+            "result": [
+                    {
+                            "id": "mc:alcohol_kelp_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 499,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:kelp": 1,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_melon_aged": {
@@ -2583,26 +2544,6 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
-    "alcohol_pumpkin_aged": {
-            "name": "mc:alcohol_pumpkin_aged",
-            "result": [
-                    {
-                            "id": "mc:alcohol_pumpkin_aged",
-                            "count": 1
-                    },
-                    {
-                            "id": "minecraft:glass_bottle",
-                            "count": 1
-                    }
-            ],
-            "requiredLevel": 499,
-            "ingredients": {
-                    "minecraft:potion": 1,
-                    "mc:yeast": 1,
-                    "minecraft:pumpkin": 1,
-                    "minecraft:sugar": 1
-            }
-    },
     "alcohol_pumpkin_liqueur": {
             "name": "mc:alcohol_pumpkin_liqueur",
             "result": [
@@ -2641,6 +2582,25 @@ export const FermentationMachineRecipes = {
                     "mc:yeast": 1,
                     "minecraft:pumpkin": 1,
                     "minecraft:sugar": 1
+            }
+    },
+    "alcohol_pumpkin_wine": {
+            "name": "mc:alcohol_pumpkin_wine",
+            "result": [
+                    {
+                            "id": "mc:alcohol_pumpkin_wine",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 499,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:pumpkin": 1
             }
     },
     "alcohol_strawberry_aged": {
@@ -2958,6 +2918,26 @@ export const FermentationMachineRecipes = {
                     "minecraft:sugar": 1
             }
     },
+    "alcohol_corn_spirit": {
+            "name": "mc:alcohol_corn_spirit",
+            "result": [
+                    {
+                            "id": "mc:alcohol_corn_spirit",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 500,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "mc:sweet_corn": 1,
+                    "minecraft:sugar": 1
+            }
+    },
     "alcohol_green_tea_ale": {
             "name": "mc:alcohol_green_tea_ale",
             "result": [
@@ -2975,6 +2955,26 @@ export const FermentationMachineRecipes = {
                     "minecraft:potion": 1,
                     "mc:yeast": 1,
                     "mc:green_tea": 1
+            }
+    },
+    "alcohol_pumpkin_aged": {
+            "name": "mc:alcohol_pumpkin_aged",
+            "result": [
+                    {
+                            "id": "mc:alcohol_pumpkin_aged",
+                            "count": 1
+                    },
+                    {
+                            "id": "minecraft:glass_bottle",
+                            "count": 1
+                    }
+            ],
+            "requiredLevel": 500,
+            "ingredients": {
+                    "minecraft:potion": 1,
+                    "mc:yeast": 1,
+                    "minecraft:pumpkin": 1,
+                    "minecraft:sugar": 1
             }
     },
     "alcohol_sugarcane_liqueur": {

@@ -1,0 +1,25 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:bottle_wrapping_paper",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "bottle_wrapping_paper"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "item.mc:bottle_wrapping_paper"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:block_placer": {
+        "block": "mc:bottle_wrapping_paper_block"
+      }
+    }
+  }
+}

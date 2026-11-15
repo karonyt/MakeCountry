@@ -1,13 +1,14 @@
+import { SecurityActionForm as ActionForm } from "@/shared/ui/purpose-forms.js";
 import { ItemStack, Player, ScriptEventSource, StructureManager, system, world } from "@minecraft/server";
 import { GetAndParsePropertyData, GetPlayerChunkPropertyId, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import { changeOwnerScriptEvent, DeleteCountry, playerCountryJoin } from "@/domain/country/land-service.js";
 import * as DyProp from "@/shared/storage/chunked-dynamic-properties.js";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionForm } from "@/shared/ui/form-class.js";
+
 const ActionFormData = ActionForm;
 import { itemIdToPath } from "@/config/textures.js";
 import { updateRanking } from "@/domain/ranking/ranking-service.js";
-import { fixCountryData, resetPlotData, resetRoleData } from "@/maintenance/fix-data.js";
+import { fixCountryData, repairCountryConsistency, resetPlotData, resetRoleData } from "@/maintenance/fix-data.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { addCompeByItemStack } from "@/domain/player/compensation.js";
 
@@ -367,7 +368,90 @@ const needs = {
         point: 40000
     },
 }
+
+const BACKPACK_QUALITY_RANKS = [
+    "F",
+    "E",
+    "D",
+    "C",
+    "B",
+    "A",
+    "S",
+    "SS",
+    "SSS",
+    "LEGENDARY",
+    "MASTERWORK",
+    "MYTHICAL",
+    "KARON",
+] as const;
+
+function parseBackpackQuality(value: string) {
+    const normalized = value.trim().toUpperCase();
+    const qualityLevel = Number(normalized);
+
+    if (Number.isInteger(qualityLevel) && qualityLevel >= 1 && qualityLevel <= BACKPACK_QUALITY_RANKS.length) {
+        return BACKPACK_QUALITY_RANKS[qualityLevel - 1];
+    }
+
+    return BACKPACK_QUALITY_RANKS.find(rank => rank === normalized);
+}
+
+function isBackpackQualityLore(line: any) {
+    if (!Array.isArray(line?.rawtext)) return false;
+
+    return line.rawtext.some((part: any) =>
+        part?.translate === "smelting.lore.quality" ||
+        (Array.isArray(part?.with) && BACKPACK_QUALITY_RANKS.includes(part.with[0]))
+    );
+}
+
+function setBackpackQuality(player: Player, value: string) {
+    if (!player.hasTag("mc_admin")) {
+        player.sendMessage({ translate: "command.permission.error" });
+        return;
+    }
+
+    const rank = parseBackpackQuality(value);
+    if (!rank) {
+        player.sendMessage(`§c使い方: /scriptevent karo:backpackquality <1-${BACKPACK_QUALITY_RANKS.length} または ${BACKPACK_QUALITY_RANKS.join("|")}>`);
+        return;
+    }
+
+    const container = player.getComponent("inventory")?.container;
+    const slot = player.selectedSlotIndex;
+    const backpack = container?.getItem(slot);
+    if (!container || !backpack || backpack.typeId !== "mc:backpack") {
+        player.sendMessage("§cメインハンドにバックパックを持ってください。");
+        return;
+    }
+
+    const lore = backpack.getRawLore();
+    const qualityLine = {
+        rawtext: [
+            { text: "§r§e" },
+            { translate: "smelting.lore.quality", with: [rank] },
+        ],
+    };
+    const qualityLineIndex = lore.findIndex(isBackpackQualityLore);
+    const nextLore = lore.filter(line => !isBackpackQualityLore(line));
+    nextLore.splice(qualityLineIndex < 0 ? nextLore.length : qualityLineIndex, 0, qualityLine);
+
+    backpack.setLore(nextLore);
+    container.setItem(slot, backpack);
+
+    const level = BACKPACK_QUALITY_RANKS.indexOf(rank) + 1;
+    player.sendMessage(`§aバックパックのクオリティを ${level} (${rank}) に変更しました。`);
+}
+
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
+    // 整合性修復は専用コンソールからだけ許可する。プレイヤー由来の
+    // debug scriptevent と同じ分岐へ入れると、本番コンソールから実行できない。
+    if (ev.id === 'karo:repaircountryconsistency') {
+        if (ev.sourceType === ScriptEventSource.Server) {
+            system.runJob(repairCountryConsistency());
+        }
+        return;
+    }
     if (ev.sourceType !== ScriptEventSource.Entity || !(ev.sourceEntity instanceof Player)) return;
     const { sourceEntity, message } = ev;
     const playerData = GetAndParsePropertyData(`player_${sourceEntity?.id}`);
@@ -496,6 +580,10 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
         };
         case `karo:itemtest`: {
             itemTestForm(sourceEntity);
+            break;
+        };
+        case `karo:backpackquality`: {
+            setBackpackQuality(sourceEntity, message);
             break;
         };
         case `karo:getdeta`: {

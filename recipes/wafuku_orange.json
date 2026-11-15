@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:wafuku_orange_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "# #",
+      "#P#",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:orange_wool"
+      },
+      "P": {
+        "item": "minecraft:paper"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:orange_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:wafuku_orange",
+      "count": 1
+    }
+  }
+}

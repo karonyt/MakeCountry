@@ -1,9 +1,9 @@
+import { PlotActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { HasPermission } from "@/shared/utils/minecraft.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { CreatePlotGroupDefaultForm } from "@/features/forms/default/sc/plot_group/create/main.js";
 import { plotGroupEditMainPlotAdminDefaultForm } from "@/features/forms/default/sc/plot_group/edit/edit_main_admin.js";
@@ -45,7 +45,7 @@ export function settingCountryPlotGroupDefaultForm(player: any) {
     };
     form.show(player).then((rs) => {
         if (rs.canceled) {
-            settingCountryDefaultForm(player);
+            callSettingCountryForm(player);
             return;
         };
         switch (rs.selection) {

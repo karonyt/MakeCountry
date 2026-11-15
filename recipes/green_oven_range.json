@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:green_oven_range_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:green_dye"
+      },
+      "#": {
+        "item": "mc:oven_range"
+      }
+    },
+    "result": {
+      "item": "mc:green_oven_range",
+      "count": 1
+    }
+  }
+}

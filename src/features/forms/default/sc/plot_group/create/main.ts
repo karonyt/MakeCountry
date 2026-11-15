@@ -1,7 +1,7 @@
+import { PlotModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ModalFormData } from "@minecraft/server-ui";
 import { settingCountryPlotGroupDefaultForm } from "@/features/forms/default/sc/plot_group/main.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 

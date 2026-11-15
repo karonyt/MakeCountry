@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:garnet_block_unpack"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:garnet_block"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:garnet_block"
+      }
+    ],
+    "result": {
+      "item": "mc:garnet",
+      "count": 4
+    }
+  }
+}

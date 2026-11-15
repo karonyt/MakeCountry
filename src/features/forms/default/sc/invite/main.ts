@@ -1,8 +1,8 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import { serchInviteDefaultForm } from "@/features/forms/default/sc/invite/search.js";
 import { sendInviteCheckDefaultForm } from "@/features/forms/default/sc/invite/check.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
@@ -39,7 +39,7 @@ export function inviteMainDefaultForm(player: any, search = false, keyword = ``)
     });
     form.show(player).then(rs => {
         if (rs.canceled) {
-            settingCountryDefaultForm(player);
+            callSettingCountryForm(player);
             return;
         };
         switch (rs.selection) {

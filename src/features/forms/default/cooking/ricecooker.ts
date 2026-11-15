@@ -6,9 +6,11 @@ import {
     openSimpleStationRecipeSelect,
     targetScore,
     type SimpleStationAction,
+    type SimpleStationCompletionGoal,
     type SimpleStationSession,
     type SimpleStationStatus
 } from "@/features/forms/default/cooking/simple-station-core.js";
+import { getSimpleStationMinigame } from "@/features/forms/default/cooking/simple-station-minigames.js";
 
 const sessions = new Map<string, SimpleStationSession>();
 
@@ -35,7 +37,7 @@ const actions: SimpleStationAction[] = [
         slot: 21,
         name: "cooking.action.cook_rice",
         icon: "minecraft:furnace",
-        unlockLv: 4,
+        unlockLv: 1,
         cost: 2,
         run(session) {
             add(session, "heat", 20);
@@ -155,11 +157,15 @@ const actions: SimpleStationAction[] = [
 ];
 
 const statuses: SimpleStationStatus[] = [
-    { name: "cooking.status.water", color: "§b", value: (session) => `${session.water}%` },
-    { name: "cooking.status.heat", color: "§c", value: (session) => `${session.heat}%` },
-    { name: "cooking.status.steam", color: "§f", value: (session) => `${session.steam}%` },
-    { name: "cooking.status.fluffiness", color: "§e", value: (session) => `${session.fluffiness}%` },
-    { name: "cooking.status.doneness", color: "§a", value: (session) => `${session.doneness}%` },
+    { name: "cooking.status.water", color: "§b", value: (session) => `${session.water}%\n` },
+    { name: "cooking.status.heat", color: "§c", value: (session) => `${session.heat}%\n` },
+    { name: "cooking.status.steam", color: "§f", value: (session) => `${session.steam}%\n` },
+    { name: "cooking.status.fluffiness", color: "§e", value: (session) => `${session.fluffiness}%\n` },
+    { name: "cooking.status.doneness", color: "§a", value: (session) => `${session.doneness}%\n` },
+];
+
+const completionGoals: SimpleStationCompletionGoal[] = [
+    { id: "doneness", label: "cooking.status.doneness", target: 45, suffix: "%", value: (session) => session.doneness },
 ];
 
 const config = {
@@ -168,6 +174,8 @@ const config = {
     sessions,
     actions,
     statuses,
+    completionGoals,
+    ...getSimpleStationMinigame("rice_cooker"),
     openRecipeSelect,
     openCooking,
     createSession() {
@@ -190,7 +198,7 @@ const config = {
     },
 };
 
-export function openRecipeSelect(player: Player, page = 0, categoryId = "all", searchQuery = "") {
+export function openRecipeSelect(player: Player, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
     openSimpleStationRecipeSelect(player, config, page, categoryId, searchQuery);
 }
 

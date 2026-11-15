@@ -1,8 +1,8 @@
+import { CountryListForm as ActionFormData } from "@/shared/ui/country-list-form.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import config from "@/config/server.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { externalAffairsMainDefaultForm } from "@/features/forms/default/sc/info/ext/main.js";
 import { sendMergeRequestFromListDefaultForm } from "@/features/forms/default/sc/info/ext/s_mrg_req_list/req_from_list.js";
@@ -22,7 +22,17 @@ export function sendMergeRequestListDefaultForm(player: any) {
     const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
     const playerCountryManager = new CountryManager(playerData.country);
     const playerCountryData = playerCountryManager.countryData;
-    if (playerCountryData.days < config.mergeProtectionDuration) return;
+    if (playerCountryData.days < config.mergeProtectionDuration) {
+        const form = new ActionFormData();
+        form.title({ translate: `form.merge.send.error.protection.title` });
+        form.body({
+            translate: `form.merge.send.error.protection.body`,
+            with: [`${config.mergeProtectionDuration}`, `${playerCountryData.days}`]
+        });
+        form.button({ translate: `mc.button.close` });
+        form.show(player);
+        return;
+    }
     if (Date.now() - (playerCountryData?.lastInvated || 0) < 3 * 24 * 60 * 60 * 1000) {
         return;
     };

@@ -1,3 +1,4 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
 import { Player, world } from "@minecraft/server";
 import { CheckPermission, CheckPermissionFromLocation, GetAndParsePropertyData, GetPlayerChunkPropertyId } from "@/shared/utils/minecraft.js";
 import config from "@/config/server.js";
@@ -29,7 +30,7 @@ export class HomeManager {
      * @param {string} name
      */
     setHome(name = "default") {
-        if (this.player.hasTag("mc_notp")) return;
+        if (teleportLocked(this.player)) return;
         const location = this.player.location;
         if (CheckPermissionFromLocation(this.player, location.x, location.z, this.player.dimension.id, "setHome")) return;
 
@@ -80,7 +81,7 @@ export class HomeManager {
             this.player.sendMessage({ translate: "teleport.error.invader" });
             return;
         }
-        if (this.player.hasTag("mc_notp")) return;
+        if (teleportLocked(this.player)) return;
 
         if (!this.homes[name]) {
             this.player.sendMessage({ translate: "command.error.nosethome" });

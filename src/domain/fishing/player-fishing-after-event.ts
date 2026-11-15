@@ -1,11 +1,13 @@
 import { Dimension, Entity, ItemStack, Player, system, Vector3, world } from "@minecraft/server";
 
-type PlayerFishingAfterEvent = {
+export type PlayerFishingAfterEvent = {
     result: boolean;
     player?: Player;
     itemEntity?: Entity;
     itemStack?: ItemStack;
     dimension?: Dimension;
+    /** Position of the removed hook, before the caught item travels toward its owner. */
+    hookLocation?: Vector3;
 };
 
 type PlayerFishingAfterEventCallback = (event: PlayerFishingAfterEvent) => void;
@@ -22,6 +24,10 @@ const fishingPlayerQueue: string[] = [];
 const fishingEntityIds = new Map<string, string>();
 const callbacks = new Set<PlayerFishingAfterEventCallback>();
 const itemSpawnTimes = new Map<string, number>();
+// The spawn callback and hook-removal timer must agree on one item owner.
+// A failed delivery releases its reservation, but retains the hook assignment:
+// an offline owner or unavailable item component must not reward another hook.
+const fishingItemClaims = new Map<string, { hookId: string; reserved: boolean; claimed: boolean; assignedAt: number }>();
 const pendingFishingHooks = new Map<string, PendingFishingHook>();
 
 const FISHED_ITEM_MAX_AGE_MS = 2500;
@@ -51,7 +57,9 @@ world.beforeEvents.itemUse.subscribe(ev => {
     const { source, itemStack } = ev;
 
     if (!(source instanceof Player)) return;
-    if (itemStack.typeId !== "minecraft:fishing_rod") return;
+    // BDS 1.26.52.3 can dispatch itemUse without an item stack. Ignore the
+    // malformed event instead of dereferencing undefined and taking down BDS.
+    if (!itemStack || itemStack.typeId !== "minecraft:fishing_rod") return;
     if (fishingEntityIds.has(source.id)) return;
     if (fishingPlayerQueue.includes(source.id)) return;
 
@@ -60,9 +68,10 @@ world.beforeEvents.itemUse.subscribe(ev => {
 
 world.afterEvents.entitySpawn.subscribe(ev => {
     const { entity } = ev;
+    if (!entity.isValid) return;
 
     if (entity.typeId === "minecraft:item") {
-        itemSpawnTimes.set(entity.id, Date.now());
+        if (!itemSpawnTimes.has(entity.id)) itemSpawnTimes.set(entity.id, Date.now());
         dispatchPendingHookNearItem(entity);
         return;
     }
@@ -107,6 +116,9 @@ system.runInterval(() => {
     for (const [entityId, spawnTime] of itemSpawnTimes) {
         if (now - spawnTime > ITEM_SPAWN_TIME_KEEP_MS) itemSpawnTimes.delete(entityId);
     }
+    for (const [entityId, claim] of fishingItemClaims) {
+        if (now - claim.assignedAt > ITEM_SPAWN_TIME_KEEP_MS) fishingItemClaims.delete(entityId);
+    }
 }, 200);
 
 function getFishingHookOwnerId(entity: Entity) {
@@ -147,48 +159,89 @@ function scheduleFishingEvent(pendingHook: PendingFishingHook, attempt: number) 
     }, 1);
 }
 
-function dispatchPendingHookNearItem(itemEntity: Entity) {
+function nearestPendingHookForItem(itemEntity: Entity): PendingFishingHook | undefined {
+    if (!itemEntity.isValid) return undefined;
     const now = Date.now();
+    const spawnTime = itemSpawnTimes.get(itemEntity.id);
     let nearestHook: PendingFishingHook | undefined;
     let nearestDistance = Number.MAX_SAFE_INTEGER;
-
     for (const pendingHook of pendingFishingHooks.values()) {
         if (pendingHook.dimension.id !== itemEntity.dimension.id) continue;
         if (now - pendingHook.removedAt > FISHED_ITEM_MAX_AGE_MS) continue;
-
+        if (spawnTime !== undefined && spawnTime < pendingHook.removedAt - ITEM_SPAWN_TIME_SKEW_MS) continue;
         const distance = getDistanceSquared(pendingHook.location, itemEntity.location);
-        if (distance > FISHED_ITEM_SEARCH_MAX_DISTANCE ** 2) continue;
-        if (distance >= nearestDistance) continue;
-
+        if (distance > FISHED_ITEM_SEARCH_MAX_DISTANCE ** 2 || distance >= nearestDistance) continue;
         nearestHook = pendingHook;
         nearestDistance = distance;
     }
+    return nearestHook;
+}
 
-    if (!nearestHook) return;
-
+function dispatchPendingHookNearItem(itemEntity: Entity) {
+    if (!itemEntity.isValid || fishingItemClaims.has(itemEntity.id)) return;
+    const nearestHook = nearestPendingHookForItem(itemEntity);
+    if (!nearestHook || !reserveFishingItem(nearestHook, itemEntity)) return;
     pendingFishingHooks.delete(nearestHook.hookId);
     system.run(() => {
         dispatchEvent(createFishingEvent(nearestHook, itemEntity));
     });
 }
 
+function canUseFishingItem(pendingHook: PendingFishingHook, itemId: string) {
+    const claim = fishingItemClaims.get(itemId);
+    return !claim || (claim.hookId === pendingHook.hookId && !claim.claimed);
+}
+
+function reserveFishingItem(pendingHook: PendingFishingHook, itemEntity: Entity): boolean {
+    if (!canUseFishingItem(pendingHook, itemEntity.id)) return false;
+    const claim = fishingItemClaims.get(itemEntity.id);
+    if (claim) claim.reserved = true;
+    else fishingItemClaims.set(itemEntity.id, { hookId: pendingHook.hookId, reserved: true, claimed: false, assignedAt: Date.now() });
+    return true;
+}
+
+function releaseFishingReservation(pendingHook: PendingFishingHook, itemEntity?: Entity) {
+    if (!itemEntity) return;
+    const claim = fishingItemClaims.get(itemEntity.id);
+    if (claim?.hookId === pendingHook.hookId && !claim.claimed) claim.reserved = false;
+}
+
 function createFishingEvent(pendingHook: PendingFishingHook, knownItem?: Entity): PlayerFishingAfterEvent {
     const player = getPlayerFromId(pendingHook.playerId);
-    if (!player) return { result: false };
+    if (!player) {
+        releaseFishingReservation(pendingHook, knownItem);
+        return { result: false };
+    }
 
-    const itemEntity = knownItem ?? findFishedItem(pendingHook);
-    if (!itemEntity) return { result: false, player };
+    // A reserved item which disappeared is not evidence that a different nearby
+    // drop belongs to this catch. Search only when no item was assigned yet.
+    const itemEntity = knownItem === undefined ? findFishedItem(pendingHook) : knownItem;
+    if (!itemEntity?.isValid || !reserveFishingItem(pendingHook, itemEntity)) {
+        releaseFishingReservation(pendingHook, itemEntity);
+        return { result: false, player };
+    }
 
-    const itemComponent = itemEntity.getComponent("item");
-    const itemStack = itemComponent?.itemStack;
-    if (!itemStack) return { result: false, player };
+    let itemStack: ItemStack | undefined;
+    let dimension: Dimension | undefined;
+    try {
+        itemStack = itemEntity.getComponent("item")?.itemStack;
+        if (itemStack) dimension = itemEntity.dimension;
+    } catch { /* An unloaded item cannot establish a successful catch. */ }
+    if (!itemStack || !dimension) {
+        releaseFishingReservation(pendingHook, itemEntity);
+        return { result: false, player };
+    }
 
+    const claim = fishingItemClaims.get(itemEntity.id)!;
+    claim.claimed = true;
+    claim.reserved = false;
     return {
         result: true,
         player,
         itemEntity,
         itemStack,
-        dimension: itemEntity.dimension,
+        dimension,
+        hookLocation: { ...pendingHook.location },
     };
 }
 
@@ -202,10 +255,16 @@ function findFishedItem(pendingHook: PendingFishingHook) {
     });
 
     return items.find(item => {
+        if (!item.isValid || !canUseFishingItem(pendingHook, item.id)) return false;
         const spawnTime = itemSpawnTimes.get(item.id);
         if (!spawnTime) return false;
         if (spawnTime < pendingHook.removedAt - ITEM_SPAWN_TIME_SKEW_MS) return false;
-        return now - spawnTime <= FISHED_ITEM_MAX_AGE_MS;
+        if (now - spawnTime > FISHED_ITEM_MAX_AGE_MS) return false;
+        if (!fishingItemClaims.has(item.id)) {
+            const nearest = nearestPendingHookForItem(item);
+            if (!nearest || !reserveFishingItem(nearest, item)) return false;
+        }
+        return canUseFishingItem(pendingHook, item.id);
     });
 }
 

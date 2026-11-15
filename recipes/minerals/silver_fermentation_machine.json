@@ -1,0 +1,40 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:silver_fermentation_machine"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:silver_ingot"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:silver_ingot"
+      },
+      {
+        "item": "mc:silver_ingot"
+      },
+      {
+        "item": "mc:silver_ingot"
+      },
+      {
+        "item": "mc:silver_ingot"
+      },
+      {
+        "item": "mc:brass_ingot"
+      },
+      {
+        "item": "minecraft:redstone"
+      }
+    ],
+    "result": {
+      "item": "mc:silver_fermentation_machine",
+      "count": 1
+    }
+  }
+}

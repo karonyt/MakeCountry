@@ -1,6 +1,6 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { FederationListDefaultForm } from "@/features/forms/default/sc/info/ext/fd/list/federation_list.js";
 import { checkFederationRemoveDefaultForm } from "@/features/forms/default/sc/info/ext/fd/list/country/remove.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";

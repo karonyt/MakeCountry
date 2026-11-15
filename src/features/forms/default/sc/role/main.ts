@@ -1,9 +1,9 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
 import { CheckPermission, HasPermission } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import config from "@/config/server.js";
 import { selectRoleEditTypeDefaultForm } from "@/features/forms/default/sc/role/edit_type/main.js";
 import { RolePriorityDefaultForm } from "@/features/forms/default/sc/role/priority.js";
@@ -64,7 +64,7 @@ export function settingCountryRoleDefaultForm(player: any) {
             form.button({ translate: `mc.button.close` });
             form.show(player).then(rs => {
                 if (rs.canceled) {
-                    settingCountryDefaultForm(player);
+                    callSettingCountryForm(player);
                     return;
                 };
                 return;
@@ -88,13 +88,13 @@ export function settingCountryRoleDefaultForm(player: any) {
             };
             for (const role of roles) {
                 const priority = (countryData.roles ?? []).indexOf(role.id) + 1;
-                form.button(`§f#${priority} §r${role.name ?? 'Unknown Name Role'}`, role.icon);
+                form.button(`§0#${priority} §r${role.name ?? 'Unknown Name Role'}`, role.icon);
             };
             form.show(player).then(rs => {
                 countryManager.reload();
                 countryData = countryManager.countryData;
                 if (rs.canceled) {
-                    settingCountryDefaultForm(player);
+                    callSettingCountryForm(player);
                     return;
                 };
                 switch (rs.selection) {

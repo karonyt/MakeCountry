@@ -4,6 +4,9 @@ import { countryListDefaultForm } from "@/features/forms/default/country_list/li
 import { MakeCountryDefaultForm } from "@/features/forms/default/make_country/make_country.js";
 import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
 import { joinTypeSelectDefaultForm } from "@/features/forms/default/menu/join/join_type_select.js";
+import { playerMainMenuKingdomsForm, settingCountryKingdomsForm } from "@/features/forms/kingdoms/index.js";
+import { joinTypeSelectKingdomsForm } from "@/features/forms/kingdoms/join.js";
+import { playerMainMenuTownyForm, settingCountryTownyForm, joinTypeSelectTownyForm } from "@/features/forms/towny/index.js";
 
 /**
  * @param {Player} player 
@@ -13,6 +16,14 @@ export function callSettingCountryForm(player: any) {
     switch (uiType) {
         case 'default': {
             settingCountryDefaultForm(player);
+            break;
+        };
+        case 'kingdoms': {
+            settingCountryKingdomsForm(player);
+            break;
+        };
+        case 'towny': {
+            settingCountryTownyForm(player);
             break;
         };
         default: {
@@ -72,6 +83,14 @@ export function callPlayerMainMenuForm(player: any) {
             playerMainMenuDefaultForm(player);
             break;
         };
+        case 'kingdoms': {
+            playerMainMenuKingdomsForm(player);
+            break;
+        };
+        case 'towny': {
+            playerMainMenuTownyForm(player);
+            break;
+        };
         default: {
             playerMainMenuDefaultForm(player);
             break;
@@ -88,6 +107,14 @@ export function callJoinTypeSelectForm(player: any) {
     switch (uiType) {
         case 'default': {
             joinTypeSelectDefaultForm(player);
+            break;
+        };
+        case 'kingdoms': {
+            joinTypeSelectKingdomsForm(player);
+            break;
+        };
+        case 'towny': {
+            joinTypeSelectTownyForm(player);
             break;
         };
         default: {

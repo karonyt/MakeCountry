@@ -1,4 +1,4 @@
-import { ActionFormData } from "@minecraft/server-ui";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { AddFederationListDefaultForm } from "@/features/forms/default/sc/info/ext/fd/list/add/add_list.js";
 import { Player } from "@minecraft/server";

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:raw_magnesite",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "raw_magnesite",
+      "minecraft:display_name": {
+        "value": "item.mc:raw_magnesite"
+      }
+    }
+  }
+}

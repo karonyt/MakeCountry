@@ -1,6 +1,6 @@
 import { world } from "@minecraft/server";
 
-const version = "ver.2.4.1-beta";
+const version = "ver.2.5.0";
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.sendMessage({ translate: "world.message.addon", with: [version] });

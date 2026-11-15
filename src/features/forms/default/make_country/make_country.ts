@@ -1,5 +1,6 @@
+import { CountryModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
-import { FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
 import config from "@/config/server.js";
 import { MakeCountry } from "@/domain/country/land-service.js";
 import { country } from "@/shared/events/make-country-events.js";

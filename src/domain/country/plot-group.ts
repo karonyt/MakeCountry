@@ -62,6 +62,8 @@ export class PlotGroupManager {
             type: type,
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             enable: true,
         };
         plotGroup.push(id);
@@ -107,6 +109,8 @@ export class PlotGroupManager {
             type: 'public',
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             enable: true,
             ...plotGroupData,
         } as PlotGroupData;

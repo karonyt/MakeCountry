@@ -138,7 +138,7 @@ export class FishManager {
     }
 
     // ---------- pick fish (same weighted logic) ----------
-    _pickFish(location: any, dimension: any) {
+    _pickFish(location: any, dimension: any, deepwaterRig = false) {
         const biome = dimension.getBiome(location);
         const biomeId = biome?.id;
         const date = this.calendar.getCalendar();
@@ -148,7 +148,8 @@ export class FishManager {
         const biomeFishes = this.config.biomes?.[biomeId]?.fishes[date.season][date.period] ?? [];
         const fishes = [
             ...(this.config.fishes[date.season][date.period] ?? []),
-            ...biomeFishes
+            ...biomeFishes,
+            ...(deepwaterRig ? (this.config.biomes?.['minecraft:deep_ocean']?.fishes[date.season][date.period] ?? []) : []),
         ];
         if (fishes.length === 0) return null;
 
@@ -163,6 +164,7 @@ export class FishManager {
                 return {
                     typeId: fish.typeId,
                     name: fish.name,
+                    weight: fish.weight ?? 0,
                     size: this.setRandomSize(min, max),
                     biome: biomeId
                 };
@@ -175,6 +177,7 @@ export class FishManager {
         return {
             typeId: last.typeId,
             name: last.name,
+            weight: last.weight ?? 0,
             size: this.setRandomSize(min, max),
             biome: biomeId
         };
@@ -186,11 +189,11 @@ export class FishManager {
      * @param {Dimension} dimension 
      * @param {Player} player 
      */
-    fishing(location: any, dimension: any, player: any) {
-        const result = this._pickFish(location, dimension);
+    fishing(location: any, dimension: any, player: any, deepwaterRig = false) {
+        const result = this._pickFish(location, dimension, deepwaterRig);
         if (!result) return null;
 
-        const { typeId, size, biome, name } = result;
+        const { typeId, size, biome, name, weight } = result;
         const pId = player.id;
         const countKey = this._playerCountKey(pId, typeId);
         const maxKey = this._playerMaxKey(pId, typeId);
@@ -225,6 +228,7 @@ export class FishManager {
             typeId,
             size,
             name,
+            weight,
             biome,
             playerRecord: {
                 count: newCount,
@@ -588,12 +592,14 @@ export class FishManager {
         const result = {};
         const pid = player.id;
 
-        for (const f of this.config.allFishes) {
-            const record = this.getPlayerFishRecord(pid, f.typeId);
+        const definitions = new Map(this.config.allFishes.map((fish: any) => [fish.typeId, fish]));
+        for (const fishId of this._getPlayerFishIds(pid)) {
+            const record = this.getPlayerFishRecord(pid, fishId);
+            const definition: any = definitions.get(fishId);
 
             // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-            result[f.typeId] = {
-                name: f.name,
+            result[fishId] = {
+                name: definition?.name ?? fishId,
                 count: record.count,
                 maxSize: record.maxSize,
                 obtained: record.count > 0
@@ -606,18 +612,44 @@ export class FishManager {
     getPlayerObtainedFishRecords(playerId: any) {
         const result = [];
 
-        for (const f of this.config.allFishes) {
-            const record = this.getPlayerFishRecord(playerId, f.typeId);
+        for (const fishId of this._getPlayerFishIds(playerId)) {
+            const record = this.getPlayerFishRecord(playerId, fishId);
             if (!record.obtained) continue;
 
             result.push({
-                typeId: f.typeId,
+                typeId: fishId,
                 count: record.count,
                 maxSize: record.maxSize,
             });
         }
 
         return result;
+    }
+
+    /**
+     * Return every fish id known for this player, including records imported
+     * from another server whose fishing catalog is not present on this server.
+     * This prevents a later transfer save from silently dropping remote-only
+     * encyclopedia entries.
+     */
+    _getPlayerFishIds(playerId: any) {
+        const fishIds = new Set<string>(
+            (this.config.allFishes ?? []).map((fish: any) => fish.typeId),
+        );
+        const countPrefix = `c_${playerId}_`;
+        const maxPrefix = `m_${playerId}_`;
+
+        const collect = (key: any) => {
+            if (typeof key !== "string") return;
+            if (key.startsWith(countPrefix)) fishIds.add(key.slice(countPrefix.length));
+            else if (key.startsWith(maxPrefix)) fishIds.add(key.slice(maxPrefix.length));
+        };
+
+        for (const key of this.db.idList) collect(key);
+        for (const key of this.playerCounts.keys()) collect(key);
+        for (const key of this.playerMaxes.keys()) collect(key);
+
+        return fishIds;
     }
 
     getServerFishRanking(fishId: any) {

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:antimony_ingot",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "antimony_ingot",
+      "minecraft:display_name": {
+        "value": "item.mc:antimony_ingot"
+      }
+    }
+  }
+}

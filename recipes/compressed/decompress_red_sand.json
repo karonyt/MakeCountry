@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:decompress_red_sand"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_red_sand"
+      }
+    },
+    "result": {
+      "item": "minecraft:red_sand",
+      "count": 9
+    }
+  }
+}

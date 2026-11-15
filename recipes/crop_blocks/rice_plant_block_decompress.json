@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:rice_plant_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:rice_plant_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:rice_plant_block"
+      }
+    ],
+    "result": {
+      "item": "mc:rice_plant",
+      "count": 9
+    }
+  }
+}
+

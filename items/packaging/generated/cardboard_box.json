@@ -1,0 +1,25 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:cardboard_box",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "cardboard_box"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "item.mc:cardboard_box"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:block_placer": {
+        "block": "mc:cardboard_box_block"
+      }
+    }
+  }
+}

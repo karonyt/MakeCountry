@@ -11,6 +11,8 @@ export interface FederationData {
     taxRate: number;
     requests: Array<number>;
     unpaidTaxes: Record<string, number>;
+    roles: Array<{ id: string; name: string; permissions: CountryPermissionList; taxRate: number }>;
+    memberPolicies: Record<string, { mode: "role" | "individual"; roleId?: string; permissions: CountryPermissionList; taxRate: number }>;
     settings: {
         showInChat: boolean;
         showOnTerritoryEnter: boolean;
@@ -51,10 +53,15 @@ export interface CountryData {
     hostility: Array<number>;
     friendly: Array<number>;
     neutralityPermission: CountryPermissionList;
+    neutralityCountryPermissions?: Array<{ id: number; permissions: CountryPermissionList }>;
+    playerPermissions?: Array<{ id: string; permissions: CountryPermissionList }>;
     alliancePermission: CountryPermissionList;
+    allianceCountryPermissions?: Array<{ id: number; permissions: CountryPermissionList }>;
     federationPermission: CountryPermissionList;
     hostilityPermission: CountryPermissionList;
+    hostilityCountryPermissions?: Array<{ id: number; permissions: CountryPermissionList }>;
     friendlyPermission: CountryPermissionList;
+    friendlyCountryPermissions?: Array<{ id: number; permissions: CountryPermissionList }>;
     internationalOrganizations: Array<number>;
     isWarNow: boolean;
     warNowCountries: Array<number>;

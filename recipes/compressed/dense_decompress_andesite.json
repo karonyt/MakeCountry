@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:dense_decompress_andesite"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:dense_andesite"
+      }
+    },
+    "result": {
+      "item": "mc:compressed_andesite",
+      "count": 9
+    }
+  }
+}

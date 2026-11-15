@@ -1,3 +1,5 @@
+import { RECIPE_SEARCH_TRANSLATIONS } from "@/generated/recipe-search-translations.js";
+
 type RecipeResultItem = string | { id: string; count?: number };
 type RecipeResult = RecipeResultItem | RecipeResultItem[];
 
@@ -55,6 +57,7 @@ function recipeSearchText(recipeId: string, recipe: RecipeListEntry) {
         stripNamespace(id),
         `item.${id}`,
         `tile.${id}`,
+        ...(RECIPE_SEARCH_TRANSLATIONS[id.toLowerCase()] ?? []),
     ]);
 
     return values.map(normalizeSearchValue).join(" ");

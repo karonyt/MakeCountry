@@ -1,5 +1,7 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
+import { CountryActionForm as ActionForm } from "@/shared/ui/purpose-forms.js";
 import { Player, system, world } from "@minecraft/server";
-import { ActionForm } from "@/shared/ui/form-class.js";
+
 import { SmartPhoneHomeScreen } from "@/features/smartphone/smartphone.js";
 import { CheckPermissionFromLocation, GetAndParsePropertyData } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
@@ -67,10 +69,10 @@ export function CountryApp(player: any, al = false) {
  */
 function showCountryInfo(player: any, countryData: any, al = false) {
     try {
-        const defaultSpawn = countryData?.spawn?.default;
-
         const countryManager = new CountryManager(countryData.id);
         countryData = countryManager.countryData;
+        // 一覧を開いた後に追加されたホームも、その場で読み直した国データから取得する。
+        const defaultSpawn = countryData?.spawn?.default;
 
         const form = new ActionFormData();
         form.title(countryData.name);
@@ -100,6 +102,7 @@ function showCountryInfo(player: any, countryData: any, al = false) {
                     return;
                 }
 
+                if (teleportLocked(player)) return;
                 const [x, y, z, rx, ry, dimensionId] = defaultSpawn.pos.split("_");
 
                 if (

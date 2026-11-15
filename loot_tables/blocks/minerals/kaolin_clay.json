@@ -1,0 +1,14 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:kaolin_clay",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

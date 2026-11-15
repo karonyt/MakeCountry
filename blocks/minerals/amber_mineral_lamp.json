@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:amber_mineral_lamp",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:amber_mineral_lamp.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#dca141",
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "amber_mineral_lamp",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:light_emission": 15,
+      "minecraft:loot": "loot_tables/blocks/minerals/amber_mineral_lamp.json"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:compressed_cobbled_deepslate",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 4
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 12
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#4c4c4c",
+      "minecraft:loot": "loot_tables/blocks/compressed/compressed_cobbled_deepslate.json",
+      "minecraft:geometry": "minecraft:geometry.full_block",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "compressed_cobbled_deepslate",
+          "render_method": "opaque"
+        }
+      }
+    }
+  }
+}

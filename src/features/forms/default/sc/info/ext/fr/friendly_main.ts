@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { externalAffairsMainDefaultForm } from "@/features/forms/default/sc/info/ext/main.js";
 import { setFriendlyPermissionDefaultForm } from "@/features/forms/default/sc/info/ext/fr/set_friendly_permission.js";

@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:dense_compress_sandstone"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_sandstone"
+      }
+    },
+    "result": {
+      "item": "mc:dense_sandstone",
+      "count": 1
+    }
+  }
+}

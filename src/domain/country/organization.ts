@@ -1,5 +1,6 @@
+import { CountryModalForm as ModalForm } from "@/shared/ui/purpose-forms.js";
 import { world } from "@minecraft/server";
-import { ModalForm} from "@/shared/ui/form-class.js";
+
 const ModalFormData = ModalForm;
 import { GetAndParsePropertyData } from "@/shared/utils/minecraft.js";
 

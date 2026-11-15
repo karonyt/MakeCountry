@@ -1,5 +1,6 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import config from "@/config/server.js";

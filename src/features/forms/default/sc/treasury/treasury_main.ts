@@ -1,8 +1,8 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import { treasurybudgetSelectDefaultForm } from "@/features/forms/default/sc/treasury/treasury_budget/treasury_budget_select.js";
 import { resourcepointSelectDefaultForm } from "@/features/forms/default/sc/treasury/resource_point/resource_point_select.js";
 import config from "@/config/server.js";
@@ -28,7 +28,7 @@ export function treasuryMainDefaultForm(player: any) {
     form.button({ translate: `resourcepoint` });
     form.show(player).then(rs => {
         if (rs.canceled) {
-            settingCountryDefaultForm(player);
+            callSettingCountryForm(player);
             return;
         };
         switch (rs.selection) {

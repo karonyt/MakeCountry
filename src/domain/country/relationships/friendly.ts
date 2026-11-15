@@ -4,6 +4,7 @@
 
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
+import { notifyRelationshipRequest } from "@/domain/country/relationships/request-notifications.js";
 /**@typedef {import("@/domain/country/country-manager.js").CountryData} CountryData*/
 
 /**
@@ -37,14 +38,13 @@ export function acceptFriendlyRequestFunction(countryId: any, countryData: any, 
     targetCountryData.friendlyRequestReceive = targetCountryData.friendlyRequestReceive.filter((r: any) => r != id);
     countryData.friendly.push(countryId);
     targetCountryData.friendly.push(id);
+    countryData.neutralityCountryPermissions = countryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.neutralityCountryPermissions = targetCountryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
-    if (player) {
-        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
-        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.friendly.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("accepted", "friendly", targetCountryData, countryData, player);
     return true;
 };
 
@@ -114,6 +114,8 @@ export function removeFriendlyFunction(countryId: any, countryData: any, id: any
     const targetCountryData = JSON.parse(rawTargetCountryData);
     countryData.friendly = countryData.friendly.filter((r: any) => r != countryId);
     targetCountryData.friendly = targetCountryData.friendly.filter((r: any) => r != id);
+    countryData.friendlyCountryPermissions = countryData.friendlyCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.friendlyCountryPermissions = targetCountryData.friendlyCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
@@ -159,8 +161,6 @@ export function sendFriendlyRequestFunction(countryId: any, countryData: any, id
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
     console.log(`友好申請を送ったよ\n${countryData.name} → ${targetCountryData.name}`);
-    if (player) {
-        //player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.friendly.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("sent", "friendly", countryData, targetCountryData, player);
     return true;
 };

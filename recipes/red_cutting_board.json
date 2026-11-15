@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:red_cutting_board_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:red_dye"
+      },
+      "#": {
+        "item": "mc:cutting_board"
+      }
+    },
+    "result": {
+      "item": "mc:red_cutting_board",
+      "count": 1
+    }
+  }
+}

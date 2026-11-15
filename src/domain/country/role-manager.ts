@@ -179,15 +179,15 @@ export class RoleManager {
         } else {
             return false;
         };
-        if (roleData.members.includes(memberId)) {
-            return false;
-        };
-        roleData.members.push(memberId);
         /**
          * @type {PlayerData}
          */
-        const playerData = JSON.parse(this.playerDataBase.get(`player_${memberId}`));
-        playerData.roles.push(roleId);
+        const playerRaw = this.playerDataBase.get(`player_${memberId}`);
+        if (!playerRaw) return false;
+        const playerData = JSON.parse(playerRaw);
+        if ((roleData.members ?? []).includes(memberId) && (playerData.roles ?? []).includes(roleId)) return false;
+        roleData.members = [...new Set([...(roleData.members ?? []), memberId])];
+        playerData.roles = [...new Set([...(playerData.roles ?? []), roleId])];
         this.playerDataBase.set(`player_${memberId}`, playerData);
         this.setRole(roleId, roleData);
         return true;
@@ -209,15 +209,15 @@ export class RoleManager {
         } else {
             return false;
         };
-        if (!roleData.members.includes(memberId)) {
-            return false;
-        };
-        roleData.members = roleData.members.filter((id: any) => id != memberId);
         /**
          * @type {PlayerData}
          */
-        const playerData = JSON.parse(this.playerDataBase.get(`player_${memberId}`));
-        playerData.roles = playerData.roles.filter((id: any) => id != roleId);
+        const playerRaw = this.playerDataBase.get(`player_${memberId}`);
+        if (!playerRaw) return false;
+        const playerData = JSON.parse(playerRaw);
+        if (!(roleData.members ?? []).includes(memberId) && !(playerData.roles ?? []).includes(roleId)) return false;
+        roleData.members = (roleData.members ?? []).filter((id: any) => id != memberId);
+        playerData.roles = (playerData.roles ?? []).filter((id: any) => id != roleId);
         this.playerDataBase.set(`player_${memberId}`, playerData);
         this.setRole(roleId, roleData);
         return true;

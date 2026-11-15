@@ -1,6 +1,6 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { HostilityListDefaultForm } from "@/features/forms/default/sc/info/ext/hos/list/hostility_list.js";
 import { checkApplicationForPeaceSendDefaultForm } from "@/features/forms/default/sc/info/ext/hos/list/list/check.js";

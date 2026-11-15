@@ -1,0 +1,52 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "mc:ochre_badlands"
+    },
+    "components": {
+      "minecraft:climate": {
+        "temperature": 1.5,
+        "downfall": 0,
+        "snow_accumulation": [
+          0,
+          0
+        ]
+      },
+      "minecraft:surface_builder": {
+        "builder": {
+          "type": "minecraft:overworld",
+          "sea_floor_depth": 7,
+          "sea_floor_material": "minecraft:gravel",
+          "foundation_material": "minecraft:stone",
+          "mid_material": "mc:graphite_schist",
+          "top_material": "mc:ochre_stone",
+          "sea_material": "minecraft:water"
+        }
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "dimension": "minecraft:overworld",
+            "targets": [
+              "minecraft:mesa",
+              "minecraft:mesa_plateau"
+            ],
+            "amount": 0.18,
+            "noise_frequency_scale": 16
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "overworld",
+          "monster",
+          "mc:ochre_badlands",
+          "mesa",
+          "warm",
+          "dry"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:orichalcum_sword",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "orichalcum_sword",
+      "minecraft:durability": {
+        "max_durability": 9000
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:damage": 14,
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "minecraft:cobweb",
+            "speed": 60
+          }
+        ]
+      },
+      "mc:ranktool": {},
+      "minecraft:tags": {
+        "tags": [
+          "weapon",
+          "type_sword"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:anpan_recipe"
+    },
+    "tags": ["oven_range"],
+    "pattern": [
+      " # ",
+      "#A#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:bread_material"
+      },
+      "A": {
+        "item": "mc:anko"
+      }
+    },
+    "unlock": [{"item": "mc:anko"}],
+    "result": {
+      "item": "mc:anpan",
+      "count": 2
+    }
+  }
+}
