@@ -104,7 +104,7 @@ jobs:
         run: |
           mkdir -p dist
           (cd bp && zip -qr ../dist/MakeCountryBehavior.mcpack . \
-            -x ".git/*" ".github/*" "node_modules/*" "src/*" "tools/*" "localization/*" \
+            -x ".git/*" ".github/*" ".vscode/*" "docs/*" "node_modules/*" "src/*" "tools/*" "localization/*" \
                "package.json" "package-lock.json" "tsconfig.json" "tsdown.config.js" ".npmrc" \
                ".gitignore" "README.md" "*.zip" "*.mcpack" "*.mcaddon")
           (cd rp && zip -qr ../dist/MakeCountryResource.mcpack . \
