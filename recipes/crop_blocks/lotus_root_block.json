@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:lotus_root_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:lotus_root"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:lotus_root"
+      }
+    ],
+    "result": {
+      "item": "mc:lotus_root_block",
+      "count": 1
+    }
+  }
+}
+

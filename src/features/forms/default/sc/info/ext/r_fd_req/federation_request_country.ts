@@ -1,8 +1,8 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { ReceivedFederationRequestDefaultForm } from "@/features/forms/default/sc/info/ext/r_fd_req/received_federation_request.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { canManageFederation } from "@/features/forms/default/sc/info/ext/fd/access.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 

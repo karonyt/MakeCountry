@@ -80,7 +80,8 @@ world.afterEvents.itemUse.subscribe(async (ev) => {
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         const [pattern, color] = player.getDynamicProperty("horseType").split("#");
         if (!horseName) return;
-        const [alreadySpawnedHorse] = player.dimension.getEntities({ name: `${horseName}'s Horse`, tags: ["pet"], type: "minecraft:horse" });
+        const alreadySpawnedHorse = player.dimension.getEntities({ tags: ["pet"], type: "minecraft:horse" })
+            .find(entity => entity.nameTag === `${horseName}'s Horse`);
         if (alreadySpawnedHorse) {
             const rideable = alreadySpawnedHorse.getComponent("rideable");
             // @ts-ignore TS(2532): Object is possibly 'undefined'.

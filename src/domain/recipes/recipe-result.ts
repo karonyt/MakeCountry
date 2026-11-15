@@ -17,8 +17,7 @@ export function createResultStacks(id: any, count: any) {
     while (count > 0) {
         const stack = new ItemStack(id);
         const stackSize = Math.min(stack.maxAmount, count);
-        stack.amount = stackSize;
-        stacks.push(stack);
+        stack.amount = stackSize;        stacks.push(stack);
         count -= stackSize;
     }
 

@@ -1,0 +1,1 @@
+{"format_version":"1.12","minecraft:recipe_shaped":{"description":{"identifier":"mc:white_fryingpan_recipe"},"tags":["crafting_table"],"pattern":["D#"],"key":{"D":{"item":"minecraft:white_dye"},"#":{"item":"mc:fryingpan"}},"result":{"item":"mc:white_fryingpan","count":1}}}

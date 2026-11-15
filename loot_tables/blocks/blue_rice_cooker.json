@@ -1,0 +1,15 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:blue_rice_cooker",
+          "quantity": 1,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

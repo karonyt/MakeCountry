@@ -1,6 +1,5 @@
-import { ActionFormResponse } from "@minecraft/server-ui";
-import { ActionForm, } from "@/shared/ui/form-class.js";
-const ActionFormData = ActionForm;
+import { ActionFormData, ActionFormResponse, FormCancelationReason } from "@minecraft/server-ui";
+import { showSafeForm, usesClassicFormUI, withoutFormRoutingTokens } from "@/shared/ui/form-class.js";
 import { resolveChestIconPath } from "@/shared/minecraft/item-presentation.js";
 import { typeIdToID } from "@/shared/minecraft/type-ids.js";
 import { langChangeItemName } from "@/shared/utils/minecraft.js";
@@ -11,19 +10,92 @@ const sizes = new Map([
     ["small", 27],
     ["large", 54]
 ]);
-export class ChestFormData {
-    /** @type {ActionFormData} */
-    #formData
 
+const iconPresentationCache = new Map<string, string|number>();
+const itemNameCache = new Map<string, string>();
+
+type PreparedChestButton = { text: any; icon: string };
+
+function cachedChestIconPath(iconPath: any, name?: any) {
+    if (typeof iconPath !== "string") return resolveChestIconPath(iconPath, name);
+    const cached = iconPresentationCache.get(iconPath);
+    if (cached !== undefined) return cached;
+    const resolved = resolveChestIconPath(iconPath, name);
+    iconPresentationCache.set(iconPath, resolved);
+    return resolved;
+}
+
+function cachedItemName(name: any) {
+    if (typeof name !== "string") return name;
+    const cached = itemNameCache.get(name);
+    if (cached !== undefined) return cached;
+    const translated = langChangeItemName(name);
+    itemNameCache.set(name, translated);
+    return translated;
+}
+
+function prepareChestButton(itemData: any, loreLineBreaks = false): PreparedChestButton {
+    const item = itemData;
+    const iconPath = cachedChestIconPath(item?.iconPath, item?.name);
+    const id = typeof iconPath === "number"
+        ? iconPath
+        : typeIdToID.get(item?.iconPath) ?? typeIdToID.get(iconPath);
+    const name = item?.editedName ? item.name : cachedItemName(item.name);
+    const text: any = {
+        rawtext: [
+            { text: `stack#${Math.min(Math.max(item.stackAmount, 1) || 1, 64).toString().padStart(2, "0")}§r` },
+        ]
+    };
+
+    typeof name === "string"
+        ? text.rawtext.push({ translate: name }, { text: `§r` })
+        : text.rawtext.push(...name);
+
+    const formattedLore = item.lore?.length > 0
+        ? typeof item.lore[0] === "string" ? item.lore.flatMap((line: any) => [
+            { text: "\n§r" },
+            { translate: `${line}` }
+        ]) : loreLineBreaks
+            ? item.lore.reduce((formatted: any[], loreLine: any, index: number) => {
+                if (index > 0) {
+                    const previousLine = item.lore[index - 1];
+                    const previousParts = Array.isArray(previousLine?.rawtext)
+                        ? previousLine.rawtext
+                        : [previousLine];
+                    const lastPart = previousParts[previousParts.length - 1];
+                    const alreadySeparated = typeof lastPart?.text === "string"
+                        && /\n(?:§[0-9a-fk-or])*$/i.test(lastPart.text);
+                    if (!alreadySeparated) formatted.push({ text: "\n§r" });
+                }
+                formatted.push(loreLine);
+                return formatted;
+            }, [{ text: "\n§r" }])
+            : [{ text: "\n§r" }].concat(item.lore)
+        : [];
+
+    text.rawtext.push(...formattedLore);
+    const texture = id !== undefined ? id * 65536 + (item.isGlint ? 32768 : 0) : iconPath;
+    return { text, icon: String(texture) };
+}
+
+export class ChestFormData {
     /** @type {{ text: string, icon: string|number }[]} */
     #buttons
 
     /** @type {string} */
     #type
 
+    /** @type {boolean} */
+    #loreLineBreaks = false
+
+    /** @type {boolean} */
+    #trimTrailingEmpty = false
+
+    /** @type {string|Array<import("@minecraft/server").RawText>} */
+    #title: any = ""
+
     /** @param {("single"|"double"|"small"|"large")} size */
     constructor(size = "large") {
-        this.#formData = new ActionFormData();
         this.#buttons = new Array(sizes.get(size)).fill({ text: "", icon: undefined });
         this.#type =
             ["small", "single"].includes(size) ? "§c§h§e§s§t§s§m§a§l§l§r" :
@@ -37,17 +109,36 @@ export class ChestFormData {
      */
     setTitle(title: any) {
         try {
-            if (typeof title == 'string') {
-                this.#formData.title({ rawtext: [{ text: this.#type }, { translate: title }] });
-            } else {
-
-                this.#formData.title({ rawtext: [{ text: this.#type }].concat(title) });
-            };
+            this.#title = title;
             return this;
         } catch (e) {
             // @ts-ignore TS(2571): Object is of type 'unknown'.
             console.error(e, e.stack);
         }
+    }
+
+    enableLoreLineBreaks() {
+        this.#loreLineBreaks = true;
+        return this;
+    }
+
+    trimTrailingEmptySlots() {
+        this.#trimTrailingEmpty = true;
+        return this;
+    }
+
+    static prepareButton(itemData: any, loreLineBreaks = false): PreparedChestButton {
+        return prepareChestButton(itemData, loreLineBreaks);
+    }
+
+    setPreparedButton(slot: number, button: PreparedChestButton) {
+        this.#buttons.splice(slot, 1, button);
+        return this;
+    }
+
+    setPreparedButtons(startSlot: number, buttons: PreparedChestButton[]) {
+        this.#buttons.splice(startSlot, buttons.length, ...buttons);
+        return this;
     }
 
     /**
@@ -58,36 +149,7 @@ export class ChestFormData {
      */
     setButton(slot: any, itemData: any) {
         try {
-            const item = itemData;
-            const iconPath = resolveChestIconPath(item?.iconPath, item?.name);
-            const id = typeof iconPath === "number"
-                ? iconPath
-                : typeIdToID.get(item?.iconPath) ?? typeIdToID.get(iconPath);
-            if (!item?.editedName) {
-                item.name = langChangeItemName(item.name);
-            };
-            const text = {
-                rawtext: [
-                    { text: `stack#${Math.min(Math.max(item.stackAmount, 1) || 1, 64).toString().padStart(2, "0")}§r` },
-                ]
-            };
-
-            // @ts-ignore TS(2345): Argument of type '{ translate: string; }' is not a... Remove this comment to see the full error message
-            typeof item.name == 'string' ? text.rawtext.push({ translate: `${item.name}` }, { text: `§r` }) : text.rawtext.push(...item.name);
-
-            // lore のフォーマット処理
-            const formattedLore = item.lore?.length > 0
-                ? typeof item.lore[0] == 'string' ? item.lore.flatMap((l: any) => [
-                    { text: "\n§r" },
-                    { translate: `${l}` }
-                ]) : [{ text: "\n§r" }].concat(item.lore)
-                : [];
-
-            // formattedLore を rawtext に追加
-            text.rawtext.push(...formattedLore);
-            const texture = id !== undefined ? id * 65536 + (item.isGlint ? 32768 : 0) : iconPath;
-
-            this.#buttons.splice(slot, 1, { text: text, icon: String(texture) });
+            this.#buttons.splice(slot, 1, prepareChestButton(itemData, this.#loreLineBreaks));
             return this;
         } catch (e) {
             // @ts-ignore TS(2571): Object is of type 'unknown'.
@@ -143,11 +205,32 @@ export class ChestFormData {
      */
     async show(player: any) {
         try {
-            for (let button of this.#buttons) this.#formData.button(button.text, button.icon);
-            return this.#formData.show(player);
+            const formData = new ActionFormData();
+            const titleParts = typeof this.#title === "string"
+                ? [{ translate: this.#title }]
+                : Array.isArray(this.#title)
+                    ? this.#title
+                    : [this.#title];
+            const visibleTitleParts = usesClassicFormUI(player)
+                ? withoutFormRoutingTokens(titleParts).filter((part: any) => part?.text !== "")
+                : titleParts;
+            formData.title({ rawtext: [{ text: this.#type }].concat(visibleTitleParts) });
+
+            let buttons = this.#buttons;
+            if (this.#trimTrailingEmpty) {
+                let lastUsed = buttons.length - 1;
+                while (lastUsed >= 0 && buttons[lastUsed].text === "" && buttons[lastUsed].icon === undefined) lastUsed--;
+                buttons = buttons.slice(0, lastUsed + 1);
+            }
+            for (let button of buttons) {
+                if (button.icon === undefined) formData.button(button.text);
+                else formData.button(button.text, button.icon);
+            }
+            return await showSafeForm(formData, player);
         } catch (e) {
             // @ts-ignore TS(2571): Object is of type 'unknown'.
             console.error(e, e.stack);
+            return { canceled: true, cancelationReason: FormCancelationReason.UserClosed };
         }
     }
 }

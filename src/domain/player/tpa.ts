@@ -1,6 +1,8 @@
+import { teleportLocked } from "@/domain/player/teleport-lock.js";
+import { SocialActionFormData as ActionFormData, SocialModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 // teleport.js
 import { world, system, Player } from '@minecraft/server';
-import { ActionFormData, ModalFormData, FormCancelationReason } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
 import config from '@/config/server.js';
 import { SmartPhoneHomeScreen } from '@/features/smartphone/smartphone.js';
 
@@ -75,7 +77,7 @@ export function tpaMainForm(player: any, isSmartPhone = false) {
         player.sendMessage({ translate: `command.error.tpa.novalidity` });
         return;
     };
-    if (player.hasTag(`mc_notp`)) {
+    if (teleportLocked(player)) {
         return;
     };
     if (config.combatTagNoTeleportValidity) {

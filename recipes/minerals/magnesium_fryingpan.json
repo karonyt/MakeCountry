@@ -1,0 +1,40 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:magnesium_fryingpan"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:magnesium_ingot"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:magnesium_ingot"
+      },
+      {
+        "item": "mc:magnesium_ingot"
+      },
+      {
+        "item": "mc:magnesium_ingot"
+      },
+      {
+        "item": "mc:magnesium_ingot"
+      },
+      {
+        "item": "mc:brass_ingot"
+      },
+      {
+        "item": "minecraft:stick"
+      }
+    ],
+    "result": {
+      "item": "mc:magnesium_fryingpan",
+      "count": 1
+    }
+  }
+}

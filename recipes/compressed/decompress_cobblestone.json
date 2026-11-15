@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:decompress_cobblestone"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_cobblestone"
+      }
+    },
+    "result": {
+      "item": "minecraft:cobblestone",
+      "count": 9
+    }
+  }
+}

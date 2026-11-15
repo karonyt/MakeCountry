@@ -1,4 +1,5 @@
-import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
+import { FormCancelationReason } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { Player, system } from "@minecraft/server";
 import { treasuryMainDefaultForm } from "@/features/forms/default/sc/treasury/treasury_main.js";
@@ -10,6 +11,8 @@ import { settingCountryInfoDefaultForm } from "@/features/forms/default/sc/info/
 import { countryDeleteCheckDefaultForm } from "@/features/forms/default/sc/del/main.js";
 import { nationalTierLevelDefaultForm } from "@/features/forms/default/sc/ntlv/ntlv.js";
 import national_tier_level from "@/config/national-tier-level.js";
+import { HasPermission } from "@/shared/utils/minecraft.js";
+import { permissionButton } from "@/features/forms/default/sc/permission_button.js";
 
 /**
  * 
@@ -23,10 +26,10 @@ export function settingCountryDefaultForm(player: any) {
     form.button({ translate: `form.setting.button.info` });
     form.button({ translate: `national.tier.level` });
     form.button({ translate: `form.setting.button.treasury` });
-    form.button({ translate: `form.setting.button.invite` });
+    form.button(permissionButton(player, `form.setting.button.invite`, `invite`));
     form.button({ translate: `form.setting.button.members` });
-    form.button({ translate: `form.setting.button.role` });
-    form.button({ translate: `form.setting.button.plotgroup` });
+    form.button(permissionButton(player, `form.setting.button.role`, `admin`));
+    form.button(permissionButton(player, `form.setting.button.plotgroup`, Boolean(HasPermission(player, `plotAdmin`))));
     if (!CheckPermission(player, `owner`)) form.button({ translate: `form.setting.button.delete` });
 
     form.show(player).then(rs => {

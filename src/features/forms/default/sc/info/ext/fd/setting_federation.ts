@@ -1,9 +1,9 @@
+import { CountryActionForm as ActionFormData, CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { canLeadFederation, canManageFederation } from "@/features/forms/default/sc/info/ext/fd/access.js";
-import { getFederationMemberIds, isFederationActive, normalizeFederationData } from "@/domain/country/relationships/federation.js";
+import { getFederationMemberIds, isFederationActive, normalizeFederationData, withdrawFederationTreasury } from "@/domain/country/relationships/federation.js";
 import config from "@/config/server.js";
 
 function getPlayerCountryManager(player: any) {
@@ -154,6 +154,7 @@ function federationFinanceSettingForm(player: any) {
     form.body(federationBody(federation));
     form.button({ translate: `mc.button.close` });
     form.button({ translate: `federation.tax.rate.set` });
+    if (canLeadFederation(player, countryData)) form.button("連邦国庫から引き出す");
     form.show(player).then((rs) => {
         if (rs.canceled || rs.selection === 0) {
             settingFederationDefaultForm(player);
@@ -163,7 +164,22 @@ function federationFinanceSettingForm(player: any) {
             player.sendMessage({ translate: `no.permission` });
             return;
         }
-        federationTaxRateForm(player);
+        if (rs.selection === 2) federationTreasuryWithdrawForm(player);
+        else federationTaxRateForm(player);
+    });
+}
+
+function federationTreasuryWithdrawForm(player: any) {
+    const manager = getPlayerCountryManager(player);
+    if (!manager || !canLeadFederation(player, manager.countryData)) return;
+    const countryId = manager.countryData.id;
+    const federation = normalizeFederationData(manager.countryData);
+    const form = new ModalFormData();
+    form.title("連邦国庫から引き出す");
+    form.textField(`残高: ${formatMoney(federation.treasury)}\n自分の所持金へ引き出す金額`, "金額（小数第2位まで）");
+    form.show(player).then((rs) => {
+        if (!rs.canceled) withdrawFederationTreasury(player, Number(rs.formValues?.[0]), countryId);
+        federationFinanceSettingForm(player);
     });
 }
 

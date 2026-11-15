@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:peanut_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:peanut_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:peanut_block"
+      }
+    ],
+    "result": {
+      "item": "mc:peanut",
+      "count": 9
+    }
+  }
+}
+

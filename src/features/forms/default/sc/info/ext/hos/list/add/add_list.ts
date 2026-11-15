@@ -1,11 +1,10 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { HostilityListDefaultForm } from "@/features/forms/default/sc/info/ext/hos/list/hostility_list.js";
 import { checkAddHostilityDefaultForm } from "@/features/forms/default/sc/info/ext/hos/list/add/check.js";
-import { ActionFormData } from "@minecraft/server-ui";
-
 /**
  * 敵対国候補一覧から選んだ国
  * @param {Player} player 

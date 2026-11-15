@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData, CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { DynamicProperties, describeDynamicPropertyEntry } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { showCountryInfoDefaultForm } from "@/features/forms/default/country_list/show.js";

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:blue_iron_board_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:blue_dye"
+      },
+      "#": {
+        "item": "mc:iron_board"
+      }
+    },
+    "result": {
+      "item": "mc:blue_iron_board",
+      "count": 1
+    }
+  }
+}

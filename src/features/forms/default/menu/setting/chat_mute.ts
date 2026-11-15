@@ -1,6 +1,7 @@
+import { SocialActionForm as ActionFormData, SocialModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system, world } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { FormCancelationReason } from "@minecraft/server-ui";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import { getMutedPlayerNames, resolvePlayerName, setMutedPlayerNames, unmutePlayer } from "@/domain/chat/mute.js";
 
 export function playerChatMuteMenuForm(player: Player) {
@@ -29,7 +30,7 @@ export function playerChatMuteMenuForm(player: Player) {
                 showMutedPlayerListForm(player);
                 break;
             default:
-                playerMainMenuDefaultForm(player);
+                callPlayerMainMenuForm(player);
                 break;
         }
     });

@@ -1,10 +1,12 @@
+import { CommerceActionFormData as ActionFormData, CommerceModalForm as ModalForm } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
-import { GetAndParsePropertyData, isDecimalNumber, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+
+import { GetAndParsePropertyData } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import config from "@/config/server.js";
+import { getMoneyTransferBalance, sendMoneyBetweenPlayers } from "@/domain/player/money-transfer.js";
+import { getInteractiveFormValues } from "@/shared/ui/form-class.js";
 import { SmartPhoneHomeScreen } from "@/features/smartphone/smartphone.js";
-import { ModalForm } from "@/shared/ui/form-class.js";
+
 
 /**
  * @type {DynamicProperties}
@@ -101,35 +103,23 @@ function serchSendMoneyForm(player: any, keyword: any) {
  * @param {Player} receivePlayer 
  */
 function sendMoneyCheckForm(sendPlayer: any, receivePlayer: any) {
-    const sendPlayerData = GetAndParsePropertyData(`player_${sendPlayer.id}`, playerDataBase);
-    const form = new ModalForm();
-    form.title({ rawtext: [{ text: 'KayKay - ' }, { translate: `form.sendmoney.check.title` }] });
-    form.textField({ rawtext: [{ translate: `form.sendmoney.check.label` }, { text: `: ${sendPlayerData?.money}` }] }, { translate: `input.number` });
-    form.submitButton({ translate: `mc.button.sendmoney` });
-    form.show(sendPlayer).then((rs: any) => {
-        if (rs.canceled) {
-            sendMoneyForm(sendPlayer);
-            return;
-        };
-        const value = Number(rs.formValues[0]);;
-        if (!isDecimalNumber(value)) {
-            sendPlayer.sendMessage({ translate: `input.error.notnumber` });
-            return;
-        };
-        const receivePlayerData = GetAndParsePropertyData(`player_${receivePlayer.id}`, playerDataBase);
-        const sendPlayerData2 = GetAndParsePropertyData(`player_${sendPlayer.id}`, playerDataBase);
-        if (sendPlayerData2.money < value) {
-            sendPlayer.sendMessage({ translate: `command.error.trysend.moremoney.youhave`, with: [`${sendPlayerData2.money}`] });
-            return;
-        };
-        receivePlayerData.money += value;
-        sendPlayerData2.money -= value;
-        sendPlayerData2.money = Math.floor(sendPlayerData2.money * 100) / 100;
-        receivePlayerData.money = Math.floor(receivePlayerData.money * 100) / 100;
-        sendPlayer.sendMessage({ translate: `command.sendmoney.result.sender`, with: [receivePlayer.name, `${config.MoneyName} ${value}`] });
-        receivePlayer.sendMessage({ translate: `command.sendmoney.result.receiver`, with: [sendPlayer.name, `${config.MoneyName} ${value}`] });
-        StringifyAndSavePropertyData(`player_${receivePlayer.id}`, receivePlayerData, playerDataBase);
-        StringifyAndSavePropertyData(`player_${sendPlayer.id}`, sendPlayerData2, playerDataBase);
+    if (!sendPlayer?.isValid) return;
+    if (!receivePlayer?.isValid) {
+        sendPlayer.sendMessage('§c送金先のプレイヤーが見つかりません。');
         return;
+    }
+    const balance = getMoneyTransferBalance(sendPlayer);
+    if (balance === undefined) {
+        sendPlayer.sendMessage('§c残高データを確認できないため、送金を中止しました。');
+        return;
+    }
+    const form = new ModalForm();
+    form.title({ rawtext: [{ text: 'KayKay - ' }, { translate: 'form.sendmoney.check.title' }] });
+    form.textField({ rawtext: [{ translate: 'form.sendmoney.check.label' }, { text: `: ${balance}` }] }, { translate: 'input.number' });
+    form.submitButton({ translate: 'mc.button.sendmoney' });
+    form.show(sendPlayer).then((rs: any) => {
+        if (!sendPlayer.isValid) return;
+        if (rs.canceled) return sendMoneyForm(sendPlayer);
+        sendMoneyBetweenPlayers(sendPlayer, receivePlayer, Number(getInteractiveFormValues(rs)[0]));
     });
-};
+}

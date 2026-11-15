@@ -1,4 +1,4 @@
-import { ActionFormData } from "@minecraft/server-ui";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { inviteMainDefaultForm } from "@/features/forms/default/sc/invite/main.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";

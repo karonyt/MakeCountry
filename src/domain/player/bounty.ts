@@ -1,5 +1,6 @@
+import { SocialActionFormData as ActionFormData, SocialModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason, ModalFormData } from "@minecraft/server-ui";
+import { FormCancelationReason } from "@minecraft/server-ui";
 import config from "@/config/server.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";

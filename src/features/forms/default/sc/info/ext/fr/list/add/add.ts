@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { addFriendlyCountryFromListDefaultForm } from "@/features/forms/default/sc/info/ext/fr/list/add/add_list.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";

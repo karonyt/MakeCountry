@@ -1,7 +1,7 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import config from "@/config/server.js";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import { penNameBeforeDefaultForm } from "@/features/forms/default/menu/pen_name/before.js";
 import { penNameAfterDefaultForm } from "@/features/forms/default/menu/pen_name/after.js";
 
@@ -18,7 +18,7 @@ export function penNameMainDefaultForm(player: any) {
     form.button({ rawtext: [{ translate: `form.penname.button.after` }, { text: `\n${penNameAfter}` }] });
     form.show(player).then((rs) => {
         if (rs.canceled) {
-            playerMainMenuDefaultForm(player);
+            callPlayerMainMenuForm(player);
             return;
         };
         switch (rs.selection) {

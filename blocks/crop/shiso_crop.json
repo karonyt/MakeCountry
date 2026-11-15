@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.21.60",
   "minecraft:block": {
     "description": {
       "identifier": "mc:shiso_crop",
@@ -19,6 +19,15 @@
     "components": {
       "minecraft:flammable": true,
       "minecraft:collision_box": false,
+      "minecraft:liquid_detection": {
+        "detection_rules": [
+          {
+            "liquid_type": "water",
+            "can_contain_liquid": false,
+            "on_liquid_touches": "popped"
+          }
+        ]
+      },
       "minecraft:geometry": "geometry.crop_common",
       "minecraft:light_dampening": 0,
       "minecraft:placement_filter": {

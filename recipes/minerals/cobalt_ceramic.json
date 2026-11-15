@@ -1,0 +1,49 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:cobalt_ceramic"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:cobalt_ingot"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:cobalt_ingot"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      },
+      {
+        "item": "minecraft:hardened_clay"
+      }
+    ],
+    "result": {
+      "item": "mc:cobalt_ceramic",
+      "count": 8
+    }
+  }
+}

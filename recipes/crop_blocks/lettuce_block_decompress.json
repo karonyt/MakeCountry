@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:lettuce_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:lettuce_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:lettuce_block"
+      }
+    ],
+    "result": {
+      "item": "mc:lettuce",
+      "count": 9
+    }
+  }
+}
+

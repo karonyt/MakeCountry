@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:jade",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "jade",
+      "minecraft:display_name": {
+        "value": "item.mc:jade"
+      }
+    }
+  }
+}

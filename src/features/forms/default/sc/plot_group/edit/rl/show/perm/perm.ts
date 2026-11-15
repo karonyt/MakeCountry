@@ -1,8 +1,8 @@
+import { PlotModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ModalFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
-import { landPermissions } from "@/domain/country/permissions.js";
+import { landPermissions, isPermissionEnabled, permissionsFromToggles } from "@/domain/country/permissions.js";
 import { plotGroupRoleSelectedShowDefaultForm } from "@/features/forms/default/sc/plot_group/edit/rl/show/show.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData*/
@@ -33,7 +33,7 @@ export function plotGroupRolePermissionsEditDefaultForm(player: any, plotGroupId
     if (!plotGroupData?.roles) plotGroupData.roles = [];
     let target: any = plotGroupData.roles.find((d: any) => d.id == targetData?.id) || { id: targetData?.id, permissions: [] };
     for (const permission of landPermissions) {
-        form.toggle({ translate: `permission.${permission}` }, { defaultValue: target?.permissions.includes(permission) });
+        form.toggle({ translate: `permission.${permission}` }, { defaultValue: isPermissionEnabled(target?.permissions, permission) });
     };
     form.submitButton({ translate: `mc.button.save` });
     form.show(player).then(rs => {
@@ -45,14 +45,7 @@ export function plotGroupRolePermissionsEditDefaultForm(player: any, plotGroupId
             return;
         };
         const values = rs.formValues;
-        let newLandPermissions: any[] = [];
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        for (let i = 0; i < values.length; i++) {
-            // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            if (values[i]) {
-                newLandPermissions.push(landPermissions[i]);
-            };
-        };
+        const newLandPermissions = permissionsFromToggles(landPermissions, values);
         target.permissions = newLandPermissions;
         const index = plotGroupData?.roles.findIndex((d: any) => d.id == target.id);
         if (index != -1) {

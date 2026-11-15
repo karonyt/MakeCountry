@@ -1,3 +1,4 @@
+import { isHunterDungeonWorld, teleportLocked } from "@/domain/player/teleport-lock.js";
 import {
     CommandPermissionLevel,
     CustomCommandParamType,
@@ -37,8 +38,8 @@ function spawnExecuter(origin: any, args: any) {
             return;
         }
 
-        if (sender.hasTag("mc_notp")) {
-            sender.sendMessage({ translate: "command.spawn.error.notp" });
+        if (teleportLocked(sender)) {
+            if (!isHunterDungeonWorld()) sender.sendMessage({ translate: "command.spawn.error.notp" });
             return;
         }
 

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:blue_mixer_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:blue_dye"
+      },
+      "#": {
+        "item": "mc:mixer"
+      }
+    },
+    "result": {
+      "item": "mc:blue_mixer",
+      "count": 1
+    }
+  }
+}

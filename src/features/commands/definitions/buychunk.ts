@@ -4,6 +4,9 @@ import { GenerateChunkData } from "@/domain/country/land-service.js";
 import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId, isNumber, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import config from "@/config/server.js";
 import { country } from "@/shared/events/make-country-events.js";
+import { deniesIncident16, noticeIncident16 } from "@/domain/protection/incident16.js";
+import { runWithGateTerritoryCheck, deniesLoadedGateTerritory } from "@/domain/country/gate-territory.js";
+import { deniesNewTerritory } from "@/domain/country/territory-rules-gate.js";
 
 /**
  * 
@@ -12,219 +15,166 @@ import { country } from "@/shared/events/make-country-events.js";
  * @returns 
  */
 function buyChunkExecuter(origin: any, args: any) {
-    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+    if (!origin?.sourceEntity || !(origin.sourceEntity instanceof Player)) return;
     const sender = origin.sourceEntity;
-
+    if (!sender.isValid) return;
+    if (args.length !== 0 && args.length !== 2) { sender.sendMessage({ translate: "command.error.coordinates.incorrect" }); return; }
     const chunkDataBase = new DynamicProperties("chunk");
     const playerDataBase = new DynamicProperties("player");
     const countryDataBase = new DynamicProperties("country");
-
-    const rawData = playerDataBase.get(`player_${sender.id}`);
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(rawData);
-
+    const playerData = GetAndParsePropertyData(`player_${sender.id}`, playerDataBase);
     if (!playerData?.country) {
-        sender.sendMessage({ translate: `command.buychunk.error.notjoin.country` });
+        sender.sendMessage({ translate: "command.buychunk.error.notjoin.country" });
         return;
-    };
+    }
     const dimension = sender.dimension.id;
-    if (args.length == 2) {
-        const [ix, iz] = args.map((str: any) => Math.floor(Number(str)));
-        const { x, z } = sender.location;
-        const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-        if (!isNumber(ix) || !isNumber(iz)) {
-            sender.sendMessage({ translate: 'command.error.coordinates.incorrect' });
+
+    function purchaseChunk(id: string, x: number, z: number, checkTerritory: boolean): void {
+        if (!sender.isValid || sender.dimension.id !== dimension) return;
+        const currentPlayer = GetAndParsePropertyData(`player_${sender.id}`, playerDataBase);
+        if (currentPlayer?.country !== playerData.country) return;
+        if (deniesIncident16(sender, x, z, dimension, true)) return;
+        const rawChunk = chunkDataBase.get(id);
+        let chunkData = GetAndParsePropertyData(id, chunkDataBase);
+        if (!chunkData) chunkData = GenerateChunkData(x, z, dimension);
+        if (CheckPermission(sender, "buyChunk")) {
+            sender.sendMessage({ translate: "command.permission.error" });
             return;
-        };
-        if (chunks.length > 300) {
-            sender.sendMessage({ translate: 'command.error.chunks.limit.buy', with: ['300'] });
+        }
+        if (!chunkData) return;
+        if (chunkData.special) {
+            sender.sendMessage({ translate: "command.buychunk.error.thischunk.special", with: { rawtext: [{ translate: "special.name" }] } });
             return;
-        };
-        let chunkPrice = config.defaultChunkPrice;
-        for (let i = 0; i < chunks.length; i++) {
-            system.runTimeout(() => {
-                // @ts-ignore TS(2532): Object is possibly 'undefined'.
-                let chunkData = GetAndParsePropertyData(`chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`, chunkDataBase);
-                // @ts-ignore TS(2532): Object is possibly 'undefined'.
-                if (!chunkData) chunkData = GenerateChunkData(chunks[i].chunkX * 16, chunks[i].chunkZ * 16, dimension);
-                if (chunkData && chunkData.price) chunkPrice = chunkData.price;
-                const cannotBuy = CheckPermission(sender, `buyChunk`);
-                if (cannotBuy) {
-                    sender.sendMessage({ translate: `command.permission.error` });
-                    return;
-                };
-                if (!chunkData) {
-                    sender.sendMessage({ translate: `command.buychunk.error.thischunk.wilderness`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-                    return;
-                };
-                if (chunkData.special) {
-                    sender.sendMessage({ translate: `command.buychunk.error.thischunk.special`, with: { rawtext: [{ translate: `special.name` }] } });
-                    return;
-                };
-                if (chunkData.owner) {
-                    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                    const ownerData = GetAndParsePropertyData(`player_${chunkData.owner}`, playerDataBase);
-                    sender.sendMessage({ translate: `command.buychunk.error.thischunk.hasowner`, with: [ownerData.name] });
-                    return;
-                };
-                if (chunkData.countryId) {
-                    if (chunkData.countryId === playerData.country) {
-                        sender.sendMessage({ translate: `command.buychunk.error.thischunk.yourcountry` });
-                        return;
-                    };
-                    sender.sendMessage({ translate: `command.buychunk.error.thischunk.othercountry`, with: { rawtext: [{ translate: `${chunkData.countryId}` }] } });
-                    return;
-                };
-                if (chunkData?.countryId) {
-                    if (chunkData.countryId === playerData.country) {
-                        sender.sendMessage({ translate: `command.buychunk.error.thischunk.yourcountry` });
-                        return;
-                    };
-                    sender.sendMessage({ translate: `command.buychunk.error.thischunk.othercountry`, with: { rawtext: [{ translate: `${chunkData.countryId}` }] } });
-                    return;
-                };
-                // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-                const limit = config.chunkLimit || 3200;
-                if (playerCountryData?.territories.length >= limit) {
-                    sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
-                    return;
-                };
-                const eventData = {
-                    player: sender,
-                    cancel: false,
-                    type: 'player',
-                    territoryCount: playerCountryData.territories.length,
-                    countryName: playerCountryData.name
-                };
-                const isCanceled = country.beforeEvents.chunkbuy.emit(eventData);
-                if (isCanceled) return;
-                // @ts-ignore TS(2322): Type 'undefined' is not assignable to type 'boolea... Remove this comment to see the full error message
-                eventData.cancel = undefined;
-                country.afterEvents.chunkbuy.emit(eventData);
-                if (playerCountryData.resourcePoint < chunkPrice) {
-                    sender.sendMessage({ translate: `command.buychunk.error.not.enough.money`, with: [`${chunkPrice}`] });
-                    return;
-                };
-
-                chunkData.countryId = playerData.country;
-                playerCountryData.resourcePoint -= chunkPrice;
-                playerCountryData.territories.push(chunkData.id);
-
-                playerCountryData.resourcePointLog ||= [];
-
-                if (playerCountryData.resourcePointLog.length > 50) {
-                    playerCountryData.resourcePointLog.shift();
-                }
-
-                playerCountryData.resourcePointLog.push({
-                    timestamp: Date.now(),
-                    actor: sender.name,
-                    action: 'remove',
-                    amount: -chunkPrice,
-                    reason: 'BUY CHUNK'
-                });
-
-                // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-                // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-                sender.sendMessage({ translate: `command.buychunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-                return;
-            }, i);
-        };
-        return;
-    };
-    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-    let chunkData = GetAndParsePropertyData(GetPlayerChunkPropertyId(sender), chunkDataBase);
-    const { x, z } = sender.location;
-    if (!chunkData) chunkData = GenerateChunkData(x, z, dimension);
-    let chunkPrice = config.defaultChunkPrice;
-    if (chunkData && chunkData.price) chunkPrice = chunkData.price;
-    const cannotBuy = CheckPermission(sender, `buyChunk`);
-    if (cannotBuy) {
-        sender.sendMessage({ translate: `command.permission.error` });
-        return;
-    };
-    if (!chunkData) {
-        sender.sendMessage({ translate: `command.buychunk.error.thischunk.wilderness`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-        return;
-    };
-    if (chunkData.special) {
-        sender.sendMessage({ translate: `command.buychunk.error.thischunk.special`, with: { rawtext: [{ translate: `special.name` }] } });
-        return;
-    };
-    if (chunkData.owner) {
-        // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-        const ownerData = GetAndParsePropertyData(`player_${chunkData.owner}`, playerDataBase);
-        sender.sendMessage({ translate: `command.buychunk.error.thischunk.hasowner`, with: [ownerData.name] });
-        return;
-    };
-    if (chunkData.countryId) {
-        if (chunkData.countryId === playerData.country) {
-            sender.sendMessage({ translate: `command.buychunk.error.thischunk.yourcountry` });
+        }
+        if (chunkData.owner) {
+            const ownerData = GetAndParsePropertyData(`player_${chunkData.owner}`, playerDataBase);
+            sender.sendMessage({ translate: "command.buychunk.error.thischunk.hasowner", with: [ownerData?.name ?? `${chunkData.owner}`] });
             return;
-        };
-        sender.sendMessage({ translate: `command.buychunk.error.thischunk.othercountry`, with: { rawtext: [{ translate: `${chunkData.countryId}` }] } });
-        return;
-    };
-    if (chunkData?.countryId) {
-        if (chunkData.countryId === playerData.country) {
-            sender.sendMessage({ translate: `command.buychunk.error.thischunk.yourcountry` });
+        }
+        if (chunkData.countryId) {
+            if (chunkData.countryId === playerData.country) sender.sendMessage({ translate: "command.buychunk.error.thischunk.yourcountry" });
+            else sender.sendMessage({ translate: "command.buychunk.error.thischunk.othercountry", with: { rawtext: [{ translate: `${chunkData.countryId}` }] } });
             return;
+        }
+        const countryKey = `country_${playerData.country}`;
+        const rawCountry = countryDataBase.get(countryKey);
+        const playerCountryData = GetAndParsePropertyData(countryKey, countryDataBase);
+        // Keep the established zero-price fallback; reject corrupt prices and
+        // balances before arithmetic can create RP or store NaN/null.
+        const chunkPrice = chunkData.price || config.defaultChunkPrice;
+        if (chunkData.id !== id || !playerCountryData || `${playerCountryData.id}` !== `${playerData.country}`
+            || !Array.isArray(playerCountryData.territories) || playerCountryData.territories.includes(id)
+            || !Number.isFinite(chunkPrice) || chunkPrice < 0
+            || !Number.isFinite(playerCountryData.resourcePoint) || playerCountryData.resourcePoint < 0
+            || (chunkPrice > 0 && playerCountryData.resourcePoint - chunkPrice === playerCountryData.resourcePoint)
+            || (playerCountryData.resourcePointLog !== undefined && !Array.isArray(playerCountryData.resourcePointLog))) {
+            throw new Error("invalid_chunk_purchase_data");
+        }
+        const limit = config.chunkLimit || 3200;
+        if (playerCountryData.territories.length >= limit) {
+            sender.sendMessage({ translate: "chunk.limit", with: [`${limit}`] });
+            return;
+        }
+        if (checkTerritory && deniesNewTerritory(sender, [[Math.floor(x / 16), Math.floor(z / 16)]], dimension, playerCountryData)) return;
+        if (playerCountryData.resourcePoint < chunkPrice) {
+            sender.sendMessage({ translate: "command.buychunk.error.not.enough.money", with: [`${chunkPrice}`] });
+            return;
+        }
+        const eventData = {
+            player: sender, cancel: false, type: "player", countryId: playerCountryData.id,
+            territoryCount: playerCountryData.territories.length, countryName: playerCountryData.name,
         };
-        sender.sendMessage({ translate: `command.buychunk.error.thischunk.othercountry`, with: { rawtext: [{ translate: `${chunkData.countryId}` }] } });
-        return;
-    };
-    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-    const playerCountryData = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
-    const limit = config.chunkLimit || 3200;
-    if (playerCountryData?.territories.length >= limit) {
-        sender.sendMessage({ translate: 'chunk.limit', with: [`${limit}`] });
-        return;
-    };
-    const eventData = {
-        player: sender,
-        cancel: false,
-        type: 'player',
-        territoryCount: playerCountryData.territories.length,
-        countryName: playerCountryData.name
-    };
-    const isCanceled = country.beforeEvents.chunkbuy.emit(eventData);
-    if (isCanceled) return;
-    // @ts-ignore TS(2322): Type 'undefined' is not assignable to type 'boolea... Remove this comment to see the full error message
-    eventData.cancel = undefined;
-    country.afterEvents.chunkbuy.emit(eventData);
-    if (playerCountryData.resourcePoint < chunkPrice) {
-        sender.sendMessage({ translate: `command.buychunk.error.not.enough.money`, with: [`${chunkPrice}`] });
-        return;
-    };
+        if (country.beforeEvents.chunkbuy.emit(eventData)) return;
+        // A before listener can change membership, protection or saved records.
+        // Never charge or overwrite the state that replaced our quote.
+        if (!sender.isValid || sender.dimension.id !== dimension
+            || GetAndParsePropertyData(`player_${sender.id}`, playerDataBase)?.country !== playerData.country
+            || CheckPermission(sender, "buyChunk") || deniesIncident16(sender, x, z, dimension, true)
+            || deniesLoadedGateTerritory(sender, [[Math.floor(x / 16), Math.floor(z / 16)]], dimension)
+            || chunkDataBase.get(id) !== rawChunk || countryDataBase.get(countryKey) !== rawCountry) return;
 
-    chunkData.countryId = playerData.country;
-    playerCountryData.resourcePoint -= chunkPrice;
-    playerCountryData.territories.push(chunkData.id);
+        chunkData.countryId = playerData.country;
+        playerCountryData.resourcePoint -= chunkPrice;
+        playerCountryData.territories.push(id);
+        playerCountryData.resourcePointLog ||= [];
+        playerCountryData.resourcePointLog.push({ timestamp: Date.now(), actor: sender.name, action: "remove", amount: -chunkPrice, reason: "BUY CHUNK" });
+        if (playerCountryData.resourcePointLog.length > 50) playerCountryData.resourcePointLog.splice(0, playerCountryData.resourcePointLog.length - 50);
 
-    playerCountryData.resourcePointLog ||= [];
-
-    if (playerCountryData.resourcePointLog.length > 50) {
-        playerCountryData.resourcePointLog.shift();
+        // These are two independent records. Restore both exact snapshots if
+        // either synchronous save fails, including a failed first/new chunk.
+        const attempted: Array<{ database: DynamicProperties; key: string; raw: string | undefined }> = [];
+        try {
+            attempted.push({ database: chunkDataBase, key: id, raw: rawChunk });
+            StringifyAndSavePropertyData(id, chunkData, chunkDataBase);
+            attempted.push({ database: countryDataBase, key: countryKey, raw: rawCountry });
+            StringifyAndSavePropertyData(countryKey, playerCountryData, countryDataBase);
+        } catch (error) {
+            const rollbackErrors: unknown[] = [];
+            for (const entry of attempted.reverse()) {
+                try {
+                    if (entry.raw === undefined) entry.database.delete(entry.key);
+                    else entry.database.set(entry.key, entry.raw);
+                } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+            }
+            if (rollbackErrors.length) throw Object.assign(new Error("chunk_purchase_rollback_failed"), { errors: [error, ...rollbackErrors] });
+            throw error;
+        }
+        try {
+            country.afterEvents.chunkbuy.emit({ ...eventData, cancel: undefined, territoryCount: playerCountryData.territories.length });
+        } catch (error) { console.error("[buychunk] Purchase event notification failed", error); }
+        if (sender.isValid) {
+            try { sender.sendMessage({ translate: "command.buychunk.result", with: [`${playerCountryData.resourcePoint}`] }); } catch { }
+        }
     }
 
-    playerCountryData.resourcePointLog.push({
-        timestamp: Date.now(),
-        actor: sender.name,
-        action: 'remove',
-        amount: -chunkPrice,
-        reason: 'BUY CHUNK'
-    });
-
-    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-    StringifyAndSavePropertyData(chunkData.id, chunkData, chunkDataBase);
-    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-    StringifyAndSavePropertyData(`country_${playerCountryData.id}`, playerCountryData, countryDataBase);
-    sender.sendMessage({ translate: `command.buychunk.result`, with: [`${playerCountryData.resourcePoint}`] });
-    return;
-};
+    if (args.length === 2) {
+        const [ix, iz] = args.map((value: any) => Math.floor(Number(value)));
+        if (!Number.isSafeInteger(ix) || !Number.isSafeInteger(iz) || !isNumber(ix) || !isNumber(iz)) {
+            sender.sendMessage({ translate: "command.error.coordinates.incorrect" });
+            return;
+        }
+        const { x, z } = sender.location;
+        const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
+        if (chunks.length > 300) {
+            sender.sendMessage({ translate: "command.error.chunks.limit.buy", with: ["300"] });
+            return;
+        }
+        // Check every target before scheduling any purchase, including diagonal
+        // and negative-coordinate borders covered by incident 16.
+        if (chunks.some(chunk => deniesIncident16(sender, chunk.chunkX * 16, chunk.chunkZ * 16, dimension, true))) {
+            noticeIncident16(sender);
+            return;
+        }
+        const rangeCountry = GetAndParsePropertyData(`country_${playerData.country}`, countryDataBase);
+        if (!rangeCountry || deniesNewTerritory(sender, chunks.map(c => [c.chunkX, c.chunkZ]), dimension, rangeCountry)) return;
+        runWithGateTerritoryCheck(sender, chunks.map(c => [c.chunkX, c.chunkZ]), dimension, () => {
+            let rangeFailed = false;
+            for (let i = 0; i < chunks.length; i++) {
+                system.runTimeout(() => {
+                    if (rangeFailed) return;
+                    if (!sender.isValid || sender.dimension.id !== dimension) return;
+                    const target = chunks[i];
+                    if (!target || deniesIncident16(sender, target.chunkX * 16, target.chunkZ * 16, dimension, true)) return;
+                    const id = `chunk_${target.chunkX}_${target.chunkZ}_${dimension.replace("minecraft:", "")}`;
+                    runWithGateTerritoryCheck(sender, [[target.chunkX, target.chunkZ]], dimension, () => {
+                        if (rangeFailed) return;
+                        try { purchaseChunk(id, target.chunkX * 16, target.chunkZ * 16, false); }
+                        catch (error) { rangeFailed = true; throw error; }
+                    });
+                }, i);
+            }
+        });
+        return;
+    }
+    const { x, z } = sender.location;
+    if (deniesIncident16(sender, x, z, dimension, true)) {
+        noticeIncident16(sender);
+        return;
+    }
+    const id = GetPlayerChunkPropertyId(sender);
+    runWithGateTerritoryCheck(sender, [[Math.floor(x / 16), Math.floor(z / 16)]], dimension,
+        () => purchaseChunk(id, x, z, true));
+}
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(

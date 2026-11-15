@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:soybeans_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:soybeans"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:soybeans"
+      }
+    ],
+    "result": {
+      "item": "mc:soybeans_block",
+      "count": 1
+    }
+  }
+}
+

@@ -1,5 +1,6 @@
+import { PlotModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
+import { parsePrice, groupSetMapAppearance, PLOT_MAP_PATTERNS, PLOT_MAP_PATTERN_NAMES } from "@/domain/country/plot-service.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import config from "@/config/server.js";
@@ -39,25 +40,31 @@ export function plotGroupEditSettingPlotAdminDefaultForm(player: any, plotGroupI
     form.textField({ translate: 'plot.price', with: [`${config.MoneyName} ${plotGroupData?.price ?? 0}`] }, { translate: 'plot.price.input' }, { defaultValue: `${plotGroupData?.price || 0}` });
     form.toggle({ translate: 'plot.selling' }, { defaultValue: plotGroupData?.is_selling });
     form.toggle({ translate: 'plot.enable' }, { defaultValue: plotGroupData?.enable });
+    form.textField("Webマップの色（空欄は本国の色）", "#RRGGBB（例: #3399ff）", { defaultValue: plotGroupData.mapColor || "" });
+    form.dropdown("Webマップの柄（公開グループ）", PLOT_MAP_PATTERN_NAMES, { defaultValueIndex: Math.max(0, PLOT_MAP_PATTERNS.indexOf(plotGroupData.mapPattern as any)) });
     form.show(player).then((rs) => {
         if (rs.canceled) {
             plotGroupEditMainPlotAdminDefaultForm(player, plotGroupId);
             return;
         };
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
+        const appearance = groupSetMapAppearance(player, `#${plotGroupId}`, String(rs.formValues?.[5] ?? ""), PLOT_MAP_PATTERNS[Number(rs.formValues?.[6] ?? 0)] ?? "");
+        if (!appearance.ok) {
+            player.sendMessage(appearance.message);
+            plotGroupEditSettingPlotAdminDefaultForm(player, plotGroupId);
+            return;
+        }
+        // 共通処理で権限を再確認し保存した、最新の柄と色を引き継ぐ。
+        plotGroupData = plotGroupManager.get(plotGroupId)!;
         let newPlotName = `${rs.formValues?.[0] ?? ""}`;
         if (newPlotName == '') {
             newPlotName = 'new Plot';
         };
         //値段チェック
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        let price = `${rs.formValues?.[2] ?? "0"}`;
-        if (!isDecimalNumberZeroOK(price) && Number(price) > 100000000000) {
-            price = '0';
-        };
-        if (Number(price) < 0) {
-            price = '0';
-        };
+        // 値段は 0 以上の整数だけ。読めない値は前の値段のままにして、そう伝える
+        const parsedPrice = parsePrice(rs.formValues?.[2]);
+        if (parsedPrice === null) player.sendMessage("§c[プロット] 値段は 0 以上の整数で入れてください。値段は変えていません。");
+        let price = `${parsedPrice ?? plotGroupData?.price ?? 0}`;
         plotGroupData.name = newPlotName;
         plotGroupData.price = Math.floor(Number(price));
         // @ts-ignore TS(2532): Object is possibly 'undefined'.

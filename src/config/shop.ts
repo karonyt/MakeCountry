@@ -13,6 +13,7 @@ export default [
             { id: `minecraft:mangrove_log`, price: 2 },
             { id: `minecraft:spruce_log`, price: 2 },
             { id: `minecraft:pale_oak_log`, price: 2 },
+            { id: `minecraft:poplar_log`, price: 2 },
             { id: `minecraft:white_concrete`, price: 2 },
             { id: `minecraft:light_gray_concrete`, price: 2 },
             { id: `minecraft:gray_concrete`, price: 2 },
@@ -36,6 +37,8 @@ export default [
             { id: `minecraft:granite`, price: 2 },
             { id: `minecraft:diorite`, price: 2 },
             { id: `minecraft:blackstone`, price: 2 },
+            { id: `minecraft:cinnabar`, price: 2 },
+            { id: `minecraft:sulfur`, price: 2 },
 
             { id: `minecraft:stonebrick`, price: 2 },
             { id: `minecraft:cobblestone`, price: 2 },
@@ -120,7 +123,9 @@ export default [
             { id: `minecraft:smooth_stone`, price: 2 },
             { id: `minecraft:crimson_stem`, price: 2 },
             { id: `minecraft:warped_stem`, price: 2 },
+            { id: `minecraft:mud`, price: 2 },
             { id: `minecraft:mud_bricks`, price: 2 },
+            { id: `minecraft:packed_mud`, price: 2 },
             { id: `minecraft:red_sandstone`, price: 2 },
             { id: `minecraft:sea_lantern`, price: 2 },
             { id: `minecraft:prismarine`, price: 2 },
@@ -133,14 +138,14 @@ export default [
             { id: `minecraft:pearlescent_froglight`, price: 2 },
             { id: `minecraft:end_stone`, price: 2 },
             { id: `minecraft:purpur_block`, price: 2 },
-            { id: `minecraft:quartz_block`, price: 2 },
-            { id: `minecraft:waxed_copper_block`, price: 2 },
+            { id: `minecraft:smooth_quartz`, price: 2 },
+            { id: `minecraft:waxed_copper`, price: 2 },
             { id: `minecraft:waxed_exposed_copper`, price: 2 },
             { id: `minecraft:waxed_weathered_copper`, price: 2 },
             { id: `minecraft:waxed_oxidized_copper`, price: 2 },
             { id: `minecraft:packed_ice`, price: 2 },
             { id: `minecraft:white_glazed_terracotta`, price: 2 },
-            { id: `minecraft:light_gray_glazed_terracotta`, price: 2 },
+            { id: `minecraft:silver_glazed_terracotta`, price: 2 },
             { id: `minecraft:gray_glazed_terracotta`, price: 2 },
             { id: `minecraft:black_glazed_terracotta`, price: 2 },
             { id: `minecraft:brown_glazed_terracotta`, price: 2 },
@@ -156,7 +161,6 @@ export default [
             { id: `minecraft:magenta_glazed_terracotta`, price: 2 },
             { id: `minecraft:pink_glazed_terracotta`, price: 2 },
             { id: `minecraft:bamboo_block`, price: 2 },
-            { id: `minecraft:mud_bricks`, price: 2 },
             { id: 'minecraft:sand', price: 2 },
             { id: `minecraft:obsidian`, price: 2000 },
         ],
@@ -170,29 +174,21 @@ export default [
         ],
         lv: 30
     },*/
-    /*{
+    {
         name: `食べ物`,
         lore: `food`,
         icon: `minecraft:bread`,
         items: [
-            { id: `mc:onion`, price: 100 },
-            { id: `mc:garlic`, price: 600 },
-            { id: `mc:ovlive`, price: 750 },
-            { id: `mc:tomato`, price: 750 },
-            { id: `mc:mikan`, price: 300 },
-            { id: `mc:adzuki_beans`, price: 200 },
-            { id: `mc:sweet_corn`, price: 100 },
-            { id: `mc:pineapple`, price: 1000 },
-            { id: `mc:straw_berry`, price: 620 },
-            { id: `mc:mikan`, price: 700 },
+            { id: `mc:adzuki_beans`, price: 20 },
+            { id: `mc:mikan`, price: 70 },
             { id: `mc:xmas_chicken`, price: 1500 },
             { id: `mc:pizza`, price: 2000 },
             { id: `mc:osechi`, price: 2200 },
             { id: `mc:omochi`, price: 500 },
            
         ],
-        lv: 50
-    },*/
+        lv: 0
+    },
     /*{
         name: `スポーンエッグ`,
         lore: `spawn egg`,

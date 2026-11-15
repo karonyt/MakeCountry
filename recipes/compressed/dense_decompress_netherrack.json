@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:dense_decompress_netherrack"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:dense_netherrack"
+      }
+    },
+    "result": {
+      "item": "mc:compressed_netherrack",
+      "count": 9
+    }
+  }
+}

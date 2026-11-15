@@ -1,4 +1,4 @@
-import { ActionFormData } from "@minecraft/server-ui";
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { AllianceListDefaultForm } from "@/features/forms/default/sc/info/ext/al/list/alliance_list.js";

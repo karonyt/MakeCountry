@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:molybdenum_iron_board",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:molybdenum_iron_board.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#6f89aa",
+      "minecraft:geometry": "geometry.iron_board",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "molybdenum_iron_board",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/molybdenum_iron_board.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:iron_board": {}
+    }
+  }
+}

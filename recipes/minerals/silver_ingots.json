@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:silver_ingots"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:silver_block"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:silver_block"
+      }
+    ],
+    "result": {
+      "item": "mc:silver_ingot",
+      "count": 9
+    }
+  }
+}

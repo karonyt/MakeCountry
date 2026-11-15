@@ -1,7 +1,7 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 
@@ -24,7 +24,7 @@ export function countryDeleteCheckDefaultForm(player: any) {
         form.button({ translate: `mc.button.dismantle` });
         form.show(player).then(rs => {
             if (rs.canceled) {
-                settingCountryDefaultForm(player);
+                callSettingCountryForm(player);
                 return;
             };
             switch (rs.selection) {

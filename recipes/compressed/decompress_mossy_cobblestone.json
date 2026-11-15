@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:decompress_mossy_cobblestone"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_mossy_cobblestone"
+      }
+    },
+    "result": {
+      "item": "minecraft:mossy_cobblestone",
+      "count": 9
+    }
+  }
+}

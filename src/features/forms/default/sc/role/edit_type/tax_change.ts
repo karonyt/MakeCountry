@@ -1,5 +1,5 @@
+import { CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
 import { CheckPermission, isDecimalNumberZeroOK } from "@/shared/utils/minecraft.js";
 import { RoleManager } from "@/domain/country/role-manager.js";
 import { selectRoleEditTypeDefaultForm } from "@/features/forms/default/sc/role/edit_type/main.js";

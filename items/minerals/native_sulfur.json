@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:native_sulfur",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "native_sulfur",
+      "minecraft:display_name": {
+        "value": "item.mc:native_sulfur"
+      }
+    }
+  }
+}

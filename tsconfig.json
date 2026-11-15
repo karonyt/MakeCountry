@@ -1,20 +1,25 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "bundler",
-
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-
-    "rootDir": "./src",
-    "outDir": "./scripts",
-    "removeComments": false,
+    "rootDir": "..",
+    "outDir": "scripts",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-
-    "ignoreDeprecations": "6.0"
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": false,
+    "removeComments": true,
+    "noImplicitAny": true,
+    "ignoreDeprecations": "5.0",
+    "baseUrl": "./src",
+    "strict": true,
+    "checkJs": true,
+    "paths": {
+      "@/*": ["*"]
+    }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src"],
+  "exclude": ["node_modules", "scripts"]
 }

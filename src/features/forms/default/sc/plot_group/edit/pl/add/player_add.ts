@@ -1,5 +1,5 @@
+import { PlotActionForm as ActionFormData, PlotModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { plotGroupEditPlayersListDefaultForm } from "@/features/forms/default/sc/plot_group/edit/pl/players_list.js";
 

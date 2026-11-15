@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:zucchini_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:zucchini"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:zucchini"
+      }
+    ],
+    "result": {
+      "item": "mc:zucchini_block",
+      "count": 1
+    }
+  }
+}
+

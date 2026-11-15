@@ -1,6 +1,7 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
-import { ActionFormData, FormCancelationReason } from "@minecraft/server-ui";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { FormCancelationReason } from "@minecraft/server-ui";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import { countryInvitesListDefaultForm } from "@/features/forms/default/menu/join/invite/invite_list.js";
 import { allowJoinCountriesListDefaultForm } from "@/features/forms/default/menu/join/allow_list/allow_list.js";
 
@@ -21,7 +22,7 @@ export function joinTypeSelectDefaultForm(player: any) {
                 }, 10);
                 return;
             };
-            playerMainMenuDefaultForm(player);
+            callPlayerMainMenuForm(player);
             return;
         };
         switch (rs.selection) {

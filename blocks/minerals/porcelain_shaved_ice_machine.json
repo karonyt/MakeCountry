@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:porcelain_shaved_ice_machine",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:porcelain_shaved_ice_machine.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#e4e8db",
+      "minecraft:geometry": "geometry.shaved_ice_machine",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "porcelain_shaved_ice_machine",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/porcelain_shaved_ice_machine.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:shaved_ice_machine": {}
+    }
+  }
+}

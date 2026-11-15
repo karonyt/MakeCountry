@@ -1,3 +1,4 @@
+import { hasHunterHudLease } from "@/shared/integration/standalone.js";
 import { system, world } from "@minecraft/server";
 import { GetAndParsePropertyData, GetPlayerChunkPropertyId, getTimeBefore, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import * as DyProp from "@/shared/storage/chunked-dynamic-properties.js";
@@ -5,6 +6,8 @@ import config from "@/config/server.js";
 import { DeleteCountry } from "@/domain/country/land-service.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { collectFederationTaxes, normalizeFederationData } from "@/domain/country/relationships/federation.js";
+import { isCoreReady } from "@/shared/integration/standalone.js";
+import { recoverStorageBatch } from "@/shared/storage/recoverable-batch.js";
 
 let taxTimerString: any
 
@@ -68,7 +71,12 @@ world.afterEvents.worldLoad.subscribe(() => {
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
         if (!world.getDynamicProperty(`start2`)) return;
+        // 領土表示は karoearth-core が担う。Core が応答している間はここで
+        // 動的プロパティを読まない (1 人あたり最大 3 回の読込が消える)。
+        // Core が落ちている間だけ、この従来処理が受け持つ。
+        if (isCoreReady()) return;
         for (const p of world.getPlayers()) {
+            if(hasHunterHudLease(p)) continue;
             const playerLastInCountryId = nowCountryId.get(p.id) ?? 0;
             const chunkId = GetPlayerChunkPropertyId(p);
             if (playerLastInCountryId == chunkId) {
@@ -126,14 +134,14 @@ world.afterEvents.worldLoad.subscribe(() => {
 
 world.afterEvents.worldLoad.subscribe(() => {
     system.runInterval(() => {
-        if (!config.taxValidity) return;
+        if (!config.taxValidity) return; // 徴税が有効でないなら先に進まない
         if (!world.getDynamicProperty(`start2`)) return;
-        if (config.taxTypeIsTimeSet) {
+        if (config.taxTypeIsTimeSet) { // 徴税の時間を設定しているなら
             const zikan = new Date();
             const hour = zikan.getHours();
             const min = zikan.getMinutes();
             const msgTime = getTimeBefore(config.taxTime, config.taxMessageBeforeTime);
-            if (hour == msgTime.hour && min == msgTime.min) {
+            if (hour == msgTime.hour && min == msgTime.min) { // 時間になったら「税回収&維持費徴収まで残り10分です」を送信する
                 world.sendMessage({
                     rawtext: [
                         { text: `§a[MakeCountry]\n§r` },
@@ -141,18 +149,19 @@ world.afterEvents.worldLoad.subscribe(() => {
                     ]
                 });
             };
+            // 徴税の時間になった時に徴税を開始する
             if (hour == config.taxTime.hour && min == config.taxTime.min) {
                 tax();
             };
-        } else {
+        } else { // 時間を設定していなければタイマーを使用する
             let taxTimer = Number(taxTimerString) - 1;
             world.setDynamicProperty(`taxTimer`, `${taxTimer}`);
             taxTimerString = `${taxTimer}`;
-            if (taxTimer == config.taxMessageBeforeTime) {
+            if (taxTimer == config.taxMessageBeforeTime) { // 時間になったら「税回収&維持費徴収まで残り ～～ 分です」の細かい版を送信する
                 world.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n§r` }, { translate: `tax.before.message1`, with: [`${config.taxMessageBeforeTime}`] }, { text: `\n` }, { translate: `tax.before.message2`, with: [`${config.NonMaintenanceCostAccrualPeriod}`] }, { text: `\n` }, { translate: `tax.before.message3`, with: [`${config.MaintenanceFeePacifistCountries}`] }, { text: `\n` }, { translate: `tax.before.message4`, with: [`${config.MaintenanceFeeNonPeacefulCountries}`] }, { text: `\n` }, { translate: `tax.before.message5` }] });
                 return;
             };
-            if (taxTimer <= 0) {
+            if (taxTimer <= 0) { // タイマーが0以下になった場合、タイマーを更新し徴税を開始する
                 world.setDynamicProperty(`taxTimer`, `${config.taxTimer}`);
                 taxTimerString = `${config.taxTimer}`;
                 tax();
@@ -161,11 +170,15 @@ world.afterEvents.worldLoad.subscribe(() => {
     }, 20 * 60);
 })
 
+// 全ての国に対して徴税を行う関数
 export function tax() {
+    if (!recoverStorageBatch()) return;
     const playerDataBase = new DynamicProperties('player');
     const countryDataBase = new DynamicProperties('country');
     const roleDataBase = new DynamicProperties('role');
+    // 徴税の通知をワールドに送信する
     world.sendMessage({ rawtext: [{ text: `§a[MakeCountry]\n` }, { translate: `tax.time` }] });
+
     for (const pId of playerDataBase.idList) {
         const rawData = playerDataBase.get(pId);
         // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
@@ -212,18 +225,20 @@ export function tax() {
                     continue;
                 };
             };
-            let upkeepCosts = config.MaintenanceFeeNonPeacefulCountries * countryData.territories.length;
-            if (countryData?.peace) upkeepCosts = config.MaintenanceFeePacifistCountries * countryData.territories.length;
+            let upkeepCosts = config.MaintenanceFeeNonPeacefulCountries * countryData.territories.length; // 非平和主義の1チャンクあたりのコスト × その国の持つ総チャンク数 で払う維持費を計算する
+            if (countryData?.peace) upkeepCosts = config.MaintenanceFeePacifistCountries * countryData.territories.length; // 平和主義の場合はそのコストにして維持費を計算する
             if (typeof countryData?.money == "number") {
+                // 国家予算よりも維持費が大きかった場合
                 if (countryData.money < upkeepCosts) {
-                    countryData.money = 0;
+                    countryData.money = 0; // 国家予算を0にする
                     countryDataBase.set(`country_${countryData.id}`, JSON.stringify(countryData));
-                    system.runTimeout(() => {
+                    system.runTimeout(() => { // その国を削除する
                         DeleteCountry(countryData.id);
                     }, deleteCount);
                     deleteCount++;
                     continue;
                 };
+                // 国家予算で払える範囲なら、国家予算から維持費を引く
                 countryData.money -= upkeepCosts;
 
                 if (upkeepCosts != 0) {
@@ -249,6 +264,8 @@ export function tax() {
         };
     };
     collectFederationTaxes(countryDataBase);
+    // A failed/partial collection must never unlock pending land transfers.
+    world.setDynamicProperty("karo:land-transfer:last-tax", Date.now());
 };
 
 world.afterEvents.worldLoad.subscribe(() => {

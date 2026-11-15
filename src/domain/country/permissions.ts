@@ -5,11 +5,20 @@ export const landPermissions = [
     'pistonPlace',
     'setHome',
     'blockUse',
+    'anvilUse',
+    'doorUse',
+    'switchUse',
+    'signEdit',
     'entityUse',
+    'gateUse',
     'itemUse',
+    'lavaUse',
+    'flightItemUse',
     'projectileUse',
     'entityAttack',
     'playerAttack',
+    'shopBuy',
+    'shopSell',
     'noTarget',
     'publicHomeUse',
 ];
@@ -27,11 +36,20 @@ export const rolePermissions = [
     'kick',
     'openContainer',
     'blockUse',
+    'anvilUse',
+    'doorUse',
+    'switchUse',
+    'signEdit',
     'entityUse',
+    'gateUse',
     'itemUse',
+    'lavaUse',
+    'flightItemUse',
     'projectileUse',
     'entityAttack',
     'playerAttack',
+    'shopBuy',
+    'shopSell',
     'publicHomeUse',
     'publicHomeAdmin',
     'nationalTierLevelAdmin',
@@ -73,3 +91,24 @@ export const checkOnlyRole = [
     'sellChunk',
     'buyChunk'
 ];
+
+// Older permission arrays have no gate setting. Store an explicit denial so
+// those records remain allowed without a destructive bulk migration.
+export const GATE_USE_DENIED = 'gateUseDenied';
+
+export function isPermissionEnabled(permissions: readonly string[] | undefined, permission: string): boolean {
+    return permission === 'gateUse'
+        ? !permissions?.includes(GATE_USE_DENIED)
+        : permissions?.includes(permission) ?? false;
+}
+
+export function permissionToggleValue(permission: string, enabled: unknown): string | undefined {
+    return enabled ? permission : permission === 'gateUse' ? GATE_USE_DENIED : undefined;
+}
+
+export function permissionsFromToggles(permissions: readonly string[], values: readonly unknown[] = [], offset = 0): string[] {
+    return permissions.flatMap((permission, index) => {
+        const value = permissionToggleValue(permission, values[index + offset]);
+        return value ? [value] : [];
+    });
+}

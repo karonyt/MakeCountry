@@ -1,5 +1,5 @@
+import { PlotActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { plotGroupEditPlayersListDefaultForm } from "@/features/forms/default/sc/plot_group/edit/pl/players_list.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { plotGroupPlayerPermissionsEditDefaultForm } from "@/features/forms/default/sc/plot_group/edit/pl/show/permissions/permissions.js";

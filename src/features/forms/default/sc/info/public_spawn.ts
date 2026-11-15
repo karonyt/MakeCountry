@@ -1,7 +1,7 @@
+import { CountryActionForm as ActionFormData, CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { settingCountryInfoDefaultForm } from "@/features/forms/default/sc/info/info.js";
 import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId } from "@/shared/utils/minecraft.js";
 import national_tier_level from "@/config/national-tier-level.js";
@@ -16,10 +16,8 @@ const unlockLevels = national_tier_level.unlockPublicSpawnLevels;
  */
 export function migrateOldHomeToNewSystem(countryId: any) {
     const countryDataBase = new DynamicProperties('country');
-    const countryDataRaw = countryDataBase.get(`country_${countryId}`);
-    if (!countryDataRaw) return console.warn(`国ID ${countryId} のデータが存在しません。`);
-
-    const countryData = JSON.parse(countryDataRaw);
+    const countryData = GetAndParsePropertyData(`country_${countryId}`, countryDataBase);
+    if (!countryData) return console.warn(`国ID ${countryId} のデータが存在しません。`);
 
     // 新システム用 spawn オブジェクトを初期化
     countryData.spawn = countryData.spawn || {};
@@ -39,6 +37,12 @@ export function migrateOldHomeToNewSystem(countryId: any) {
     }
 }
 
+/** フォームを開いている間の変更を巻き戻さないよう、保存直前に国データを読み直す */
+function getCurrentCountryData(countryId: any) {
+    const countryDataBase = new DynamicProperties('country');
+    return GetAndParsePropertyData(`country_${countryId}`, countryDataBase);
+}
+
 /** 現在の国レベルで設定可能なスポーン数を返す */
 function getMaxSpawns(countryLv: any, unlockLevels: any) {
     let count = 0;
@@ -52,12 +56,12 @@ function getMaxSpawns(countryLv: any, unlockLevels: any) {
 export function publicSpawnManageForm(player: any) {
     const playerDataBase = new DynamicProperties('player');
     /** @type {PlayerData} */
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
-    const countryManager = new CountryManager(playerData.country);
-
+    const playerData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+    if (!playerData?.country) return;
     migrateOldHomeToNewSystem(playerData.country);
 
+    // 移行が走った場合も、その場で更新後の値を使う。再起動による再読込を不要にする。
+    const countryManager = new CountryManager(playerData.country);
     let countryData = countryManager.countryData;
 
     countryData.spawn = countryData.spawn || {};
@@ -123,8 +127,8 @@ export function publicSpawnManageForm(player: any) {
 /** 既存スポーンの編集/削除フォーム */
 function spawnEditDeleteForm(player: any, spawnName: any) {
     const playerDataBase = new DynamicProperties('player');
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
+    const playerData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+    if (!playerData?.country) return;
     const countryManager = new CountryManager(playerData.country);
     let countryData = countryManager.countryData;
 
@@ -152,10 +156,13 @@ function spawnEditDeleteForm(player: any, spawnName: any) {
             editForm.show(player).then(res => {
                 if (res.canceled) return publicSpawnManageForm(player);
 
-                // @ts-ignore TS(2532): Object is possibly 'undefined'.
-                const newName = res.formValues[0].trim() || spawnName;
-                // @ts-ignore TS(2532): Object is possibly 'undefined'.
-                const enabled = res.formValues[1];
+                // フォーム表示中に国データが変わっている可能性があるため、保存直前に読み直す。
+                // 古いオブジェクトを丸ごと保存すると、直前のパブリックホーム追加などを消してしまう。
+                countryData = getCurrentCountryData(playerData.country);
+                if (!countryData?.spawn?.[spawnName]) return publicSpawnManageForm(player);
+
+                const newName = String(res.formValues?.[0] ?? '').trim() || spawnName;
+                const enabled = res.formValues?.[1] === true;
 
                 // 名前変更の場合は既存キーを置き換え
                 if (newName !== spawnName) {
@@ -165,6 +172,7 @@ function spawnEditDeleteForm(player: any, spawnName: any) {
 
                 // enabled 更新
                 countryData.spawn[newName].enabled = enabled;
+                if (enabled) countryData.publicSpawn = true;
 
                 const countryDataBase = new DynamicProperties('country');
                 countryDataBase.set(`country_${playerData.country}`, countryData);
@@ -175,6 +183,8 @@ function spawnEditDeleteForm(player: any, spawnName: any) {
 
         // 削除
         if (rs.selection === 1) {
+            countryData = getCurrentCountryData(playerData.country);
+            if (!countryData?.spawn?.[spawnName]) return publicSpawnManageForm(player);
             delete countryData.spawn[spawnName];
             const countryDataBase = new DynamicProperties('country');
             countryDataBase.set(`country_${playerData.country}`, JSON.stringify(countryData));
@@ -187,8 +197,8 @@ function spawnEditDeleteForm(player: any, spawnName: any) {
 /** 新規追加フォーム */
 export function publicSpawnDefaultForm(player: any) {
     const playerDataBase = new DynamicProperties('player');
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
+    const playerData = GetAndParsePropertyData(`player_${player.id}`, playerDataBase);
+    if (!playerData?.country) return;
     const countryManager = new CountryManager(playerData.country);
     let countryData = countryManager.countryData;
 
@@ -206,13 +216,17 @@ export function publicSpawnDefaultForm(player: any) {
             return;
         }
 
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        const spawnName = rs.formValues[0].trim() || "default";
-        // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        const enabled = rs.formValues[1];
+        const spawnName = String(rs.formValues?.[0] ?? '').trim() || "default";
+        const enabled = rs.formValues?.[1] === true;
 
         const chunkDB = new DynamicProperties('chunk');
         const countryDB = new DynamicProperties('country');
+        // ModalForm を開いていた間に更新された国データを取り直す。
+        // Core のメモリ写しも DynamicProperties.set と同じ tick で更新されるため、
+        // ここから保存した内容はサーバー再起動なしで後続の一覧に見える。
+        countryData = getCurrentCountryData(playerData.country);
+        if (!countryData) return settingCountryInfoDefaultForm(player);
+        countryData.spawn = countryData.spawn || {};
         //スポーン上限をチェック
         const spawnKeys = Object.keys(countryData.spawn);
         const maxSpawns = getMaxSpawns(countryData.lv || 0, unlockLevels);
@@ -221,9 +235,14 @@ export function publicSpawnDefaultForm(player: any) {
             return publicSpawnManageForm(player);
         }
 
-        // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-        const chunkData = JSON.parse(chunkDB.get(GetPlayerChunkPropertyId(player)));
-        if (!chunkData?.countryId || chunkData.countryId !== playerData.country) {
+        const currentChunkId = GetPlayerChunkPropertyId(player);
+        const chunkData = GetAndParsePropertyData(currentChunkId, chunkDB);
+        // 建国・領土購入の直後は country.territories が先に見え、chunk の写しが
+        // まだ無いことがある。どちらか一方で自国領と確認できれば設定を許可する。
+        const ownedByChunk = String(chunkData?.countryId ?? '') === String(playerData.country);
+        const ownedByCountry = Array.isArray(countryData.territories)
+            && countryData.territories.includes(currentChunkId);
+        if (!ownedByChunk && !ownedByCountry) {
             player.sendMessage({ translate: `publichome.set.error.within.country` });
             return publicSpawnManageForm(player);
         }
@@ -233,6 +252,9 @@ export function publicSpawnDefaultForm(player: any) {
         const spawnPos = `${Math.ceil(x) - 0.5}_${Math.ceil(y)}_${Math.ceil(z) - 0.5}_${Math.ceil(rx)}_${Math.ceil(ry)}_${player.dimension.id}`;
 
         countryData.spawn[spawnName] = { pos: spawnPos, enabled };
+        // 個別ホームを有効として追加した操作は、その国の公開も同時に有効化する。
+        // 従来は enabled=true でも publicSpawn=false のままで、公開一覧に出なかった。
+        if (enabled) countryData.publicSpawn = true;
         countryDB.set(`country_${playerData.country}`, JSON.stringify(countryData));
         player.sendMessage({ translate: `updated` });
         publicSpawnManageForm(player);

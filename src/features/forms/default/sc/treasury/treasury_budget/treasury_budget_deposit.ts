@@ -1,6 +1,6 @@
+import { CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ModalFormData } from "@minecraft/server-ui";
 import { treasurybudgetSelectDefaultForm } from "@/features/forms/default/sc/treasury/treasury_budget/treasury_budget_select.js";
 import { isDecimalNumber } from "@/shared/utils/minecraft.js";
 import { CountryManager } from "@/domain/country/country-manager.js";

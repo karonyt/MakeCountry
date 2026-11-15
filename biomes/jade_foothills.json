@@ -1,0 +1,51 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "mc:jade_foothills"
+    },
+    "components": {
+      "minecraft:climate": {
+        "temperature": 0.6,
+        "downfall": 0.6,
+        "snow_accumulation": [
+          0,
+          0
+        ]
+      },
+      "minecraft:surface_builder": {
+        "builder": {
+          "type": "minecraft:overworld",
+          "sea_floor_depth": 7,
+          "sea_floor_material": "minecraft:gravel",
+          "foundation_material": "minecraft:stone",
+          "mid_material": "mc:serpentine_block",
+          "top_material": "mc:jade_slate",
+          "sea_material": "minecraft:water"
+        }
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "dimension": "minecraft:overworld",
+            "targets": [
+              "minecraft:extreme_hills",
+              "minecraft:forest"
+            ],
+            "amount": 0.18,
+            "noise_frequency_scale": 16
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "overworld",
+          "monster",
+          "mc:jade_foothills",
+          "mountain",
+          "animal"
+        ]
+      }
+    }
+  }
+}

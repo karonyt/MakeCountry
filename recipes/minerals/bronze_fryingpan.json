@@ -1,0 +1,40 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:bronze_fryingpan"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:bronze_ingot"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:bronze_ingot"
+      },
+      {
+        "item": "mc:bronze_ingot"
+      },
+      {
+        "item": "mc:bronze_ingot"
+      },
+      {
+        "item": "mc:bronze_ingot"
+      },
+      {
+        "item": "mc:brass_ingot"
+      },
+      {
+        "item": "minecraft:stick"
+      }
+    ],
+    "result": {
+      "item": "mc:bronze_fryingpan",
+      "count": 1
+    }
+  }
+}

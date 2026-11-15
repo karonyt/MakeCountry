@@ -1,8 +1,9 @@
+import { CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
 import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId, isDecimalNumber, isDecimalNumberZeroOK, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import config from "@/config/server.js";
-import { ModalFormData } from "@minecraft/server-ui";
+
 
 /**
  * 
@@ -50,8 +51,11 @@ export function kingdomsSettingForm(player: any) {
                     player.sendMessage({ translate: `no.permission` });
                     return;
                 };
-                countryData.publicSpawn = !countryData.publicSpawn;
-                StringifyAndSavePropertyData('country_' + playerData.country, countryData);
+                // フォームを開いている間に変わった国データを古い写しで戻さない。
+                const currentCountryData = GetAndParsePropertyData('country_' + playerData.country);
+                if (!currentCountryData) return;
+                currentCountryData.publicSpawn = !currentCountryData.publicSpawn;
+                StringifyAndSavePropertyData('country_' + playerData.country, currentCountryData);
                 kingdomsSettingForm(player);
                 break;
             };
@@ -77,9 +81,17 @@ export function kingdomsSettingForm(player: any) {
                 let { x, y, z } = player.location;
                 let { x: rx, y: ry } = player.getRotation();
                 let spawnString = `${Math.ceil(x) - 0.5}_${Math.ceil(y)}_${Math.ceil(z) - 0.5}_${Math.ceil(rx)}_${Math.ceil(ry)}_${player.dimension.id}`;
-                countryData[`spawn`] = spawnString;
+                // 旧UIからも現行の複数ホーム形式で保存する。
+                // 文字列で保存すると spawn.default を読む一覧へ反映されず、再読込が必要になる。
+                const currentCountryData = GetAndParsePropertyData('country_' + playerData.country);
+                if (!currentCountryData) return;
+                currentCountryData.spawn = typeof currentCountryData.spawn === 'object' && currentCountryData.spawn
+                    ? currentCountryData.spawn
+                    : {};
+                currentCountryData.spawn.default = { pos: spawnString, enabled: true };
+                currentCountryData.publicSpawn = true;
                 player.sendMessage({ translate: `updated` });
-                StringifyAndSavePropertyData('country_' + playerData.country, countryData);
+                StringifyAndSavePropertyData('country_' + playerData.country, currentCountryData);
                 break;
             };
             //税金

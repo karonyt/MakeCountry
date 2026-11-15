@@ -1,5 +1,5 @@
+import { CommerceModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
 import { sendMoneyDefaultForm } from "@/features/forms/default/menu/send_money/send_money.js";
 
 /**

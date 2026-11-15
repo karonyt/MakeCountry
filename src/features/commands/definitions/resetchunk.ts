@@ -1,78 +1,89 @@
 import { CommandPermissionLevel, CustomCommandParamType, Player, system, world } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { CheckPermission, GetAndParsePropertyData, GetPlayerChunkPropertyId, isNumber, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+import { GetAndParsePropertyData, GetPlayerChunkPropertyId, isNumber, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import config from "@/config/server.js";
 
-function resetChunkExecuter(this: any, origin: any, args: any) {
-    if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;
+function resetChunkExecuter(origin: any, args: any) {
+    if (!origin?.sourceEntity || !(origin.sourceEntity instanceof Player)) return;
     const sender = origin.sourceEntity;
-
+    if (!sender.isValid) return;
+    if (!sender.hasTag("mc_admin")) { sender.sendMessage({ translate: "command.permission.error" }); return; }
+    if (args.length !== 0 && args.length !== 2) { sender.sendMessage({ translate: "command.resetchunk.error.invalid_coordinates" }); return; }
     const chunkDataBase = new DynamicProperties("chunk");
     const countryDataBase = new DynamicProperties("country");
-    if (!sender.hasTag("mc_admin")) {
-        sender.sendMessage({ translate: `command.permission.error` });
-        return;
-    };
     const dimension = sender.dimension.id;
-    if (args.length == 2) {
-        const [ix, iz] = args.map((str: any) => Math.floor(Number(str)));
-        const { x, z } = this.sender.location;
+
+    function resetChunk(id: string): void {
+        if (!sender.isValid || !sender.hasTag("mc_admin") || sender.dimension.id !== dimension) return;
+        const rawChunk = chunkDataBase.get(id);
+        const chunkData = GetAndParsePropertyData(id, chunkDataBase);
+        const attempted: Array<{ database: DynamicProperties; key: string; raw: string | undefined }> = [];
+        let countryKey: string | undefined, rawCountry: string | undefined, countryData: any;
+        if (chunkData?.countryId) {
+            countryKey = `country_${chunkData.countryId}`;
+            rawCountry = countryDataBase.get(countryKey);
+            countryData = GetAndParsePropertyData(countryKey, countryDataBase);
+            if (countryData) {
+                const fullPrice = chunkData.price || config.defaultChunkPrice;
+                const indexed = Array.isArray(countryData.territories) && countryData.territories.includes(id);
+                const refund = indexed ? fullPrice / 2 : 0;
+                if (`${countryData.id}` !== `${chunkData.countryId}` || !Array.isArray(countryData.territories)
+                    || !Number.isFinite(fullPrice) || fullPrice < 0 || (indexed && fullPrice > 0 && refund === 0)
+                    || !Number.isFinite(countryData.money) || !Number.isFinite(countryData.money + refund)
+                    || (refund > 0 && countryData.money + refund === countryData.money)) throw new Error("invalid_chunk_reset_data");
+                // A missing index entry must never splice away the last unrelated
+                // territory. A missing target may already have been refunded by a
+                // partially completed reset; remove it without paying again.
+                countryData.territories = countryData.territories.filter((key: any) => key !== id);
+                // Preserve the reset command's established treasury refund (money).
+                countryData.money += refund;
+            }
+        }
+        try {
+            if (countryData && countryKey) {
+                attempted.push({ database: countryDataBase, key: countryKey, raw: rawCountry });
+                StringifyAndSavePropertyData(countryKey, countryData, countryDataBase);
+            }
+            attempted.push({ database: chunkDataBase, key: id, raw: rawChunk });
+            chunkDataBase.delete(id);
+        } catch (error) {
+            const rollbackErrors: unknown[] = [];
+            for (const entry of attempted.reverse()) {
+                try {
+                    if (entry.raw === undefined) entry.database.delete(entry.key);
+                    else entry.database.set(entry.key, entry.raw);
+                } catch (rollbackError) { rollbackErrors.push(rollbackError); }
+            }
+            if (rollbackErrors.length) throw Object.assign(new Error("chunk_reset_rollback_failed"), { errors: [error, ...rollbackErrors] });
+            throw error;
+        }
+        if (sender.isValid) {
+            try { sender.sendMessage({ translate: "command.resetchunk.result", with: { rawtext: [{ translate: "wilderness.name" }] } }); } catch { }
+        }
+    }
+    if (args.length === 2) {
+        const [ix, iz] = args.map((value: any) => Math.floor(Number(value)));
+        if (!Number.isSafeInteger(ix) || !Number.isSafeInteger(iz) || !isNumber(ix) || !isNumber(iz)) {
+            sender.sendMessage({ translate: "command.resetchunk.error.invalid_coordinates" });
+            return;
+        }
+        const { x, z } = sender.location;
         const chunks = getChunksInRange(Math.floor(x), Math.floor(z), ix, iz);
-        if (!isNumber(ix) || !isNumber(iz)) {
-            this.sender.sendMessage({ translate: 'command.resetchunk.error.invalid_coordinates' });
-            return;
-        };
-        if (chunks.length > 100) {
-            sender.sendMessage({ translate: 'command.resetchunk.error.too_many_chunks' });
-            return;
-        };
+        if (chunks.length > 100) { sender.sendMessage({ translate: "command.resetchunk.error.too_many_chunks" }); return; }
+        let rangeFailed = false;
         for (let i = 0; i < chunks.length; i++) {
             system.runTimeout(() => {
-                // @ts-ignore TS(2532): Object is possibly 'undefined'.
-                const chunkId = `chunk_${chunks[i].chunkX}_${chunks[i].chunkZ}_${dimension.replace(`minecraft:`, ``)}`;
-                // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                let chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
-                if (chunkData) {
-                    if (chunkData?.countryId) {
-                        // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                        const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
-                        if (countryData) {
-                            countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
-                            let chunkPrice = config.defaultChunkPrice / 2;
-                            if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                            countryData.money += chunkPrice;
-                            // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                            StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
-                        };
-                    };
-                };
-                chunkDataBase.delete(chunkId);
-                sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-            }, i)
+                if (rangeFailed) return;
+                const target = chunks[i];
+                if (!target) return;
+                const id = `chunk_${target.chunkX}_${target.chunkZ}_${dimension.replace("minecraft:", "")}`;
+                try { resetChunk(id); } catch (error) { rangeFailed = true; throw error; }
+            }, i);
         }
         return;
     }
-    const chunkId = GetPlayerChunkPropertyId(sender);
-    // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-    const chunkData = GetAndParsePropertyData(chunkId, chunkDataBase);
-    if (chunkData) {
-        if (chunkData?.countryId) {
-            // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-            const countryData = GetAndParsePropertyData(`country_${chunkData?.countryId}`, countryDataBase);
-            if (countryData) {
-                countryData.territories.splice(countryData.territories.indexOf(chunkId), 1);
-                let chunkPrice = config.defaultChunkPrice / 2;
-                if (chunkData && chunkData.price) chunkPrice = chunkData.price / 2;
-                countryData.money += chunkPrice;
-                // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
-                StringifyAndSavePropertyData(`country_${chunkData?.countryId}`, countryData, countryDataBase);
-            };
-        };
-    };
-    chunkDataBase.delete(chunkId);
-    sender.sendMessage({ translate: `command.resetchunk.result`, with: { rawtext: [{ translate: `wilderness.name` }] } });
-    return;
-};
+    resetChunk(GetPlayerChunkPropertyId(sender));
+}
 
 system.beforeEvents.startup.subscribe((event) => {
     event.customCommandRegistry.registerCommand(

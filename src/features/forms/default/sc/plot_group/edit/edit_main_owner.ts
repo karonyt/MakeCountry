@@ -1,4 +1,4 @@
-import { ActionFormData } from "@minecraft/server-ui";
+import { PlotActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { system } from "@minecraft/server";
 

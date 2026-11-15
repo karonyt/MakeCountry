@@ -1,5 +1,5 @@
+import { CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
 import { inviteMainDefaultForm } from "@/features/forms/default/sc/invite/main.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData */
 

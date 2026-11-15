@@ -10,7 +10,19 @@ export type CountryPermission = "editCountryName" |
     "kick" |
     "openContainer" |
     "blockUse" |
+    "anvilUse" |
+    "doorUse" |
+    "switchUse" |
+    "signEdit" |
     "entityUse" |
+    "gateUse" |
+    "itemUse" |
+    "flightItemUse" |
+    "projectileUse" |
+    "entityAttack" |
+    "playerAttack" |
+    "shopBuy" |
+    "shopSell" |
     "publicHomeUse" |
     "publicHomeAdmin" |
     "noTarget" |

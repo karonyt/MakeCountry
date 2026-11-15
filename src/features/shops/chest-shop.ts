@@ -1,15 +1,16 @@
+import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
 import { EntityComponentTypes, system, world, BlockComponentTypes, SignSide, Direction } from '@minecraft/server';
 import { chestShopConfig } from '@/config/chest-shop.js';
-import { GetAndParsePropertyData, StringifyAndSavePropertyData, playerNameToId } from '@/shared/utils/minecraft.js';
+import { CheckPermissionFromLocation, GetAndParsePropertyData, StringifyAndSavePropertyData, playerNameToId } from '@/shared/utils/minecraft.js';
+import { addItemsExactly } from '@/shared/minecraft/inventory-delivery.js';
 
 /**
  *
- * @param {string} playerName
+ * @param {string} playerId
  * @returns {number | undefined}
  */
-function getPlayerMoney(playerName: any) {
-    const id = playerNameToId(playerName);
-    let playerData = GetAndParsePropertyData(`player_${id}`);
+function getPlayerMoney(playerId: string) {
+    const playerData = GetAndParsePropertyData(`player_${playerId}`);
 
     if (playerData === undefined) return;
     if (playerData.money === undefined) return;
@@ -18,14 +19,13 @@ function getPlayerMoney(playerName: any) {
 
 /**
  *
- * @param {string} playerName
+ * @param {string} playerId
  * @param {number} money
  */
-function setPlayerMoney(playerName: any, money: any) {
-    const id = playerNameToId(playerName);
-    const playerData = GetAndParsePropertyData(`player_${id}`);
+function setPlayerMoney(playerId: string, money: any) {
+    const playerData = GetAndParsePropertyData(`player_${playerId}`);
     playerData.money = money;
-    StringifyAndSavePropertyData(`player_${id}`, playerData);
+    StringifyAndSavePropertyData(`player_${playerId}`, playerData);
     return;
 }
 
@@ -44,9 +44,7 @@ export function getSignTexts(block: any) {
     const frontString = sign.getText(SignSide.Front);
     const backString = sign.getText(SignSide.Back);
 
-    if (frontString === undefined || backString === undefined) return;
-
-    return [frontString, backString];
+    return [frontString ?? '', backString ?? ''];
 }
 
 /**
@@ -92,71 +90,22 @@ function shopDataToSignTexts(shopData: any) {
     return signTexts;
 }
 
-/**
- *
- * @param {import('@minecraft/server').Container} container
- * @param {Array<import('@minecraft/server').ItemStack>} itemStacks
- */
-function addItems(container: any, itemStacks: any) {
-    for (const itemStack of itemStacks) {
-        container.addItem(itemStack);
-    }
-}
-
-/**
- *
- * @param {import('@minecraft/server').Container} container
- * @param {Array<import('@minecraft/server').ItemStack>} itemStacks
- * @returns {boolean}
- */
-function canAddItems(container: any, itemStacks: any) {
-    const items = cloneItems(itemStacks);
-
-    // @ts-ignore TS(2345): Argument of type '(a: any, b: any) => boolean' is ... Remove this comment to see the full error message
-    items.sort((a, b) => {
-        return a.amount > b.amount;
-    });
-
-    for (let cIndex = 0; cIndex < container.size; cIndex++) {
-        const item = container.getItem(cIndex);
-        if (item === undefined) continue;
-        let stackableAmount = item.maxAmount - item.amount;
-        if (stackableAmount <= 0) continue;
-
-        for (let iIndex = 0; iIndex < items.length; iIndex++) {
-            if (!item.isStackableWith(items[iIndex])) continue;
-
-            if (stackableAmount > items[iIndex].amount) {
-                stackableAmount -= items[iIndex].amount;
-                items.splice(iIndex, 1);
-                iIndex -= 1;
-                continue;
-            } else if (stackableAmount === items[iIndex].amount) {
-                items.splice(iIndex, 1);
-                break;
-            } else if (stackableAmount < items[iIndex].amount) {
-                items[iIndex].amount -= stackableAmount;
-                break;
-            }
+/** Move the complete order, restoring the source if the native delivery refuses it. */
+function moveShopItems(source: any, destination: any, itemId: string, amount: number): boolean {
+    const before = Array.from({ length: source.size }, (_, slot) => source.getItem(slot));
+    let moved = false;
+    try {
+        const items = removeItems(source, itemId, amount);
+        if (items.reduce((total: number, item: any) => total + item.amount, 0) !== amount) return false;
+        if (!addItemsExactly(destination, items)) return false;
+        moved = true;
+        return true;
+    } finally {
+        if (!moved) {
+            source.clearAll();
+            before.forEach((item, slot) => { if (item) source.setItem(slot, item); });
         }
     }
-
-    return container.emptySlotsCount >= items.length;
-}
-
-/**
- *
- * @param {Array<import('@minecraft/server').ItemStack>} itemStacks
- * @returns {Array<import('@minecraft/server').ItemStack>}
- */
-function cloneItems(itemStacks: any) {
-    const newItemStacks = [];
-
-    for (let index = 0; index < itemStacks.length; index++) {
-        newItemStacks.push(itemStacks[index].clone());
-    }
-
-    return newItemStacks;
 }
 
 /**
@@ -214,23 +163,26 @@ export function getShopData(signTexts: any, block: any) {
         container: undefined,
     };
 
-    const amount = parseInt(data[1]);
-    if (Number.isNaN(amount) || amount < 1) return;
+    if (!/^\d+$/.test(data[1])) return;
+    const amount = Number(data[1]);
+    if (!Number.isSafeInteger(amount) || amount < 1) return;
     shopData.amount = amount;
 
     const prices = data[2].replace(/ /g, '').split(':');
 
     for (const price of prices) {
         if (price.startsWith(chestShopConfig.buyPrefix) || price.endsWith(chestShopConfig.buyPrefix)) {
-            const buyPrice = parseInt(price.replace(chestShopConfig.buyPrefix, ''));
-            if (isNaN(buyPrice) || typeof buyPrice !== 'number') continue;
+            const rawPrice = price.replace(chestShopConfig.buyPrefix, '');
+            const buyPrice = Number(rawPrice);
+            if (!/^\d+$/.test(rawPrice) || !Number.isSafeInteger(buyPrice)) return;
 
             shopData.buyPrice = buyPrice;
             continue;
         }
         if (price.startsWith(chestShopConfig.sellPrefix) || price.endsWith(chestShopConfig.sellPrefix)) {
-            const sellPrice = parseInt(price.replace(chestShopConfig.sellPrefix, ''));
-            if (isNaN(sellPrice) || typeof sellPrice !== 'number') continue;
+            const rawPrice = price.replace(chestShopConfig.sellPrefix, '');
+            const sellPrice = Number(rawPrice);
+            if (!/^\d+$/.test(rawPrice) || !Number.isSafeInteger(sellPrice)) return;
 
             shopData.sellPrice = sellPrice;
             continue;
@@ -245,6 +197,7 @@ export function getShopData(signTexts: any, block: any) {
 
     const shopBlock = block.dimension.getBlock(shopData.location);
     if (shopBlock === undefined) return;
+    if (!chestShopConfig.shopBlockIds.includes(shopBlock.typeId)) return;
 
     const shop = shopBlock.getComponent(BlockComponentTypes.Inventory);
     if (shop === undefined) return;
@@ -344,6 +297,30 @@ function setShopData(shopData: any, itemStack: any, playerName: any) {
     shopData.item = itemStack.typeId.replace('minecraft:', '');
 }
 
+function canManageShopContainer(playerId: string, block: any, adminMode = false): boolean {
+    if (adminMode) return true;
+    const containers = [block];
+    if (block.typeId.includes('chest') && (block.getComponent('inventory')?.container?.size ?? 0) > 27) {
+        for (const direction of ['north', 'south', 'east', 'west']) {
+            try {
+                const neighbor = block[direction]();
+                if (neighbor?.typeId === block.typeId && (neighbor.getComponent('inventory')?.container?.size ?? 0) > 27) containers.push(neighbor);
+            } catch {
+                // A neighboring chunk can be outside the loaded world.
+            }
+        }
+    }
+    return containers.every(container => {
+        const lock = GetAndParsePropertyData(`chest_${container.x}_${container.y}_${container.z}_${container.dimension.id}`);
+        return !lock || lock.player === playerId || lock.admin?.includes(playerId);
+    });
+}
+
+function shopOwnerCanUseContainer(ownerId: string, shopData: any, dimension: any): boolean {
+    const block = dimension.getBlock(shopData.location);
+    return !!block && ownerId !== undefined && canManageShopContainer(ownerId, block);
+}
+
 /**
  * @param {import('@minecraft/server').Block} block
  * @param {string} playerName
@@ -377,120 +354,138 @@ export function isShopOwner(block: any, playerName: any) {
 
 // buy
 world.beforeEvents.playerInteractWithBlock.subscribe(async (ev) => {
-    const signTexts = getSignTexts(ev.block);
-    if (signTexts === undefined) return;
+    if (cancelIncident16BlockEvent(ev)) return;
+    try {
+        const signTexts = getSignTexts(ev.block);
+        if (signTexts === undefined) return;
 
-    if (signTexts[0].split('\n')[0] === chestShopConfig.shopId) ev.cancel = true;
-    if (signTexts[0].split('\n')[4] === chestShopConfig.shopId) ev.cancel = true;
-    if (signTexts[1] === chestShopConfig.shopId) ev.cancel = true;
-    const shopData = getShopData(signTexts, ev.block);
-    if (shopData === undefined) return;
+        if (signTexts[0].split('\n')[0] === chestShopConfig.shopId) ev.cancel = true;
+        if (signTexts[0].split('\n')[4] === chestShopConfig.shopId) ev.cancel = true;
+        if (signTexts[1] === chestShopConfig.shopId) ev.cancel = true;
+        let shopData = getShopData(signTexts, ev.block);
+        if (shopData === undefined) return;
 
-    await system.waitTicks(1);
-    if (shopData.player === chestShopConfig.shopId) {
-        setShopData(shopData, ev.itemStack, ev.player.name);
-        const signTexts = shopDataToSignTexts(shopData);
+        await system.waitTicks(1);
+        if (!ev.player.isValid || !ev.block.isValid || ev.player.dimension.id !== ev.block.dimension.id) return;
+        if (JSON.stringify(getSignTexts(ev.block)) !== JSON.stringify(signTexts)) return;
+        shopData = getShopData(signTexts, ev.block);
+        if (!shopData) return;
+        if (shopData.player === chestShopConfig.shopId) {
+            if (CheckPermissionFromLocation(ev.player, shopData.location.x, shopData.location.z, ev.block.dimension.id, 'openContainer')) return;
+            const shopBlock = ev.block.dimension.getBlock(shopData.location);
+            if (!shopBlock || !canManageShopContainer(ev.player.id, shopBlock, ev.player.hasTag('adminmode'))) return;
+            if (shopData.item === '?' && !ev.itemStack) return;
+            setShopData(shopData, ev.itemStack, ev.player.name);
+            const signTexts = shopDataToSignTexts(shopData);
 
-        setSignTexts(ev.block, signTexts[0], signTexts[1]);
-        return;
+            setSignTexts(ev.block, signTexts[0], signTexts[1]);
+            return;
+        }
+        if (signTexts[0].split('\n')[4] !== chestShopConfig.shopId) return;
+        if (signTexts[1] !== chestShopConfig.shopId) return;
+
+        if (shopData.buyPrice <= 0) return;
+        if (CheckPermissionFromLocation(ev.player, shopData.location.x, shopData.location.z, ev.block.dimension.id, 'shopSell')) return;
+        const ownerId = playerNameToId(shopData.player);
+        if (!ownerId) return;
+        if (!shopOwnerCanUseContainer(ownerId, shopData, ev.block.dimension)) return;
+
+        let money = getPlayerMoney(ev.player.id);
+
+        if (money === undefined) return;
+        let shopMoney = getPlayerMoney(ownerId);
+        if (shopMoney === undefined) return;
+        if (!Number.isFinite(money) || !Number.isFinite(shopMoney)) return;
+
+        if (shopData.buyPrice > shopMoney) return;
+
+        const playerInventory = ev.player.getComponent(EntityComponentTypes.Inventory);
+        if (playerInventory === undefined) return;
+
+        // @ts-ignore TS(2339): Property 'container' does not exist on type 'never... Remove this comment to see the full error message
+        const playerContainer = playerInventory.container;
+        if (playerContainer === undefined) return;
+        if (shopData.amount > getItemStock(playerContainer, shopData.item)) return;
+
+        if (!moveShopItems(playerContainer, shopData.container, shopData.item, shopData.amount)) return;
+
+        // if(shopData.player === ev.player.name) return
+
+        shopMoney -= shopData.buyPrice;
+        setPlayerMoney(ownerId, shopMoney);
+
+        money = getPlayerMoney(ev.player.id);
+        money += shopData.buyPrice;
+        setPlayerMoney(ev.player.id, money);
+    } catch (error) {
+        // An unloaded sign/container or a departing player must not complete a trade.
+        console.warn('[ChestShop] transaction aborted', error);
     }
-    if (signTexts[0].split('\n')[4] !== chestShopConfig.shopId) return;
-    if (signTexts[1] !== chestShopConfig.shopId) return;
-
-    if (shopData.buyPrice <= 0) return;
-
-    let money = getPlayerMoney(ev.player.name);
-
-    if (money === undefined) return;
-    let shopMoney = getPlayerMoney(shopData.player);
-    if (shopMoney === undefined) return;
-
-    if (shopData.buyPrice > shopMoney) return;
-
-    const playerInventory = ev.player.getComponent(EntityComponentTypes.Inventory);
-    if (playerInventory === undefined) return;
-
-    // @ts-ignore TS(2339): Property 'container' does not exist on type 'never... Remove this comment to see the full error message
-    const playerContainer = playerInventory.container;
-    if (playerContainer === undefined) return;
-    if (shopData.amount > getItemStock(playerContainer, shopData.item)) return;
-
-    const itemStacks = removeItems(playerContainer, shopData.item, shopData.amount);
-
-    if (!canAddItems(shopData.container, itemStacks)) {
-        addItems(playerContainer, itemStacks);
-        return;
-    }
-
-    addItems(shopData.container, itemStacks);
-
-    // if(shopData.player === ev.player.name) return
-
-    shopMoney -= shopData.buyPrice;
-    setPlayerMoney(shopData.player, shopMoney);
-
-    money = getPlayerMoney(ev.player.name);
-    money += shopData.buyPrice;
-    setPlayerMoney(ev.player.name, money);
 });
 
 // sell
 world.afterEvents.entityHitBlock.subscribe(async (ev) => {
-    if (ev.damagingEntity.typeId !== 'minecraft:player') return;
+    try {
+        if (ev.damagingEntity.typeId !== 'minecraft:player') return;
 
-    const signTexts = getSignTexts(ev.hitBlock);
-    if (signTexts === undefined) return;
+        const signTexts = getSignTexts(ev.hitBlock);
+        if (signTexts === undefined) return;
 
-    const shopData = getShopData(signTexts, ev.hitBlock);
-    if (shopData === undefined) return;
+        let shopData = getShopData(signTexts, ev.hitBlock);
+        if (shopData === undefined) return;
 
-    if (signTexts[0].split('\n')[4] !== chestShopConfig.shopId) return;
-    if (signTexts[1] !== chestShopConfig.shopId) return;
+        if (signTexts[0].split('\n')[4] !== chestShopConfig.shopId) return;
+        if (signTexts[1] !== chestShopConfig.shopId) return;
 
-    if (shopData.sellPrice <= 0) return;
+        if (shopData.sellPrice <= 0) return;
 
-    await system.waitTicks(1);
+        await system.waitTicks(1);
+        if (!ev.damagingEntity.isValid || !ev.hitBlock.isValid || ev.damagingEntity.dimension.id !== ev.hitBlock.dimension.id) return;
+        if (JSON.stringify(getSignTexts(ev.hitBlock)) !== JSON.stringify(signTexts)) return;
+        shopData = getShopData(signTexts, ev.hitBlock);
+        if (!shopData) return;
+        if (CheckPermissionFromLocation(ev.damagingEntity, shopData.location.x, shopData.location.z, ev.hitBlock.dimension.id, 'shopBuy')) return;
+        const ownerId = playerNameToId(shopData.player);
+        if (!ownerId) return;
+        if (!shopOwnerCanUseContainer(ownerId, shopData, ev.hitBlock.dimension)) return;
 
-    // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-    let money = getPlayerMoney(ev.damagingEntity.name);
-    if (money === undefined) return;
-    let shopMoney = getPlayerMoney(shopData.player);
-    if (shopMoney === undefined) return;
+        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
+        let money = getPlayerMoney(ev.damagingEntity.id);
+        if (money === undefined) return;
+        let shopMoney = getPlayerMoney(ownerId);
+        if (shopMoney === undefined) return;
+        if (!Number.isFinite(money) || !Number.isFinite(shopMoney)) return;
 
-    if (shopData.sellPrice > money) return;
-    if (shopData.amount > getItemStock(shopData.container, shopData.item)) return;
+        if (shopData.sellPrice > money) return;
+        if (shopData.amount > getItemStock(shopData.container, shopData.item)) return;
 
-    const playerInventory = ev.damagingEntity.getComponent(EntityComponentTypes.Inventory);
-    if (playerInventory === undefined) return;
+        const playerInventory = ev.damagingEntity.getComponent(EntityComponentTypes.Inventory);
+        if (playerInventory === undefined) return;
 
-    // @ts-ignore TS(2339): Property 'container' does not exist on type 'never... Remove this comment to see the full error message
-    const playerContainer = playerInventory.container;
-    if (playerContainer === undefined) return;
+        // @ts-ignore TS(2339): Property 'container' does not exist on type 'never... Remove this comment to see the full error message
+        const playerContainer = playerInventory.container;
+        if (playerContainer === undefined) return;
 
-    const itemStacks = removeItems(shopData.container, shopData.item, shopData.amount);
+        if (!moveShopItems(shopData.container, playerContainer, shopData.item, shopData.amount)) return;
 
-    if (!canAddItems(playerContainer, itemStacks)) {
-        addItems(shopData.container, itemStacks);
-        return;
+        // if(shopData.player === ev.player.name) return
+
+        shopMoney += shopData.sellPrice;
+        setPlayerMoney(ownerId, shopMoney);
+
+        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
+        money = getPlayerMoney(ev.damagingEntity.id);
+
+        money -= shopData.sellPrice;
+        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
+        setPlayerMoney(ev.damagingEntity.id, money);
+    } catch (error) {
+        console.warn('[ChestShop] transaction aborted', error);
     }
-
-    addItems(playerContainer, itemStacks);
-
-    // if(shopData.player === ev.player.name) return
-
-    shopMoney += shopData.sellPrice;
-    setPlayerMoney(shopData.player, shopMoney);
-
-    // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-    money = getPlayerMoney(ev.damagingEntity.name);
-
-    money -= shopData.sellPrice;
-    // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-    setPlayerMoney(ev.damagingEntity.name, money);
-
 });
 
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
+    if (cancelIncident16BlockEvent(ev)) return;
     if (ev.player.hasTag('mc_admin')) return;
     if (!chestShopConfig.shopBlockIds.includes(ev.block.typeId)) return;
 

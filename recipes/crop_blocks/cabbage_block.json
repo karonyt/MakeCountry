@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:cabbage_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:cabbage"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:cabbage"
+      }
+    ],
+    "result": {
+      "item": "mc:cabbage_block",
+      "count": 1
+    }
+  }
+}
+

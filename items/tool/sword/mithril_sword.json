@@ -1,0 +1,36 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:mithril_sword",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "mithril_sword",
+      "minecraft:durability": {
+        "max_durability": 6500
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:hand_equipped": true,
+      "minecraft:damage": 12,
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "minecraft:cobweb",
+            "speed": 40
+          }
+        ]
+      },
+      "mc:ranktool": {},
+      "minecraft:tags": {
+        "tags": [
+          "weapon",
+          "type_sword"
+        ]
+      }
+    }
+  }
+}

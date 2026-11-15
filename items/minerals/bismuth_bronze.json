@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:bismuth_bronze",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "bismuth_bronze",
+      "minecraft:display_name": {
+        "value": "item.mc:bismuth_bronze"
+      }
+    }
+  }
+}

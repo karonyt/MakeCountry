@@ -130,6 +130,23 @@ export function readItemStackPotionData(item: any) {
     };
 }
 
+/** Short, language-neutral potion label for history lists, e.g. "Potion of Swiftness II (1:30)". */
+export function getPotionSummaryRawText(typeId: string, potionData: any) {
+    const normalizedTypeId = String(typeId || "");
+    const potion = firstPotionData({ potion: potionData });
+    const name = potionDisplayName(normalizedTypeId, potion);
+    if (!name) return undefined;
+    const effect = potionEffectPresentationKey(potion?.id);
+    const suffix: string[] = [];
+    if (effect && !isBrewingOnlyEffect(effect)) {
+        const power = potionPowerLevel(potion, effect);
+        if (power && power > 1) suffix.push(romanNumeral(power));
+        const duration = formatPotionDuration(potionDurationTicks(potion));
+        if (duration) suffix.push(`(${duration})`);
+    }
+    return suffix.length > 0 ? [...name, { text: ` ${suffix.join(" ")}` }] : name;
+}
+
 export function appendChestPresentationLore(lore: any[] = [], presentationLore: any[] = []) {
     if (presentationLore.length === 0) return lore;
     const normalizedLore = normalizeChestLore(lore);

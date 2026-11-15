@@ -1,0 +1,52 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "mc:salt_flats"
+    },
+    "components": {
+      "minecraft:climate": {
+        "temperature": 1.8,
+        "downfall": 0,
+        "snow_accumulation": [
+          0,
+          0
+        ]
+      },
+      "minecraft:surface_builder": {
+        "builder": {
+          "type": "minecraft:overworld",
+          "sea_floor_depth": 7,
+          "sea_floor_material": "minecraft:gravel",
+          "foundation_material": "minecraft:stone",
+          "mid_material": "mc:saltstone",
+          "top_material": "mc:salt_crust",
+          "sea_material": "minecraft:water"
+        }
+      },
+      "minecraft:replace_biomes": {
+        "replacements": [
+          {
+            "dimension": "minecraft:overworld",
+            "targets": [
+              "minecraft:desert",
+              "minecraft:savanna"
+            ],
+            "amount": 0.18,
+            "noise_frequency_scale": 16
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "overworld",
+          "monster",
+          "mc:salt_flats",
+          "desert",
+          "warm",
+          "dry"
+        ]
+      }
+    }
+  }
+}

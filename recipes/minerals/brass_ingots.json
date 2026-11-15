@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:brass_ingots"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:brass_block"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:brass_block"
+      }
+    ],
+    "result": {
+      "item": "mc:brass_ingot",
+      "count": 9
+    }
+  }
+}

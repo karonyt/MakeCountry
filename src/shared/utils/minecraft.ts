@@ -4,12 +4,21 @@ import config from "@/config/server.js";
 import jobs_config from "@/config/jobs.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { checkOnlyRole } from "@/domain/country/permissions.js";
-import { areCountriesInSameFederation } from "@/domain/country/relationships/federation.js";
+import { areCountriesInSameFederation, getEffectiveFederationPermissions } from "@/domain/country/relationships/federation.js";
+import { deniesIncident16 } from "@/domain/protection/incident16.js";
+import { isUnsafeToPlay } from "@/shared/integration/standalone.js";
+import { isGateUseDenied } from "@/domain/country/gate-use.js";
 
 const dynamicPropertiesByName: Record<string, DynamicProperties> = Object.create(null);
 
 function getDynamicProperties(name: string) {
     return dynamicPropertiesByName[name] ??= new DynamicProperties(name);
+}
+
+function getCountryRelationshipPermissions(countryData: any, relationship: "alliance" | "friendly" | "hostility" | "neutrality", countryId: number) {
+    const overrides = countryData[`${relationship}CountryPermissions`];
+    const fallback = countryData[`${relationship}Permission`];
+    return overrides?.find((entry: any) => entry.id === countryId)?.permissions ?? fallback ?? [];
 }
 
 /**
@@ -44,25 +53,17 @@ export function GetPlayerChunkPropertyId(player: any) {
  * @returns {any|undefined}
  */
 export function GetAndParsePropertyData(id: string, database?: DynamicProperties): any | undefined {
-    if (!database) {
-        if (id.includes('_')) {
-            const database = getDynamicProperties(id.split('_')[0]);
-            const data = database.get(id);
-            return data ? JSON.parse(data) : undefined;
-        }
-        const data = Dyprop.getDynamicProperty(id);
-        return data ? JSON.parse(data) : undefined;
-    }
-    // @ts-ignore TS(2339): Property 'get' does not exist on type 'never'.
-    let dataString = database.get(id);
-    if (!dataString || typeof dataString !== "string") return undefined;
-    try {
-        const parseData = JSON.parse(dataString);
-        return parseData;
-    } catch (error) {
-        console.warn(error);
-        return undefined;
-    }
+    const data = database
+        ? database.get(id)
+        : id.includes('_')
+            ? getDynamicProperties(id.split('_')[0]).get(id)
+            : Dyprop.getDynamicProperty(id);
+    // Only an absent record may become a caller's default. An unreadable
+    // existing record must stop the operation before it replaces ownership,
+    // balances or permissions with newly generated data.
+    if (data === undefined) return undefined;
+    if (typeof data !== "string") throw new TypeError(`invalid_property_json_type:${id}`);
+    return JSON.parse(data);
 };
 
 /**
@@ -72,11 +73,11 @@ export function GetAndParsePropertyData(id: string, database?: DynamicProperties
  * @param {DynamicProperties} database 
  * @returns 
  */
-export function StringifyAndSavePropertyData(id: any, data: any, database = undefined) {
+export function StringifyAndSavePropertyData(id: any, data: any, database: DynamicProperties | undefined = undefined) {
     if (!database) {
         if (id.includes('_')) {
             const database = getDynamicProperties(id.split('_')[0]);
-            database.set(id, JSON.stringify(data));
+            database.set(id, data);
             return;
         }
         // @ts-ignore TS(2345): Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
@@ -84,7 +85,7 @@ export function StringifyAndSavePropertyData(id: any, data: any, database = unde
         return;
     }
     // @ts-ignore TS(2339): Property 'set' does not exist on type 'never'.
-    database.set(id, JSON.stringify(data));
+    database.set(id, data);
     return;
 };
 
@@ -107,6 +108,9 @@ export function ConvertChunk(rawX: any, rawZ: any) {
  * @returns {boolean} true = キャンセル / false = 許可
  */
 export function CheckPermission(player: any, permission: any) {
+    if (isUnsafeToPlay()) return true;
+    if (player instanceof Player && !checkOnlyRole.includes(permission)
+        && deniesIncident16(player, player.location.x, player.location.z, player.dimension.id)) return true;
     // ====== playerId 解決 ======
     let playerId;
     if (player instanceof Player) playerId = player.id;
@@ -150,6 +154,8 @@ export function CheckPermission(player: any, permission: any) {
     const chunkData = player instanceof Player
         ? GetAndParsePropertyData(GetPlayerChunkPropertyId(player))
         : undefined;
+    if (!playerData) return true;
+    if (chunkData?.countryId && !getCountry(chunkData.countryId)) return true;
 
     // ====== ロールのみチェック ======
     if (checkOnlyRole.includes(permission)) {
@@ -160,12 +166,23 @@ export function CheckPermission(player: any, permission: any) {
 
     // ====== チャンクなし / 荒野 ======
     if (!chunkData || (!chunkData.countryId && !chunkData.owner && !chunkData.special)) {
-        return !config.wildernessAllowPermissions.includes(permission);
+        return permission !== "gateUse" && !config.wildernessAllowPermissions.includes(permission);
     }
 
     // ====== 特別区 ======
     if (chunkData.special) {
-        return !config.specialAllowPermissions.includes(permission);
+        return permission !== "gateUse" && !config.specialAllowPermissions.includes(permission);
+    }
+
+    if (permission === 'gateUse') return isGateUseDenied(playerData, chunkData, GetAndParsePropertyData);
+
+    // 国土全体の個人設定はプロットと外交関係の双方より優先する。
+    if (chunkData.countryId && playerData.country !== chunkData.countryId) {
+        const countryData = getCountry(chunkData.countryId);
+        const playerPermission = countryData.playerPermissions?.find(
+            (entry: any) => entry.id === playerData.id
+        );
+        if (playerPermission) return !playerPermission.permissions?.includes(permission);
     }
 
     // ====== plot 解決 ======
@@ -248,19 +265,19 @@ export function CheckPermission(player: any, permission: any) {
 
         const playerCountryData = getCountry(playerData?.country);
         if (areCountriesInSameFederation(countryData, playerCountryData)) {
-            return !countryData.federationPermission?.includes(permission);
+            return !getEffectiveFederationPermissions(countryData).includes(permission);
         }
         if (countryData.alliance?.includes(playerData.country)) {
-            return !countryData.alliancePermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "alliance", playerData.country).includes(permission);
         }
         if (countryData.hostility?.includes(playerData.country)) {
-            return !countryData.hostilityPermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "hostility", playerData.country).includes(permission);
         }
         if (countryData.friendly?.includes(playerData.country)) {
-            return !countryData.friendlyPermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "friendly", playerData.country).includes(permission);
         }
 
-        return !countryData.neutralityPermission.includes(permission);
+        return !getCountryRelationshipPermissions(countryData, "neutrality", playerData.country).includes(permission);
     }
 
     return false;
@@ -276,6 +293,8 @@ export function CheckPermission(player: any, permission: any) {
  * @returns {boolean} true = キャンセル / false = 許可
  */
 export function CheckPermissionFromLocation(player: any, x: any, z: any, dimensionId: any, permission: any) {
+    if (isUnsafeToPlay() || !player?.isValid) return true;
+    if (deniesIncident16(player, x, z, dimensionId)) return true;
     // ===== AdminMode =====
     if (player.hasTag("adminmode")) return false;
 
@@ -316,22 +335,34 @@ export function CheckPermissionFromLocation(player: any, x: any, z: any, dimensi
     const chunkData = GetAndParsePropertyData(
         GetChunkPropertyId(x, z, dimensionId)
     );
+    if (!playerData) return true;
+    if (chunkData?.countryId && !getCountry(chunkData.countryId)) return true;
 
     // ===== チャンクなし(荒野) =====
     if (!chunkData) {
         if (config.isNoPiston && permission === "placePiston") return true;
-        return !config.wildernessAllowPermissions.includes(permission);
+        return permission !== "gateUse" && !config.wildernessAllowPermissions.includes(permission);
     }
 
     // ===== 荒野 =====
     if (!chunkData?.countryId && !chunkData.owner && !chunkData.special) {
         if (config.isNoPiston && permission === "placePiston") return true;
-        return !config.wildernessAllowPermissions.includes(permission);
+        return permission !== "gateUse" && !config.wildernessAllowPermissions.includes(permission);
     }
 
     // ===== 特別区 =====
     if (chunkData?.special) {
-        return !config.specialAllowPermissions.includes(permission);
+        return permission !== "gateUse" && !config.specialAllowPermissions.includes(permission);
+    }
+
+    if (permission === 'gateUse') return isGateUseDenied(playerData, chunkData, GetAndParsePropertyData);
+
+    if (chunkData.countryId && playerData.country !== chunkData.countryId) {
+        const countryData = getCountry(chunkData.countryId);
+        const playerPermission = countryData.playerPermissions?.find(
+            (entry: any) => entry.id === playerData.id
+        );
+        if (playerPermission) return !playerPermission.permissions?.includes(permission);
     }
 
     // ===== plot 解決 =====
@@ -417,19 +448,19 @@ export function CheckPermissionFromLocation(player: any, x: any, z: any, dimensi
 
         const playerCountryData = getCountry(playerData?.country);
         if (areCountriesInSameFederation(countryData, playerCountryData)) {
-            return !countryData.federationPermission?.includes(permission);
+            return !getEffectiveFederationPermissions(countryData).includes(permission);
         }
         if (countryData.alliance?.includes(playerData.country)) {
-            return !countryData.alliancePermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "alliance", playerData.country).includes(permission);
         }
         if (countryData.hostility?.includes(playerData.country)) {
-            return !countryData.hostilityPermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "hostility", playerData.country).includes(permission);
         }
         if (countryData.friendly?.includes(playerData.country)) {
-            return !countryData.friendlyPermission.includes(permission);
+            return !getCountryRelationshipPermissions(countryData, "friendly", playerData.country).includes(permission);
         }
 
-        return !countryData.neutralityPermission?.includes(permission);
+        return !getCountryRelationshipPermissions(countryData, "neutrality", playerData.country).includes(permission);
     }
 
     return false;
@@ -535,10 +566,21 @@ export function getTimeBefore(time: any, minutesBefore: any) {
  * @param {string} playerName 
  * @returns {string}
  */
-export function playerNameToId(playerName: any) {
+export function playerNameToId(playerName: any): string | undefined {
+    if (typeof playerName !== "string" || !playerName) return undefined;
     const playerDataBase = new DynamicProperties('player');
-    const playerIds = playerDataBase.idList;
-    return playerIds.find((id: any) => playerName === GetAndParsePropertyData(id).name).split('_')[1];
+    let found: string | undefined;
+    for (const key of playerDataBase.idList) {
+        if (typeof key !== "string" || !key.startsWith("player_") || key.length === 7) continue;
+        const data = GetAndParsePropertyData(key, playerDataBase);
+        if (data?.name !== playerName) continue;
+        const id = key.slice(7);
+        // A sign stores a name rather than an ID. Ambiguous historic records
+        // must not select whichever wallet happens to be first in the index.
+        if (found !== undefined && found !== id) return undefined;
+        found = id;
+    }
+    return found;
 };
 
 /**
@@ -547,7 +589,13 @@ export function playerNameToId(playerName: any) {
  * @returns {string}
  */
 export function langChangeItemName(itemName: any) {
-    return new ItemStack(itemName).localizationKey;
+    if (typeof itemName !== "string") return itemName;
+    try {
+        return new ItemStack(itemName).localizationKey;
+    } catch {
+        // Legacy/removed identifiers must not break the entire chest form.
+        return itemName;
+    }
 };
 
 export const enchantIdToLang = {

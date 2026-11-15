@@ -1,20 +1,28 @@
+import { resolveCookingCategoryPreference } from "@/shared/ui/artisan-filter-preferences.js";
+import { addCraftableFilterButton, craftableOnly, toggleCraftableOnly, filterCraftableRecipeIds, CRAFTABLE_FILTER_SLOT } from "@/shared/ui/craftable-filter.js";
+import { openCookingRecipeCategory } from "@/shared/ui/artisan-recipe-filter.js";
+import { cancelArtisanCraft, runArtisanCraft } from "@/domain/jobs/pending-artisan-rewards.js";
+import { recipeListName, recipeTitleParts } from "@/domain/recipes/recipe-display.js";
+import { captureCookingEquipment, requireCookingEquipment } from '@/domain/cooking/cookware.js';
+import { CraftingModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { ItemStack, Player, world } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
+import { addLastCraftedRecipeButton, getLastCraftedRecipeId, rememberLastCraftedRecipe } from "@/shared/ui/last-crafted-recipe.js";
 import { FryStewRecipes } from "@/content/cooking/frystew-recipe.js";
 import { itemIdToPath } from "@/config/textures.js";
 import jobs_config from "@/config/jobs.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { getRandomInteger, langChangeItemName } from "@/shared/utils/minecraft.js";
-import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { getGameplayRandomValue } from "@/shared/utils/gameplay-random.js";
 import { createResultStacks, resolveRecipeResult } from "@/domain/recipes/recipe-result.js";
-import { capCookingRankByChefLevel } from "@/domain/cooking/quality-cap.js";
+import { buildCookingEffectRawtext } from "@/domain/recipes/recipe-effect-lore.js";
+import { capCookingRankByRecipe } from "@/domain/cooking/quality-cap.js";
 import {
     adjacentRecipeCategory,
+    recipeCategoryLabel,
     filterRecipeIds,
     getAvailableRecipeCategories,
-    resolveRecipeCategory,
 } from "@/domain/cooking/recipe-category.js";
 import {
     cleanRecipeSearchQuery,
@@ -22,18 +30,32 @@ import {
     isRecipeSearchActive,
     sortRecipeIdsByLevel,
 } from "@/domain/recipes/recipe-list.js";
-import { ModalFormData } from "@minecraft/server-ui";
-import config from "@/config/server.js";
+
+import {
+    addComplexCookingMinigameUi,
+    beginComplexCookingAction,
+    canCompleteComplexCooking,
+    endComplexCookingAction,
+    ensureComplexCookingRoute,
+    getComplexCookingAdjustment,
+    getComplexCookingCompletionLore,
+    getComplexCookingCompletionMessage,
+    getComplexCookingResultInfo,
+    initializeComplexCookingMinigame,
+} from "@/features/forms/default/cooking/complex-station-minigame.js";
+import { buildCookingMasteryLore } from "@/features/forms/default/cooking/cooking-mastery-ui.js";
+import {
+    hasAnyUnreservedCookingIngredient,
+    hasUnreservedCookingIngredient,
+} from "@/features/forms/default/cooking/complex-station-ingredients.js";
 
 /* ===============================
    Init
 ================================ */
 let buff: any;
-let playerDB: any;
 
 world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
-    playerDB = new DynamicProperties("player");
 });
 
 /* ===============================
@@ -150,13 +172,13 @@ function isFryingDanger(fryer: any, recipe: any) {
 
 function calcMaxActions(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
-    return recipe.baseActions + Math.min(Math.floor(lv / 4), 40 + (recipe.requiredLevel * 4));
+    return Math.max(10, recipe.baseActions + Math.min(Math.floor(lv / 4), 40 + (recipe.requiredLevel * 4)));
 }
 
 function tempVariance(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
     const diff = lv - recipe.requiredLevel;
-    return getRandomInteger(
+    return getGameplayRandomValue(
         -Math.max(1, 8 - Math.floor(diff / 5)),
         Math.max(1, 8 - Math.floor(diff / 5))
     );
@@ -246,7 +268,7 @@ const FryingActions = [
         unlockLv: 1,
         cost: 1,
         run(fryer: any, recipe: any, ctx: any, player: any) {
-            fryer.oilTemp += getRandomInteger(30, 50) + ctx.tempVariance();
+            fryer.oilTemp += getGameplayRandomValue(30, 50) + ctx.tempVariance();
             fryer.progress += fryer.oilTemp >= recipe.needTemp[0] ? 12 : 4;
             if (fryer.oilTemp > recipe.needTemp[1]) {
                 fryer.burned += 12;
@@ -291,7 +313,7 @@ const FryingActions = [
             }
 
             for (const c of Object.keys(recipe.coatings ?? {})) {
-                if (!hasAll(player, { [c]: 1 })) continue;
+                if (!hasUnreservedCookingIngredient(player, c, fryer.scaledIngredients)) continue;
 
                 const inv = player.getComponent("inventory").container;
                 let usedItem;
@@ -333,7 +355,7 @@ const FryingActions = [
         slot: 23,
         name: "cooking.action.flip",
         icon: "minecraft:wooden_shovel",
-        unlockLv: 3,
+        unlockLv: 1,
         cost: 1,
         run(fryer: any, recipe: any, ctx: any, player: any) {
             fryer.phase = "frying";
@@ -355,7 +377,7 @@ const FryingActions = [
         cost: 1,
         run(fryer: any, recipe: any, ctx: any, player: any) {
             fryer.phase = "frying";
-            fryer.oilTemp -= getRandomInteger(20, 40);
+            fryer.oilTemp -= getGameplayRandomValue(20, 40);
             fryer.progress += 5;
             fryer.burned -= 10;
             fryer.oilDegradation -= 5;
@@ -490,7 +512,7 @@ const FryingActions = [
         cost: 2,
         run(fryer: any, recipe: any, ctx: any, player: any) {
             fryer.phase = "frying";
-            fryer.oilTemp += getRandomInteger(60, 90) + ctx.tempVariance();
+            fryer.oilTemp += getGameplayRandomValue(60, 90) + ctx.tempVariance();
             fryer.progress += 25;
             fryer.goldenColor += 20;
             fryer.crispiness += 15;
@@ -585,22 +607,27 @@ const FryingActions = [
 /* ===============================
    UI
 ================================ */
-export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all", searchQuery = "") {
-    const form = new ChestFormData("large")
+export function openFryStewRecipeSelect(player: any, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
+    if (fryingSessions.has(player.id)) {
+        openFryer(player);
+        return;
+    }
+
+    const form = new ChestFormData("large").enableLoreLineBreaks()
         .setTitle({ rawtext: [{ translate: "cooking.title.deep_fryer" }] });
 
     const lv = new JobLevel(player, "chef").getLevel();
     const recipes = FryStewRecipes as Record<string, any>;
     const cleanSearchQuery = cleanRecipeSearchQuery(searchQuery);
     const searchActive = isRecipeSearchActive(cleanSearchQuery);
-    const selectedCategory = resolveRecipeCategory(recipes, categoryId);
+    const selectedCategory = resolveCookingCategoryPreference(player, "cooking:frystew", recipes, categoryId);
     const availableCategories = getAvailableRecipeCategories(recipes, selectedCategory.id);
-    const recipeIds = filterUnlockedRecipesForSearch(
+    const recipeIds = filterCraftableRecipeIds(filterUnlockedRecipesForSearch(
         filterRecipeIds(sortRecipeIdsByLevel(Object.keys(recipes), recipes), recipes, selectedCategory.id),
         recipes,
         cleanSearchQuery,
         lv
-    );
+    ), recipes, player, lv);
 
     // ==== 枠装飾 ====
     fill(form,
@@ -613,6 +640,7 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
     );
 
     // ==== ページ計算 ====
+    addCraftableFilterButton(form, player, recipeIds.length);
     const totalPages = Math.max(1, Math.ceil(recipeIds.length / RECIPES_PER_PAGE));
     const safePage = Math.min(Math.max(0, page), totalPages - 1);
     const start = safePage * RECIPES_PER_PAGE;
@@ -648,7 +676,7 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
                 ? itemIdToPath[r.name]
                 : itemIdToPath["minecraft:barrier"],
             name: lv >= r.requiredLevel
-                ? langChangeItemName(r.name)
+                ? recipeListName(r)
                 : "cooking.locked",
             lore: lv >= r.requiredLevel
                 ? [{
@@ -663,9 +691,10 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
                         { text: ":" },
                         ...coatings,
                         { text: "\n§6" },
-                        { translate: "cooking.fried.specialty" }
+                        { translate: "cooking.fried.specialty" },
+                        ...buildCookingEffectRawtext(r.result),
                     ]
-                }]
+                }, ...buildCookingMasteryLore(lv, r.requiredLevel)]
                 : [{
                     rawtext: [
                         { translate: "cooking.unlock_level" },
@@ -702,14 +731,14 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(47, {
             iconPath: getIconPath(previousCategory.icon),
-            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, { translate: previousCategory.label }],
+            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, recipeCategoryLabel(previousCategory)],
             editedName: true
         });
 
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(51, {
             iconPath: getIconPath(nextCategory.icon),
-            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, { translate: nextCategory.label }],
+            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, recipeCategoryLabel(nextCategory)],
             editedName: true
         });
     }
@@ -731,10 +760,18 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
         });
     }
 
-    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, { translate: selectedCategory.label }] }];
+    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, recipeCategoryLabel(selectedCategory)] }];
     if (searchActive) pageLore.push({ rawtext: [{ text: `§e検索: ${cleanSearchQuery}` }] });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form!.setButton(52, {
+        iconPath: itemIdToPath["minecraft:hopper"],
+        name: "§bジャンルで絞り込み",
+        lore: pageLore,
+        editedName: true
+    });
+
+    // @ts-ignore TS(2532): Object is possibly undefined.
     form.setButton(49, {
         iconPath: itemIdToPath["minecraft:paper"],
         name: [{ translate: "cooking.page.current", with: [`${safePage + 1}`, `${totalPages}`] }],
@@ -742,9 +779,25 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
         editedName: true
     });
 
+    if (!craftableOnly(player) || recipeIds.includes(getLastCraftedRecipeId(player.id, "cooking:frystew") ?? "")) addLastCraftedRecipeButton(form, player.id, "cooking:frystew", recipes);
+
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
         if (r.canceled) return;
+
+        if (r.selection === CRAFTABLE_FILTER_SLOT) {
+            toggleCraftableOnly(player);
+            openFryStewRecipeSelect(player, 0, selectedCategory.id, cleanSearchQuery);
+            return;
+        }
+
+        if (r.selection === 46) {
+            const lastRecipeId = getLastCraftedRecipeId(player.id, "cooking:frystew");
+            if (lastRecipeId && (!craftableOnly(player) || recipeIds.includes(lastRecipeId)) && recipes[lastRecipeId] && lv >= recipes[lastRecipeId].requiredLevel) {
+                openQuantitySelect(player, lastRecipeId);
+            }
+            return;
+        }
 
         if (r.selection === 45) {
             openFryStewRecipeSelect(player, safePage - 1, selectedCategory.id, cleanSearchQuery);
@@ -762,6 +815,11 @@ export function openFryStewRecipeSelect(player: any, page = 0, categoryId = "all
             openFryStewRecipeSelect(player, 0, adjacentRecipeCategory(recipes, selectedCategory.id, 1).id, cleanSearchQuery);
             return;
         }
+        if (r.selection === 52) {
+            openCookingRecipeCategory(player, recipes, selectedCategory.id, next => openFryStewRecipeSelect(player, 0, next, cleanSearchQuery));
+            return;
+        }
+
         if (r.selection === 48) {
             openFryStewRecipeSearch(player, selectedCategory.id, cleanSearchQuery);
             return;
@@ -855,8 +913,10 @@ function startFrying(player: any, recipeId: any, quantity: any) {
 
     const materialQuality = calcAverageMaterialQuality(player, scaledIngredients);
 
-    fryingSessions.set(player.id, {
+    cancelArtisanCraft(fryingSessions.get(player.id));
+    fryingSessions.set(player.id, initializeComplexCookingMinigame({
         recipeId,
+        cookware: captureCookingEquipment(player, "deep_fryer"),
         quantity,
         scaledIngredients,
         oilTemp: 20,
@@ -883,18 +943,25 @@ function startFrying(player: any, recipeId: any, quantity: any) {
         coatingCount: 0,
 
         ctx: { tempVariance: () => tempVariance(player, recipe) }
-    });
+    }));
 
     openFryer(player);
 }
 
 function openFryer(player: any) {
     const fryer = fryingSessions.get(player.id);
+    if (!ensureComplexCookingRoute(player, "deep_fryer", fryer, FryingActions, openFryer)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = FryStewRecipes[fryer.recipeId];
     const lv = new JobLevel(player, "chef").getLevel();
+    const predictedRank = capCookingRankByRecipe(
+        player,
+        calcRank({ ...fryer, score: fryer.score + getComplexCookingAdjustment(player, "deep_fryer", fryer) }, recipe),
+        recipe.requiredLevel,
+        FRY_STEW_RANK_MULTIPLIER,
+    ).rank;
 
-    const form = new ChestFormData("large").setTitle({ rawtext: [{ translate: langChangeItemName(recipe.name) }] });
+    const form = new ChestFormData("large").enableLoreLineBreaks().setTitle({ rawtext: recipeTitleParts(recipe) });
 
     fill(form, [...Array(9).keys()],
         "minecraft:orange_stained_glass_pane"
@@ -902,6 +969,7 @@ function openFryer(player: any) {
     fill(form, [...Array(9).keys()].map(i => i + 45),
         "minecraft:orange_stained_glass_pane"
     );
+    addComplexCookingMinigameUi(form, player, "deep_fryer", fryer);
 
     const fryingDanger = isFryingDanger(fryer, recipe);
     if (fryingDanger) {
@@ -931,7 +999,8 @@ function openFryer(player: any) {
             { rawtext: [{ text: '§5' }, { translate: "cooking.status.aroma" }, { text: `: ${Math.max(0, fryer.aroma)}\n` }] },
             { rawtext: [{ text: '§b' }, { translate: "cooking.status.actions" }, { text: `: ${fryer.actions}/${fryer.maxActions}\n` }] },
             { rawtext: [{ text: '§f' }, { translate: "cooking.status.amount" }, { text: `: ${fryer.quantity}\n` }] },
-            { rawtext: [{ text: '§5' }, { translate: "cooking.lore.quality", with: [`${capCookingRankByChefLevel(player, calcRank(fryer, recipe), FRY_STEW_RANK_MULTIPLIER).rank}`] }] }
+            { rawtext: [{ text: '§5' }, { translate: "cooking.lore.quality", with: [predictedRank] }] },
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
         ],
         editedName: true
     });
@@ -959,14 +1028,19 @@ function openFryer(player: any) {
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.setButton(49, {
-        iconPath: itemIdToPath["minecraft:lime_dye"],
-        name: "cooking.button.complete",
+        iconPath: itemIdToPath[canCompleteComplexCooking(fryer) ? "minecraft:lime_dye" : "minecraft:barrier"],
+        name: canCompleteComplexCooking(fryer) ? "cooking.button.complete" : "cooking.minigame.finish.locked",
+        lore: [
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
+            ...getComplexCookingCompletionLore(fryer),
+        ],
         editedName: true
     });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
-        handleAction(player, r.selection || 0);
+        if (r.canceled || r.selection === undefined) return;
+        handleAction(player, r.selection);
     });
 }
 
@@ -975,11 +1049,18 @@ function openFryer(player: any) {
 ================================ */
 function handleAction(player: any, slot: any) {
     const fryer = fryingSessions.get(player.id);
+    if (!fryer) return;
+    if (fryer.artisanFinish) { finish(player); return; }
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = FryStewRecipes[fryer.recipeId];
 
-    if (slot === 49 && fryer.phase != 'preparing') {
+    if (slot === 49 && fryer.phase != 'preparing' && canCompleteComplexCooking(fryer)) {
         finish(player);
+        return;
+    }
+    if (slot === 49) {
+        player.onScreenDisplay.setActionBar(getComplexCookingCompletionMessage(fryer));
+        openFryer(player);
         return;
     }
 
@@ -999,7 +1080,17 @@ function handleAction(player: any, slot: any) {
         finish(player);
         return;
     }
+    if (
+        action.key === "add_coating"
+        && fryer.usedCoatings.length < recipe.maxCoatings
+        && !hasAnyUnreservedCookingIngredient(player, Object.keys(recipe.coatings ?? {}), fryer.scaledIngredients)
+    ) {
+        player.onScreenDisplay.setActionBar({ rawtext: [{ translate: "cooking.error.optional_requires_surplus" }] });
+        openFryer(player);
+        return;
+    }
 
+    const hadTrouble = beginComplexCookingAction("deep_fryer", fryer, action.key);
     action.run(fryer, recipe, fryer.ctx, player);
     fryer.actions += action.cost;
     fryer.oilTemp = Math.floor(fryer.oilTemp * 100) / 100;
@@ -1015,6 +1106,7 @@ function handleAction(player: any, slot: any) {
     fryer.flavor = Math.max(0, Math.floor(fryer.flavor * 100) / 100);
     fryer.clarity = Math.max(0, Math.floor(fryer.clarity * 100) / 100);
     fryer.oilDegradation = Math.max(0, Math.floor(fryer.oilDegradation * 100) / 100);
+    endComplexCookingAction(player, "deep_fryer", fryer, FryingActions, hadTrouble);
 
     openFryer(player);
 }
@@ -1131,48 +1223,38 @@ function calcRank(fryer: any, recipe: any) {
  */
 function finish(player: any) {
     const fryer = fryingSessions.get(player.id);
+    if (!fryer || fryer.artisanCraftStarted) return;
+    if (!requireCookingEquipment(player, fryer?.cookware)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = FryStewRecipes[fryer.recipeId];
 
     if (!checkIngredients(player, fryer.scaledIngredients)) {
+        cancelArtisanCraft(fryer);
         fryingSessions.delete(player.id);
         return;
     }
 
-    consume(player, fryer.scaledIngredients);
+    const { minigameResult, rank, mul, itemId, totalCount } = fryer.artisanFinish ??= (() => {
+        const minigameResult = getComplexCookingResultInfo(player, "deep_fryer", fryer);
+        const finalResult = calcRank({
+            ...fryer,
+            score: fryer.score + getComplexCookingAdjustment(player, "deep_fryer", fryer),
+        }, recipe);
+        const { rank, mul } = capCookingRankByRecipe(
+            player,
+            finalResult,
+            recipe.requiredLevel,
+            FRY_STEW_RANK_MULTIPLIER,
+        );
 
-    const { rank, mul } = capCookingRankByChefLevel(player, calcRank(fryer, recipe), FRY_STEW_RANK_MULTIPLIER);
-
-    const resolved = resolveRecipeResult(recipe.result);
-    const isFailure = rank === "F" && fryer.phase === "burned";
-    const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
-    const totalCount = isFailure ? fryer.quantity : fryer.quantity * resolved.count;
-    const inv = player.getComponent("inventory").container;
-
-    for (const item of createResultStacks(itemId, totalCount)) {
-        item.setLore([
-            { rawtext: [{ text: '§r§3==============' }] },
-            { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
-            { rawtext: [{ text: '§r§6' }, { translate: "cooking.fried.specialty" }] },
-            { rawtext: [{ text: '§r§3==============' }] },
-        ]);
-
-        const leftover = inv.addItem(item);
-        if (leftover) {
-            player.dimension.spawnItem(leftover, player.location);
-        }
-    }
-
-    fryingSessions.delete(player.id);
-
-    player.stopSound('cooking.frying_idle');
-    player.stopSound('cooking.fire');
-    player.stopSound('cooking.oil_bubble');
-    player.stopSound('cooking.cool');
-    player.playSound('cooking.complete', player.location);
-
-    if (jobs_config.validity && player.hasTag('mcjobs_chef')) {
-        /* ===== Chef Job ===== */
+        const resolved = resolveRecipeResult(recipe.result);
+        const isFailure = rank === "F" && fryer.phase === "burned";
+        const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
+        const totalCount = isFailure ? fryer.quantity : fryer.quantity * resolved.count;
+        return { minigameResult, rank, mul, itemId, totalCount };
+    })();
+    if (!runArtisanCraft(player, fryer, () => {
+        if (!jobs_config.validity || !player.hasTag('mcjobs_chef')) return undefined;
         const job = new JobLevel(player, "chef");
         const level = job.getLevel();
 
@@ -1191,32 +1273,37 @@ function finish(player: any) {
                 buff.getMultiplier("chef") *
                 6
             ) / 100;
+        const xpReward = recipe.baseXp * mul * 1.5 * Math.min(fryer.quantity, 25);
+        return { job: "chef", money: reward, xp: xpReward, rank, display: "cooking" };
+    }, () => {
+        consume(player, fryer.scaledIngredients);
+        rememberLastCraftedRecipe(player.id, "cooking:frystew", fryer.recipeId);
 
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-        const finalReward = applyDailyLimit(
-            playerData,
-            "chef",
-            reward,
-            jobs_config.dailyLimit.chef
-        );
+        const inv = player.getComponent("inventory").container;
 
-        if (finalReward > 0) {
-            job.addXp(recipe.baseXp * mul * 1.5);
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+        for (const item of createResultStacks(itemId, totalCount)) {
+            item.setLore([
+                { rawtext: [{ text: '§r§3==============' }] },
+                { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
+                { rawtext: [{ text: '§r§6' }, { translate: "cooking.minigame.result.level_technique", with: [`${minigameResult.levelTechnique}`] }] },
+                { rawtext: [{ text: '§r§d' }, { translate: "cooking.minigame.result.route_bonus", with: [`${minigameResult.routeBonus}`] }] },
+                { rawtext: [{ text: '§r§6' }, { translate: "cooking.fried.specialty" }] },
+                { rawtext: [{ text: '§r§3==============' }] },
+            ]);
+
+            const leftover = inv.addItem(item);
+            if (leftover) {
+                player.dimension.spawnItem(leftover, player.location);
+            }
         }
 
-        player.onScreenDisplay.setActionBar(
-            {
-                rawtext: [
-                    { translate: "cooking.reward.prefix" },
-                    { text: ` ${rank} ` },
-                    { translate: "cooking.reward.money" },
-                    { text: `+${finalReward}${config.MoneyName}` },
-                    { translate: "cooking.reward.xp" },
-                    { text: `${job.getXp()}/${job.getXpRequired(level)}` }
-                ]
-            }
-        );
-    }
+        fryingSessions.delete(player.id);
+    })) return;
+
+    player.stopSound('cooking.frying_idle');
+    player.stopSound('cooking.fire');
+    player.stopSound('cooking.oil_bubble');
+    player.stopSound('cooking.cool');
+    player.playSound('cooking.complete', player.location);
+
 }

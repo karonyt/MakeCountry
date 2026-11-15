@@ -1,5 +1,6 @@
+import { StorageActionFormData as ActionFormData, StorageModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
+
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 
 /**

@@ -1,0 +1,34 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:jade_mineral_lamp"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:glow_pigment"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:glow_pigment"
+      },
+      {
+        "item": "mc:borosilicate_glass"
+      },
+      {
+        "item": "minecraft:redstone"
+      },
+      {
+        "item": "minecraft:green_dye"
+      }
+    ],
+    "result": {
+      "item": "mc:jade_mineral_lamp",
+      "count": 4
+    }
+  }
+}

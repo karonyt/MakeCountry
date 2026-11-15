@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:suit_shoes",
+      "menu_category": {
+        "category": "equipment"
+      }
+    },
+    "components": {
+      "minecraft:icon": "suit_shoes",
+      "minecraft:wearable": {
+        "slot": "slot.armor.feet",
+        "protection": 1,
+        "dispensable": true
+      },
+      "minecraft:durability": {
+        "max_durability": 195
+      },
+      "minecraft:enchantable": {
+        "slot": "armor_feet",
+        "value": 12
+      }
+    }
+  }
+}

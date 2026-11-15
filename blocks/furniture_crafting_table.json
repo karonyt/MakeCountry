@@ -24,6 +24,10 @@
       "minecraft:collision_box": true,
       "minecraft:geometry": "minecraft:geometry.full_block",
       "minecraft:material_instances": {
+        "*": {
+          "texture": "furniture_crafting_table_side",
+          "render_method": "opaque"
+        },
         "up": {
           "texture": "furniture_crafting_table_top",
           "render_method": "opaque"

@@ -1,0 +1,25 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:gypsum_block_unpack"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:gypsum_block"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:gypsum_block"
+      }
+    ],
+    "result": {
+      "item": "mc:fine_plaster",
+      "count": 4
+    }
+  }
+}

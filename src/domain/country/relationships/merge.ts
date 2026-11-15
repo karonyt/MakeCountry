@@ -5,6 +5,7 @@
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { country } from "@/shared/events/make-country-events.js";
+import { notifyRelationshipRequest } from "@/domain/country/relationships/request-notifications.js";
 /**@typedef {import("@/domain/country/country-manager.js").CountryData} CountryData*/
 
 /**
@@ -44,10 +45,7 @@ export function sendMergeRequestFunction(countryId: any, countryData: any, id: a
     countryData.mergeRequestSend = send;
     countryDataBase.set(`country_${countryData.id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
-    if (player) {
-        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
-        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `sent.merge.request`, with: [`${targetCountryData.name}`] }] })
-    }
+    notifyRelationshipRequest("sent", "merge", countryData, targetCountryData, player);
     country.afterEvents.sendMergeRequest.emit({
         countryId: id,
         targetCountryId: countryId,

@@ -1,0 +1,26 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:croissant_recipe"
+    },
+    "tags": ["oven_range"],
+    "pattern": [
+      "#B#",
+      " # "
+    ],
+    "key": {
+      "#": {
+        "item": "mc:bread_material"
+      },
+      "B": {
+        "item": "mc:butter"
+      }
+    },
+    "unlock": [{"item": "mc:butter"}],
+    "result": {
+      "item": "mc:croissant",
+      "count": 2
+    }
+  }
+}

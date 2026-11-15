@@ -1,5 +1,6 @@
+import { NetworkActionFormData as ActionFormData, NetworkMessageFormData as MessageFormData } from "@/shared/ui/purpose-forms.js";
 import { system, Player, CommandPermissionLevel } from "@minecraft/server";
-import { MessageFormData, ActionFormData, uiManager } from "@minecraft/server-ui";
+import { uiManager } from "@minecraft/server-ui";
 
 async function pingExecuter(origin: any, args: any) {
     if (!origin?.sourceEntity || !(origin?.sourceEntity instanceof Player)) return;

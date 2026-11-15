@@ -1,8 +1,11 @@
+import { CommerceModalForm as ModalForm } from "@/shared/ui/purpose-forms.js";
+import { addItemsExactly } from "@/shared/minecraft/inventory-delivery.js";
+import { getInteractiveFormValues } from "@/shared/ui/form-class.js";
 import { ItemStack, Player, system } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
 import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ModalForm } from "@/shared/ui/form-class.js";
+
 const ModalFormData = ModalForm;
 import config from "@/config/server.js";
 import { itemIdToPath } from "@/config/textures.js";
@@ -179,30 +182,40 @@ function ShopSelectCommonForm(player: any, common: any, categoryCommons: any, pa
             return;
         };
         const playerData = GetAndParsePropertyData(`player_${player.id}`);
-        let price = common.price * rs.formValues[1];
-        if (rs.formValues[0]) {
-            price = price * 64
-        };
+        const values = getInteractiveFormValues(rs);
+        const amount = values[1];
+        if (!Number.isSafeInteger(amount) || amount < 1 || amount > 64) return;
+        const quantity = amount * (values[0] === true ? 64 : 1);
+        const price = common.price * quantity;
+        if (!Number.isFinite(price) || price < 0) return;
         if (playerData.money < price) {
             player.sendMessage({ translate: `error.notenough.money` });
             return;
         };
         const container = player.getComponent(`inventory`).container;
-        if (container.emptySlotsCount <= Math.ceil((price / common.price) / 64)) {
+        const probe = new ItemStack(common.id, 1);
+        let capacity = 0;
+        for (let slot = 0; slot < container.size; slot++) {
+            const current = container.getItem(slot);
+            if (!current) capacity += probe.maxAmount;
+            else if (current.isStackableWith(probe)) capacity += Math.max(0, current.maxAmount - current.amount);
+        }
+        if (capacity < quantity) {
             player.sendMessage({ translate: `no.available.slots` });
             return;
         };
-        for (let i = (price / common.price); 0 < i; i -= 64) {
-            if (i < 64) {
-                container.addItem(new ItemStack(common.id, i));
-                break;
-            };
-            container.addItem(new ItemStack(common.id, 64));
+        const stacks: ItemStack[] = [];
+        for (let remaining = quantity; remaining > 0; remaining -= probe.maxAmount) {
+            stacks.push(new ItemStack(common.id, Math.min(remaining, probe.maxAmount)));
+        }
+        if (!addItemsExactly(container, stacks)) {
+            player.sendMessage({ translate: `no.available.slots` });
+            return;
         };
         playerData.money -= price;
+        StringifyAndSavePropertyData(`player_${player.id}`, playerData);
         player.sendMessage({ translate: `finish.bought` });
         ShopCommonsMenuCategory(player, categoryCommons, page);
-        StringifyAndSavePropertyData(`player_${player.id}`, playerData);
         return;
     });
 };

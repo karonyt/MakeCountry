@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.21.60",
   "minecraft:block": {
     "description": {
       "identifier": "mc:soybeans_crop",
@@ -22,6 +22,15 @@
       },
       "minecraft:flammable": true,
       "minecraft:collision_box": false,
+      "minecraft:liquid_detection": {
+        "detection_rules": [
+          {
+            "liquid_type": "water",
+            "can_contain_liquid": false,
+            "on_liquid_touches": "popped"
+          }
+        ]
+      },
       "minecraft:geometry": "geometry.soybeans_crop",
       "minecraft:light_dampening": 0,
       "minecraft:placement_filter": {

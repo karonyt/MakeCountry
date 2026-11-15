@@ -1,8 +1,64 @@
 import { Player, world } from "@minecraft/server";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { CountryManager } from "@/domain/country/country-manager.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
+
+function withoutRole(roles: unknown, roleId: number): any[] {
+    if (!Array.isArray(roles)) return [];
+    return roles.filter((id: any) => Number(id) !== roleId);
+}
+
+/**
+ * country.owner / owner role / player.roles を一緒に切り替える。
+ * country.owner だけ先に変えると、旧国王が owner role を持ち続けたり
+ * 新国王が管理フォームを開けない状態になるため、ここを唯一の更新口にする。
+ */
+export function applyCountryOwnerChange(countryId: any, rawNewOwnerId: any) {
+    const newOwnerId = `${rawNewOwnerId ?? ""}`;
+    if (!newOwnerId || newOwnerId === "undefined" || newOwnerId === "null") return undefined;
+
+    const countryDataBase = new DynamicProperties('country');
+    const playerDataBase = new DynamicProperties('player');
+    const roleDataBase = new DynamicProperties('role');
+    const rawCountryData = countryDataBase.get(`country_${countryId}`);
+    const rawNewOwnerData = playerDataBase.get(`player_${newOwnerId}`);
+    if (!rawCountryData || !rawNewOwnerData) return undefined;
+
+    const countryData = JSON.parse(rawCountryData);
+    const newOwnerData = JSON.parse(rawNewOwnerData);
+    const members = Array.isArray(countryData.members) ? countryData.members.map(String) : [];
+    if (!members.includes(newOwnerId) || Number(newOwnerData.country) !== Number(countryData.id)) {
+        return undefined;
+    }
+
+    const ownerRoleId = Number(countryData.ownerRole);
+    const rawOwnerRoleData = roleDataBase.get(`role_${ownerRoleId}`);
+    if (!Number.isFinite(ownerRoleId) || !rawOwnerRoleData) return undefined;
+    const ownerRoleData = JSON.parse(rawOwnerRoleData);
+
+    // owner role に残っている歴代国王から、この国の owner role だけを外す。
+    const previousRoleMembers = Array.isArray(ownerRoleData.members)
+        ? [...new Set(ownerRoleData.members.map(String))]
+        : [];
+    for (const memberId of previousRoleMembers) {
+        if (memberId === newOwnerId) continue;
+        const rawMemberData = playerDataBase.get(`player_${memberId}`);
+        if (!rawMemberData) continue;
+        const memberData = JSON.parse(rawMemberData);
+        memberData.roles = withoutRole(memberData.roles, ownerRoleId);
+        playerDataBase.set(`player_${memberId}`, memberData);
+    }
+
+    newOwnerData.roles = [...withoutRole(newOwnerData.roles, ownerRoleId), ownerRoleId];
+    ownerRoleData.members = [newOwnerId];
+    countryData.owner = newOwnerId;
+
+    // Role と player を先に揃え、最後に owner を切り替える。
+    roleDataBase.set(`role_${ownerRoleId}`, ownerRoleData);
+    playerDataBase.set(`player_${newOwnerId}`, newOwnerData);
+    countryDataBase.set(`country_${countryData.id}`, countryData);
+    return { countryData, newOwnerData };
+}
 
 /**
  * プレイヤーに招待を送る
@@ -43,30 +99,9 @@ export function setNewOwnerFunction(countryId: any, newOwner: any, player = unde
                 return false;
             };
         };
-        const playerDataBase = new DynamicProperties('player');
-        /**
-         * @type {PlayerData|undefined}
-         */
-        let playerData = undefined;
-        if (player) {
-            // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-            playerData = JSON.parse(playerDataBase.get(`player_${playerId}`));
-        };
-        const rawNewOwnerData = playerDataBase.get(`player_${newOwnerId}`);
-        if (!rawNewOwnerData) {
-            return false
-        };
-
-        const countryDataBase = new DynamicProperties('country');
-        const countryManager = new CountryManager(countryId);
-        const countryData = countryManager.countryData;
-        countryData.owner = newOwnerId;
-        countryDataBase.set(`country_${countryId}`, countryData);
-
-        /**
-         * @type {PlayerData}
-         */
-        const newOwnerData = JSON.parse(rawNewOwnerData);
+        const changed = applyCountryOwnerChange(countryId, newOwnerId);
+        if (!changed) return false;
+        const newOwnerData = changed.newOwnerData;
         if (player) {
             const playerEntity = world.getEntity(playerId);
             //playerDataBase.set(`player_${playerId}`, playerData)

@@ -1,7 +1,8 @@
+import { SocialActionForm as ActionForm } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionForm } from "@/shared/ui/form-class.js";
-import { joinTypeSelectDefaultForm } from "@/features/forms/default/menu/join/join_type_select.js";
+
+import { callJoinTypeSelectForm } from "@/features/forms/form-registry.js";
 import { joinCheckFromListDefaultForm } from "@/features/forms/default/menu/join/allow_list/check.js";
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData*/
 
@@ -34,7 +35,7 @@ export function allowJoinCountriesListDefaultForm(player: any) {
     };
     form.show(player).then((rs: any) => {
         if (rs.canceled) {
-            joinTypeSelectDefaultForm(player);
+            callJoinTypeSelectForm(player);
             return;
         };
         if (countriesData.length === 0) {

@@ -1,3 +1,4 @@
+import { StorageModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import {
     world,
     ItemStack,
@@ -10,9 +11,14 @@ import { getToolQuality } from "@/domain/items/item-service.js";
 import { itemIdToPath } from "@/config/textures.js";
 import { appendChestPresentationLore, getChestItemDataPresentation, getChestItemStackPresentation, readItemStackPotionData } from "@/shared/minecraft/item-presentation.js";
 import { enchantIdToLang, langChangeItemName } from "@/shared/utils/minecraft.js";
-import { ModalFormData } from "@minecraft/server-ui";
+import { usesClassicFormUI } from "@/shared/ui/form-class.js";
+import { addItemsExactly } from "@/shared/minecraft/inventory-delivery.js";
+
 
 const CHUNK_LIMIT = 20000;
+const BACKPACK_CHEST_MARKER = "§b§a§c§k§p§a§c§k§g§r§i§d";
+const BACKPACK_PAGE_SIZE = 45;
+const HOTBAR_SLOT_COUNT = 9;
 
 const outItems = [
     //'minecraft:arrow',
@@ -101,6 +107,13 @@ function getBackpackName(bp: any) {
     return langChangeItemName(bp.typeId);
 }
 
+function getBackpackTitleParts(bp: any, suffix = "") {
+    const name = bp.nameTag && bp.nameTag.trim().length > 0
+        ? { text: bp.nameTag }
+        : { translate: langChangeItemName(bp.typeId) };
+    return [{ text: BACKPACK_CHEST_MARKER }, name, ...(suffix ? [{ text: suffix }] : [])];
+}
+
 function getBackpackCapacity(bp: any) {
     const q = Math.floor(getToolQuality(bp) + 1);
     return {
@@ -108,18 +121,6 @@ function getBackpackCapacity(bp: any) {
         maxSlots: q * 9,
         maxTotal: q * 10000
     };
-}
-
-function fillGlass(ui: any, slots: any, start: any, end: any, type: any, name: any) {
-    for (let i = start; i <= end; i++) {
-        if (slots.has(i)) continue;
-        ui.setButton(i, {
-            iconPath: type,
-            name,
-            stackAmount: 1,
-            editedName: true
-        });
-    }
 }
 
 function getEnchantLore(enchantments: any, prefix: any) {
@@ -137,6 +138,19 @@ function getEnchantLore(enchantments: any, prefix: any) {
         );
     }
     return lore;
+}
+
+export function getBackpackItemLore(lore: any[] = []) {
+    return lore.flatMap((line: any, index: number) => [
+        ...(index > 0 ? [{ text: "\n\u00A7r" }] : []),
+        typeof line === "string" ? { text: line } : line
+    ]);
+}
+
+function appendBackpackItemLore(lore: any[], itemLore: any[] = []) {
+    const normalizedItemLore = getBackpackItemLore(itemLore);
+    if (normalizedItemLore.length === 0) return lore;
+    return [...lore, { text: "\n\u00A7r" }, ...normalizedItemLore];
 }
 
 function reopenBackpackList(player: any, page = 0, keyword = "", mode = "single") {
@@ -192,8 +206,12 @@ world.afterEvents.itemUse.subscribe(ev => {
 function openRoot(player: any, bp: any, data: any, meta: any) {
     const cap = getBackpackCapacity(bp);
 
-    const ui = new ChestFormData("single")
-        .setTitle(getBackpackName(bp));
+    const ui = new ChestFormData("single");
+    if (usesClassicFormUI(player)) ui.setTitle(getBackpackName(bp));
+    else {
+        ui.setTitle(getBackpackTitleParts(bp));
+        ui.trimTrailingEmptySlots();
+    }
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     ui.setButton(11, {
@@ -241,9 +259,32 @@ function openRoot(player: any, bp: any, data: any, meta: any) {
         editedName: true
     });
 
+    ui.setButton(24, {
+        iconPath: itemIdToPath["minecraft:ender_chest"],
+        name: "backpack.button.storeknown",
+        lore: [{ rawtext: [{ translate: "backpack.lore.storeknown" }] }],
+        stackAmount: 1,
+        editedName: true
+    });
+
+    ui.setButton(25, {
+        iconPath: itemIdToPath["minecraft:shulker_box"],
+        name: "backpack.button.storeinventory",
+        lore: [{ rawtext: [{ translate: "backpack.lore.storeinventory" }] }],
+        stackAmount: 1,
+        editedName: true
+    });
+
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     ui.show(player).then(r => {
         if (r.canceled) return;
+        if (r.selection === 24 || r.selection === 25) {
+            storeInventoryInBulk(player, r.selection === 24 ? "known" : "inventory");
+            const current = getCurrentBackpack(player);
+            if (!current) return;
+            openRoot(player, current.item, loadSplit(current.item, "bp:data", []), loadSplit(current.item, "bp:meta", { total: 0 }));
+            return;
+        }
         if (r.selection === 11) openList(player, bp, data, meta, 0, "", "single");
         if (r.selection === 12) openList(player, bp, data, meta, 0, "", "all");
         if (r.selection === 13) openRenameUI(player);
@@ -302,7 +343,6 @@ function hasInventorySpace(player: any) {
 function getAddableAmount(player: any, itemData: any) {
     const inv = player.getComponent("inventory").container;
     const temp = createItemStackFromData(itemData, 1);
-    const targetKey = makeItemKey(containerToData(temp));
     let amount = 0;
 
     for (let i = 0; i < inv.size; i++) {
@@ -312,7 +352,7 @@ function getAddableAmount(player: any, itemData: any) {
             continue;
         }
 
-        if (makeItemKey(containerToData(current)) !== targetKey) continue;
+        if (!current.isStackableWith(temp)) continue;
         amount += Math.max(0, current.maxAmount - current.amount);
     }
 
@@ -320,12 +360,15 @@ function getAddableAmount(player: any, itemData: any) {
 }
 
 function openList(player: any, bp: any, data: any, meta: any, page: any, keyword = "", mode = "single") {
+    if (usesClassicFormUI(player)) {
+        openClassicBackpackList(player, bp, data, meta, page, keyword, mode);
+        return;
+    }
     const current = getCurrentBackpack(player);
     // @ts-ignore TS(2531): Object is possibly 'null'.
     const cap = current.cap;
 
-    const perPage = 45;
-    const maxPage = Math.max(0, Math.ceil(cap.maxSlots / perPage) - 1);
+    const maxPage = Math.max(0, Math.ceil(cap.maxSlots / BACKPACK_PAGE_SIZE) - 1);
 
     page = Math.max(0, Math.min(page, maxPage));
 
@@ -333,43 +376,40 @@ function openList(player: any, bp: any, data: any, meta: any, page: any, keyword
     if (keyword) list = list.filter((d: any) => d.data.typeId.includes(keyword));
     list.sort((a: any, b: any) => b.count - a.count);
 
-    const startIndex = page * perPage;
-    const endIndex = Math.min(startIndex + perPage, cap.maxSlots);
+    const startIndex = page * BACKPACK_PAGE_SIZE;
+    const endIndex = Math.min(startIndex + BACKPACK_PAGE_SIZE, cap.maxSlots);
     const items = list.slice(startIndex, endIndex);
 
     const pageAvailableSlots = Math.max(
         0,
-        Math.min(perPage, cap.maxSlots - startIndex)
+        Math.min(BACKPACK_PAGE_SIZE, cap.maxSlots - startIndex)
     );
 
-    const ui = new ChestFormData("large")
-        .setTitle([{ rawtext: [{ translate: getBackpackName(bp) }, { text: ` [${page + 1}/${maxPage + 1}]` }] }]);
-
-    const usedSlots = new Set();
+    const ui = new ChestFormData("large");
+    ui.setTitle(getBackpackTitleParts(bp, `  §8${page + 1}/${maxPage + 1}`));
+    ui.trimTrailingEmptySlots();
 
     items.forEach((d: any, i: any) => {
-        usedSlots.add(i);
         const itemData = d.data;
         const presentation = getChestItemDataPresentation(itemData);
 
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        ui.setButton(i, {
+        ui.setButton(i + 9, {
             iconPath: presentation.iconPath,
             name: itemData.nameTag ? [{ text: itemData.nameTag }] : presentation.name,
             stackAmount: Math.min(d.count, 64),
-            lore: appendChestPresentationLore(getEnchantLore(
+            lore: appendChestPresentationLore(appendBackpackItemLore(getEnchantLore(
                 itemData.enchantments,
                 [{ text: '\u00A77' }, { translate: "backpack.item.hasamount", with: [`${d.count}`] }]
-            ), presentation.lore),
+            ), itemData.lore), presentation.lore),
             editedName: true,
             isGlint: (itemData.enchantments?.length ?? 0) > 0
         });
     });
 
-    for (let i = pageAvailableSlots; i < perPage; i++) {
-        usedSlots.add(i);
+    for (let i = pageAvailableSlots; i < BACKPACK_PAGE_SIZE; i++) {
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        ui.setButton(i, {
+        ui.setButton(i + 9, {
             iconPath: itemIdToPath["minecraft:red_stained_glass_pane"],
             name: "backpack.button.locked",
             stackAmount: 1,
@@ -378,9 +418,8 @@ function openList(player: any, bp: any, data: any, meta: any, page: any, keyword
     }
 
     if (page > 0) {
-        usedSlots.add(45);
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        ui.setButton(45, {
+        ui.setButton(0, {
             iconPath: itemIdToPath["minecraft:arrow"],
             name: "backpack.button.before",
             stackAmount: 1,
@@ -389,9 +428,8 @@ function openList(player: any, bp: any, data: any, meta: any, page: any, keyword
     }
 
     if (page < maxPage) {
-        usedSlots.add(53);
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
-        ui.setButton(53, {
+        ui.setButton(8, {
             iconPath: itemIdToPath["minecraft:arrow"],
             name: "backpack.button.after",
             stackAmount: 1,
@@ -399,15 +437,13 @@ function openList(player: any, bp: any, data: any, meta: any, page: any, keyword
         });
     }
 
-    fillGlass(ui, usedSlots, 45, 53, itemIdToPath["minecraft:black_stained_glass_pane"], " ");
-
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     ui.show(player).then(r => {
         if (r.canceled) return;
-        if (r.selection === 45) return openList(player, bp, data, meta, page - 1, keyword, mode);
-        if (r.selection === 53) return openList(player, bp, data, meta, page + 1, keyword, mode);
+        if (r.selection === 0 && page > 0) return openList(player, bp, data, meta, page - 1, keyword, mode);
+        if (r.selection === 8 && page < maxPage) return openList(player, bp, data, meta, page + 1, keyword, mode);
 
-        const entry = items[r.selection];
+        const entry = items[r.selection - 9];
         if (!entry) return;
 
         if (mode === "all") {
@@ -415,6 +451,74 @@ function openList(player: any, bp: any, data: any, meta: any, page: any, keyword
             return;
         }
         takeItem(player, bp, data, meta, entry);
+    });
+}
+
+function fillClassicBackpackGlass(ui: any, usedSlots: Set<number>, start: number, end: number) {
+    for (let slot = start; slot <= end; slot++) {
+        if (usedSlots.has(slot)) continue;
+        ui.setButton(slot, {
+            iconPath: itemIdToPath["minecraft:black_stained_glass_pane"],
+            name: " ",
+            stackAmount: 1,
+            editedName: true,
+        });
+    }
+}
+
+function openClassicBackpackList(player: any, bp: any, data: any, meta: any, page: number, keyword = "", mode = "single") {
+    const current = getCurrentBackpack(player);
+    if (!current) return;
+    const perPage = 45;
+    const maxPage = Math.max(0, Math.ceil(current.cap.maxSlots / perPage) - 1);
+    page = Math.max(0, Math.min(page, maxPage));
+    let list = data;
+    if (keyword) list = list.filter((entry: any) => entry.data.typeId.includes(keyword));
+    list.sort((a: any, b: any) => b.count - a.count);
+    const startIndex = page * perPage;
+    const items = list.slice(startIndex, Math.min(startIndex + perPage, current.cap.maxSlots));
+    const pageAvailableSlots = Math.max(0, Math.min(perPage, current.cap.maxSlots - startIndex));
+    const ui = new ChestFormData("large");
+    ui.setTitle([{ rawtext: [{ translate: getBackpackName(bp) }, { text: ` [${page + 1}/${maxPage + 1}]` }] }]);
+    const usedSlots = new Set<number>();
+
+    items.forEach((entry: any, index: number) => {
+        usedSlots.add(index);
+        const itemData = entry.data;
+        const presentation = getChestItemDataPresentation(itemData);
+        ui.setButton(index, {
+            iconPath: presentation.iconPath,
+            name: itemData.nameTag ? [{ text: itemData.nameTag }] : presentation.name,
+            stackAmount: Math.min(entry.count, 64),
+            lore: appendChestPresentationLore(appendBackpackItemLore(getEnchantLore(
+                itemData.enchantments,
+                [{ text: '\u00A77' }, { translate: "backpack.item.hasamount", with: [`${entry.count}`] }],
+            ), itemData.lore), presentation.lore),
+            editedName: true,
+            isGlint: (itemData.enchantments?.length ?? 0) > 0,
+        });
+    });
+    for (let index = pageAvailableSlots; index < perPage; index++) {
+        usedSlots.add(index);
+        ui.setButton(index, { iconPath: itemIdToPath["minecraft:red_stained_glass_pane"], name: "backpack.button.locked", stackAmount: 1, editedName: true });
+    }
+    if (page > 0) {
+        usedSlots.add(45);
+        ui.setButton(45, { iconPath: itemIdToPath["minecraft:arrow"], name: "backpack.button.before", stackAmount: 1, editedName: true });
+    }
+    if (page < maxPage) {
+        usedSlots.add(53);
+        ui.setButton(53, { iconPath: itemIdToPath["minecraft:arrow"], name: "backpack.button.after", stackAmount: 1, editedName: true });
+    }
+    fillClassicBackpackGlass(ui, usedSlots, 45, 53);
+    ui.show(player).then(response => {
+        if (response.canceled) return;
+        if (response.selection === 45 && page > 0) return openList(player, bp, data, meta, page - 1, keyword, mode);
+        if (response.selection === 53 && page < maxPage) return openList(player, bp, data, meta, page + 1, keyword, mode);
+        const entry = items[response.selection ?? -1];
+        if (!entry) return;
+        if (mode === "all") takeAllItem(player, bp, data, meta, entry);
+        else takeItem(player, bp, data, meta, entry);
     });
 }
 
@@ -442,11 +546,15 @@ function takeItemAmount(player: any, entry: any, maxAmount: any) {
     const inv = player.getComponent("inventory").container;
     const maxStackAmount = createItemStackFromData(realEntry.data, 1).maxAmount;
     let remaining = amount;
-
+    const stacks: ItemStack[] = [];
     while (remaining > 0) {
         const stackAmount = Math.min(remaining, maxStackAmount);
-        inv.addItem(createItemStackFromData(realEntry.data, stackAmount));
+        stacks.push(createItemStackFromData(realEntry.data, stackAmount));
         remaining -= stackAmount;
+    }
+    if (!addItemsExactly(inv, stacks)) {
+        player.sendMessage({ translate: 'backpack.error.notenough.inventory' });
+        return false;
     }
 
     realEntry.count -= amount;
@@ -514,7 +622,7 @@ function containerToData(item: any) {
     const potionData = readItemStackPotionData(item);
     const potion = potionData ? [potionData] : [];
     return {
-        typeId: item.typeId, amount: item.amount, nameTag: item.nameTag, lore: item.getLore(), enchantments: ench, nbt: item.getComponent(ItemComponentTypes.Durability)?.damage, dyp, potion
+        typeId: item.typeId, amount: item.amount, nameTag: item.nameTag, lore: item.getRawLore(), enchantments: ench, nbt: item.getComponent(ItemComponentTypes.Durability)?.damage, dyp, potion
     };
 }
 
@@ -554,7 +662,7 @@ function storeMatchingItems(player: any, selectedSlot: any) {
     const data = loadSplit(bp, "bp:data", []);
     const inv = player.getComponent("inventory").container;
     const selectedItem = inv.getItem(selectedSlot);
-    if (!selectedItem) return false;
+    if (!selectedItem || selectedItem.getComponent(ItemComponentTypes.Inventory)) return false;
 
     const itemData = containerToData(selectedItem);
     const key = makeItemKey(itemData);
@@ -586,7 +694,7 @@ function storeMatchingItems(player: any, selectedSlot: any) {
         const currentItem = inv.getItem(i);
         if (!currentItem) continue;
         if (currentItem.typeId.includes('backpack')) continue;
-        if (outItems.includes(currentItem.typeId)) continue;
+        if (outItems.includes(currentItem.typeId) || currentItem.getComponent(ItemComponentTypes.Inventory)) continue;
 
         if (makeItemKey(containerToData(currentItem)) !== key) continue;
 
@@ -616,6 +724,99 @@ function storeMatchingItems(player: any, selectedSlot: any) {
     return true;
 }
 
+export function canStoreInBackpack(item: any) {
+    if (!item) return false;
+    if (item.typeId.includes('backpack')) return false;
+    if (outItems.includes(item.typeId)) return false;
+    if (item.getComponent(ItemComponentTypes.Inventory)) return false;
+    return true;
+}
+
+/**
+ * ホットバー（0〜8）以外のインベントリをまとめて入れる。
+ * known: すでにバックパックにある種類（名前・説明・エンチャント・耐久まで一致）だけ。
+ * inventory: 入れられるものを全部（新しい種類は空き枠の分だけ）。
+ */
+export function storeInventoryInBulk(player: any, mode: "known" | "inventory") {
+    const current = getCurrentBackpack(player);
+    if (!current) {
+        player.sendMessage({ translate: 'backpack.error.notfound' });
+        return 0;
+    }
+
+    const { item: bp, slot, cap } = current;
+    const meta = loadSplit(bp, "bp:meta", { total: 0 });
+    const data = loadSplit(bp, "bp:data", []);
+    const entries = new Map<string, any>(data.map((e: any) => [e.key, e]));
+    const inv = player.getComponent("inventory").container;
+
+    let remain = cap.maxTotal - meta.total;
+    let stored = 0;
+    let matched = 0;
+    let leftOver = false;
+
+    for (let i = HOTBAR_SLOT_COUNT; i < inv.size; i++) {
+        if (i === slot) continue;
+        const item = inv.getItem(i);
+        if (!canStoreInBackpack(item)) continue;
+
+        const itemData = containerToData(item);
+        const key = makeItemKey(itemData);
+        let entry = entries.get(key);
+        if (!entry) {
+            if (mode === "known") continue;
+            if (data.length >= cap.maxSlots) {
+                leftOver = true;
+                continue;
+            }
+            entry = { key, data: itemData, count: 0 };
+            data.push(entry);
+            entries.set(key, entry);
+        }
+        matched++;
+
+        if (remain <= 0) {
+            leftOver = true;
+            break;
+        }
+
+        const moveAmount = Math.min(item.amount, remain);
+        entry.count += moveAmount;
+        meta.total += moveAmount;
+        stored += moveAmount;
+        remain -= moveAmount;
+
+        if (moveAmount >= item.amount) {
+            inv.setItem(i, undefined);
+        } else {
+            item.amount -= moveAmount;
+            inv.setItem(i, item);
+            leftOver = true;
+        }
+    }
+
+    for (let i = data.length - 1; i >= 0; i--) {
+        if (data[i].count <= 0) data.splice(i, 1);
+    }
+
+    if (stored <= 0) {
+        if (matched === 0 && !leftOver) {
+            player.sendMessage({ translate: mode === "known" ? 'backpack.error.noknownitem' : 'backpack.error.noitem' });
+        } else {
+            player.sendMessage({ translate: 'backpack.error.full' });
+        }
+        return 0;
+    }
+
+    saveSplit(bp, "bp:data", data);
+    saveSplit(bp, "bp:meta", meta);
+    inv.setItem(slot, bp);
+
+    player.sendMessage({ translate: 'backpack.bulk.stored', with: [`${stored}`] });
+    if (leftOver) player.sendMessage({ translate: 'backpack.bulk.partial' });
+    return stored;
+}
+
 function storeItemAmount(player: any, selectedSlot: any, amount: any) {
     const current = getCurrentBackpack(player);
     if (!current) {
@@ -628,7 +829,7 @@ function storeItemAmount(player: any, selectedSlot: any, amount: any) {
     const data = loadSplit(bp, "bp:data", []);
     const inv = player.getComponent("inventory").container;
     const item = inv.getItem(selectedSlot);
-    if (!item) return false;
+    if (!item || item.getComponent(ItemComponentTypes.Inventory)) return false;
 
     const storeAmount = Math.min(amount, item.amount);
     if (meta.total + storeAmount > cap.maxTotal) {
@@ -700,44 +901,73 @@ function openStoreAmountUI(player: any, invIndex: any) {
     });
 }
 
-function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single") {
+function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single", page = 0) {
+    if (usesClassicFormUI(player)) {
+        openClassicBackpackStore(player, bp, data, meta, mode);
+        return;
+    }
     const inv = player.getComponent("inventory").container;
-    const ui = new ChestFormData("large").setTitle([{ translate: 'backpack.item.store' }]);
-
-    const map: any = [];
-
-    let uiSlot = 0;
-    for (let i = 0; i < inv.size && uiSlot < 54; i++) {
+    const candidates: { invIndex: number, item: any }[] = [];
+    for (let i = 0; i < inv.size; i++) {
         const it = inv.getItem(i);
         if (!it) continue;
         if (it.typeId.includes('backpack')) continue;
-        if (outItems.includes(it.typeId)) continue;
+        if (outItems.includes(it.typeId) || it.getComponent(ItemComponentTypes.Inventory)) continue;
+        candidates.push({ invIndex: i, item: it });
+    }
+
+    if (candidates.length === 0) {
+        player.sendMessage({ translate: 'backpack.error.noitem' });
+        return;
+    }
+
+    const pageCount = Math.max(1, Math.ceil(candidates.length / BACKPACK_PAGE_SIZE));
+    page = Math.max(0, Math.min(page, pageCount - 1));
+    const pageItems = candidates.slice(page * BACKPACK_PAGE_SIZE, (page + 1) * BACKPACK_PAGE_SIZE);
+    const ui = new ChestFormData("large");
+    ui.setTitle([{ text: BACKPACK_CHEST_MARKER }, { translate: 'backpack.item.store' }, { text: `  §8${page + 1}/${pageCount}` }]);
+    ui.trimTrailingEmptySlots();
+
+    if (page > 0) {
+        ui.setButton(0, {
+            iconPath: itemIdToPath["minecraft:arrow"],
+            name: "backpack.button.before",
+            stackAmount: 1,
+            editedName: true
+        });
+    }
+    if (page + 1 < pageCount) {
+        ui.setButton(8, {
+            iconPath: itemIdToPath["minecraft:arrow"],
+            name: "backpack.button.after",
+            stackAmount: 1,
+            editedName: true
+        });
+    }
+
+    const map: any = [];
+    pageItems.forEach(({ invIndex, item: it }, pageIndex) => {
         const presentation = getChestItemStackPresentation(it);
+        const uiSlot = pageIndex + 9;
 
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         ui.setButton(uiSlot, {
             iconPath: presentation.iconPath,
             name: it.nameTag ? [{ text: it.nameTag }] : presentation.name,
             stackAmount: it.amount,
-            lore: appendChestPresentationLore(getEnchantLore(
+            lore: appendChestPresentationLore(appendBackpackItemLore(getEnchantLore(
                 it.getComponent(ItemComponentTypes.Enchantable)?.getEnchantments().map((enchant: any) => ({
                     typeId: enchant.type.id,
                     level: enchant.level
                 })) ?? [],
                 [{ text: '\u00A77' }, { translate: 'backpack.lore.click.to.store' }]
-            ), presentation.lore),
+            ), it.getRawLore()), presentation.lore),
             editedName: true,
             isGlint: (it.getComponent(ItemComponentTypes.Enchantable)?.getEnchantments()?.length ?? 0) > 0
         });
 
-        map[uiSlot] = i;
-        uiSlot++;
-    }
-
-    if (uiSlot === 0) {
-        player.sendMessage({ translate: 'backpack.error.noitem' });
-        return;
-    }
+        map[uiSlot] = invIndex;
+    });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     ui.show(player).then(r => {
@@ -756,6 +986,9 @@ function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single"
             return;
         }
 
+        if (r.selection === 0 && page > 0) return openStoreUI(player, realBp, data, meta, mode, page - 1);
+        if (r.selection === 8 && page + 1 < pageCount) return openStoreUI(player, realBp, data, meta, mode, page + 1);
+
         const invIndex = map[r.selection];
         if (invIndex === undefined) return;
 
@@ -766,5 +999,54 @@ function openStoreUI(player: any, bp: any, data: any, meta: any, mode = "single"
         }
 
         openStoreAmountUI(player, invIndex);
+    });
+}
+
+function openClassicBackpackStore(player: any, bp: any, data: any, meta: any, mode = "single") {
+    const inv = player.getComponent("inventory").container;
+    const ui = new ChestFormData("large");
+    ui.setTitle([{ translate: "backpack.item.store" }]);
+    const map: any[] = [];
+    let uiSlot = 0;
+    for (let invIndex = 0; invIndex < inv.size && uiSlot < 54; invIndex++) {
+        const item = inv.getItem(invIndex);
+        if (!item || item.typeId.includes("backpack") || outItems.includes(item.typeId) || item.getComponent(ItemComponentTypes.Inventory)) continue;
+        const presentation = getChestItemStackPresentation(item);
+        ui.setButton(uiSlot, {
+            iconPath: presentation.iconPath,
+            name: item.nameTag ? [{ text: item.nameTag }] : presentation.name,
+            stackAmount: item.amount,
+            lore: appendChestPresentationLore(appendBackpackItemLore(getEnchantLore(
+                item.getComponent(ItemComponentTypes.Enchantable)?.getEnchantments().map((enchant: any) => ({ typeId: enchant.type.id, level: enchant.level })) ?? [],
+                [{ text: '\u00A77' }, { translate: "backpack.lore.click.to.store" }],
+            ), item.getRawLore()), presentation.lore),
+            editedName: true,
+            isGlint: (item.getComponent(ItemComponentTypes.Enchantable)?.getEnchantments()?.length ?? 0) > 0,
+        });
+        map[uiSlot] = invIndex;
+        uiSlot++;
+    }
+    if (uiSlot === 0) {
+        player.sendMessage({ translate: "backpack.error.noitem" });
+        return;
+    }
+    ui.show(player).then(response => {
+        const current = getCurrentBackpack(player);
+        if (!current) {
+            player.sendMessage({ translate: "backpack.error.notfound" });
+            return;
+        }
+        const currentMeta = loadSplit(current.item, "bp:meta", { total: 0 });
+        const currentData = loadSplit(current.item, "bp:data", []);
+        if (response.canceled) {
+            openRoot(player, current.item, currentData, currentMeta);
+            return;
+        }
+        const invIndex = map[response.selection ?? -1];
+        if (invIndex === undefined) return;
+        if (mode === "all") {
+            storeMatchingItems(player, invIndex);
+            reopenBackpackStore(player, "all");
+        } else openStoreAmountUI(player, invIndex);
     });
 }

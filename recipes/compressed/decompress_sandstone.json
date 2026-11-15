@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:decompress_sandstone"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:compressed_sandstone"
+      }
+    },
+    "result": {
+      "item": "minecraft:sandstone",
+      "count": 9
+    }
+  }
+}

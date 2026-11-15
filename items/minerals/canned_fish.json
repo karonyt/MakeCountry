@@ -1,0 +1,27 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:canned_fish",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "canned_fish",
+      "minecraft:display_name": {
+        "value": "item.mc:canned_fish"
+      },
+      "minecraft:food": {
+        "nutrition": 8,
+        "saturation_modifier": 0.8,
+        "can_always_eat": false
+      },
+      "minecraft:use_animation": "eat",
+      "minecraft:use_modifiers": {
+        "use_duration": 1.6,
+        "movement_modifier": 0.35
+      }
+    }
+  }
+}

@@ -6,9 +6,11 @@ import {
     openSimpleStationRecipeSelect,
     targetScore,
     type SimpleStationAction,
+    type SimpleStationCompletionGoal,
     type SimpleStationSession,
     type SimpleStationStatus
 } from "@/features/forms/default/cooking/simple-station-core.js";
+import { getSimpleStationMinigame } from "@/features/forms/default/cooking/simple-station-minigames.js";
 
 const sessions = new Map<string, SimpleStationSession>();
 
@@ -154,11 +156,15 @@ const actions: SimpleStationAction[] = [
 ];
 
 const statuses: SimpleStationStatus[] = [
-    { name: "cooking.status.steam", color: "§f", value: (session) => `${session.steam}%` },
-    { name: "cooking.status.heat", color: "§c", value: (session) => `${session.heat}%` },
-    { name: "cooking.status.moisture", color: "§b", value: (session) => `${session.moisture}%` },
-    { name: "cooking.status.softness", color: "§e", value: (session) => `${session.softness}%` },
-    { name: "cooking.status.timing", color: "§d", value: (session) => `${session.timing}%` },
+    { name: "cooking.status.steam", color: "§f", value: (session) => `${session.steam}%\n` },
+    { name: "cooking.status.heat", color: "§c", value: (session) => `${session.heat}%\n` },
+    { name: "cooking.status.moisture", color: "§b", value: (session) => `${session.moisture}%\n` },
+    { name: "cooking.status.softness", color: "§e", value: (session) => `${session.softness}%\n` },
+    { name: "cooking.status.timing", color: "§d", value: (session) => `${session.timing}%\n` },
+];
+
+const completionGoals: SimpleStationCompletionGoal[] = [
+    { id: "steam", label: "cooking.status.steam", target: 40, suffix: "%", value: (session) => session.steam },
 ];
 
 const config = {
@@ -167,6 +173,8 @@ const config = {
     sessions,
     actions,
     statuses,
+    completionGoals,
+    ...getSimpleStationMinigame("steamer"),
     openRecipeSelect,
     openCooking,
     createSession() {
@@ -189,7 +197,7 @@ const config = {
     },
 };
 
-export function openRecipeSelect(player: Player, page = 0, categoryId = "all", searchQuery = "") {
+export function openRecipeSelect(player: Player, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
     openSimpleStationRecipeSelect(player, config, page, categoryId, searchQuery);
 }
 

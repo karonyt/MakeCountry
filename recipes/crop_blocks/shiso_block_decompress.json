@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:shiso_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:shiso_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:shiso_block"
+      }
+    ],
+    "result": {
+      "item": "mc:shiso",
+      "count": 9
+    }
+  }
+}
+

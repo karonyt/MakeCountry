@@ -38,10 +38,8 @@ export function CompePlayerForm(player: any, page = 0) {
      * @type {Array<{id: number,playerName: string,playerId: string,price: number, item: {name: undefined|string,typeId: string,amount: number}}>}
      */
     const allCommons = beforeCompeData;
-    if (allCommons.length < page * 36 + 1) {
-        CompePlayerForm(player, page - 1);
-        return;
-    };
+    const pageCount = Math.max(1, Math.ceil(allCommons.length / 45));
+    page = Number.isFinite(page) ? Math.max(0, Math.min(Math.floor(page), pageCount - 1)) : 0;
     const commonsAll = allCommons;
     const commons = allCommons.slice(0 + (45 * page), 45 + (45 * page));
     for (let i = 0; i < commons.length; i++) {
@@ -79,19 +77,23 @@ export function CompePlayerForm(player: any, page = 0) {
                  * @type {Array}
                  */
                 let afterCompeData = JSON.parse(afterRawCompeData);
-                if (afterCompeData[rs.selection - 9] != beforeCompeData[rs.selection - 9]) {
+                const selected = (rs.selection ?? -1) - 9;
+                if (selected < 0 || selected >= commons.length) return;
+                const itemIndex = page * 45 + selected;
+                if (afterCompeData[itemIndex] != beforeCompeData[itemIndex]) {
                     CompePlayerForm(player, page);
                     return;
                 };
-                const item = dataToItemStack(afterCompeData[rs.selection - 9])
+                const item = dataToItemStack(afterCompeData[itemIndex])
                 const playerInventory = player.getComponent('inventory').container;
                 if (playerInventory.emptySlotsCount == 0) {
                     player.dimension.spawnItem(item, player.location);
                 } else {
-                    playerInventory.addItem(item);
+                    const remaining = playerInventory.addItem(item);
+                    if (remaining) player.dimension.spawnItem(remaining, player.location);
                 };
                 afterCompeData = afterCompeData.filter(
-                    (_: any, index: any) => index !== rs.selection - 9
+                    (_: any, index: any) => index !== itemIndex
                 );
                 compeDB.set(`player_${player.id}`, JSON.stringify(afterCompeData));
                 break;
@@ -154,7 +156,7 @@ function itemToData(itemStack: any) {
         for (let i = 0; i < container.size; i++) {
             const item = container.getItem(i);
             if (item) {
-                inventoryData.push({ slot: i, data: JSON.stringify(itemToData(item)) });
+                inventoryData.push({ slot: i, data: itemToData(item) });
             };
         };
     };
@@ -182,6 +184,10 @@ function itemToData(itemStack: any) {
         inventory: inventoryData,
         enchant: enchantData,
         book: bookData,
+        durability: itemStack.getComponent('minecraft:durability') ? {
+            damage: itemStack.getComponent('minecraft:durability').damage,
+            unbreakable: itemStack.getComponent('minecraft:durability').unbreakable,
+        } : undefined,
     }
 
     return JSON.stringify(data);
@@ -193,7 +199,9 @@ function itemToData(itemStack: any) {
  * @returns {ItemStack}
  */
 function dataToItemStack(itemDataString: any) {
-    const itemData = JSON.parse(itemDataString);
+    // Older nested records were JSON-encoded twice. Accept both encodings.
+    let itemData = JSON.parse(itemDataString);
+    if (typeof itemData === 'string') itemData = JSON.parse(itemData);
 
     const itemStack = new ItemStack(itemData.typeId, itemData.amount);
     if (itemData?.name) itemStack.nameTag = itemData.name;
@@ -203,19 +211,19 @@ function dataToItemStack(itemDataString: any) {
         // @ts-ignore TS(2532): Object is possibly 'undefined'.
         const container = itemStack.getComponent('minecraft:inventory').container;
 
-        for (const inventory of itemData.inventory) {
+        for (const inventory of itemData.inventory ?? []) {
             container.setItem(inventory.slot, dataToItemStack(inventory.data))
         };
     };
 
-    for (const dypData of itemData.dyp) {
+    for (const dypData of itemData.dyp ?? []) {
         itemStack.setDynamicProperty(dypData.key, dypData.value)
     };
 
     if (itemStack.getComponent('minecraft:enchantable')?.isValid) {
         const enchantable = itemStack.getComponent('minecraft:enchantable');
 
-        for (const enchantment of itemData.enchant) {
+        for (const enchantment of itemData.enchant ?? []) {
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
             enchantable.addEnchantment({ type: EnchantmentTypes.get(enchantment.type), level: enchantment.level })
         };
@@ -223,18 +231,24 @@ function dataToItemStack(itemDataString: any) {
 
     if (itemStack.getComponent('minecraft:book')?.isValid) {
         const book = itemStack.getComponent('minecraft:book');
-        const bookData = itemData.book;
+        const bookData = Array.isArray(itemData.book) ? itemData.book[0] : itemData.book;
 
-        for (const page of bookData.pages) {
+        for (const page of bookData?.pages ?? []) {
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
             book.setPageContent(page.page, page.content);
         };
 
-        if (bookData.isSigned) {
+        if (bookData?.isSigned) {
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
             book.signBook(bookData.title, bookData.author);
         };
     };
+
+    const durability = itemStack.getComponent('minecraft:durability');
+    if (durability && itemData.durability) {
+        durability.damage = itemData.durability.damage;
+        if (typeof itemData.durability.unbreakable === 'boolean') durability.unbreakable = itemData.durability.unbreakable;
+    }
 
     return itemStack;
 };

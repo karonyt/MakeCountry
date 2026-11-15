@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.26.20",
   "minecraft:block": {
     "description": {
       "identifier": "mc:furniture_cherry_nightstand",
@@ -15,8 +15,6 @@
       }
     },
     "components": {
-      "tag:furniture": {},
-      "tag:furniture_nightstand": {},
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.6
       },
@@ -30,6 +28,19 @@
           "texture": "furniture_cherry_nightstand",
           "render_method": "opaque"
         }
+      },
+      "minecraft:tags": [
+        "furniture",
+        "furniture_nightstand"
+      ],
+      "minecraft:block_entity": {
+        "container": {
+          "slot_count": 9,
+          "title": "tile.mc:furniture_cherry_nightstand.name"
+        }
+      },
+      "minecraft:movable": {
+        "movement_type": "immovable"
       }
     },
     "permutations": [

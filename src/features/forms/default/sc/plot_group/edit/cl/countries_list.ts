@@ -1,6 +1,6 @@
+import { PlotActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { plotGroupEditMainPlotAdminDefaultForm } from "@/features/forms/default/sc/plot_group/edit/edit_main_admin.js";
 import { plotGroupEditMainPlotOwnerDefaultForm } from "@/features/forms/default/sc/plot_group/edit/edit_main_owner.js";

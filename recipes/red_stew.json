@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:red_stew_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:red_dye"
+      },
+      "#": {
+        "item": "mc:stew"
+      }
+    },
+    "result": {
+      "item": "mc:red_stew",
+      "count": 1
+    }
+  }
+}

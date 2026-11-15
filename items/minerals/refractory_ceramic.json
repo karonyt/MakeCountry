@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:refractory_ceramic",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "refractory_ceramic",
+      "minecraft:display_name": {
+        "value": "item.mc:refractory_ceramic"
+      }
+    }
+  }
+}

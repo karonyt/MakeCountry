@@ -9,7 +9,8 @@
         ],
         "pattern": [
             "#*a",
-            "b"
+            "bcf",
+            "gh"
         ],
         "key": {
             "#": {
@@ -25,11 +26,23 @@
             "b": {
                 "item": "minecraft:fern"
             },
+            "c": {
+                "item": "minecraft:carrot"
+            },
             "d": {
                 "item": "mc:basil"
             },
             "e": {
                 "item": "mc:pineapple"
+            },
+            "f": {
+                "item": "mc:barley"
+            },
+            "g": {
+                "item": "mc:spinach_chopped"
+            },
+            "h": {
+                "item": "mc:shiso_leaf"
             }
         },
         "unlock": [

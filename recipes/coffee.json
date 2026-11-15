@@ -5,17 +5,15 @@
             "identifier": "mc:coffee_recipe"
         },
         "tags": [
-            "stew"
+            "oven_range"
         ],
         "pattern": [
-            "***",
-            "*#*",
+            "**#",
             "***"
         ],
         "key": {
             "#": {
-                "item": "minecraft:potion",
-                "data": 0
+                "item": "mc:water_cup"
             },
             "*": {
                 "item": "mc:coffee_beans"

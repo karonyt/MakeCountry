@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:shokupan_recipe"
+    },
+    "tags": ["oven_range"],
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:bread_material"
+      }
+    },
+    "unlock": [{"item": "mc:bread_material"}],
+    "result": {
+      "item": "mc:shokupan",
+      "count": 2
+    }
+  }
+}

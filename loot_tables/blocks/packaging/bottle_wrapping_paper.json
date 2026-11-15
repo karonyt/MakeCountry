@@ -1,0 +1,14 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:bottle_wrapping_paper",
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

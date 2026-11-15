@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { memberSelectedShowDefaultForm } from "@/features/forms/default/sc/members/member_show.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { settingCountryMembersDefaultForm } from "@/features/forms/default/sc/members/setting_members.js";

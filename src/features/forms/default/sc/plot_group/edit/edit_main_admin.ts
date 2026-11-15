@@ -1,5 +1,6 @@
+import { PlotActionForm as ActionForm } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionForm } from "@/shared/ui/form-class.js";
+
 import { settingCountryPlotGroupDefaultForm } from "@/features/forms/default/sc/plot_group/main.js";
 import { PlotGroupManager } from "@/domain/country/plot-group.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";

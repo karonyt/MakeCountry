@@ -52,6 +52,14 @@ export function fixCountryData() {
                         };
                     };
                 };
+                // shop 権限は全国家で既定 ON。既存国の People ロールにも補完する。
+                if (roleId === countryData.peopleRole) {
+                    roleData.permissions = [...new Set([
+                        ...(roleData.permissions ?? []),
+                        `shopBuy`,
+                        `shopSell`,
+                    ])];
+                }
                 if (!roleData?.permissions) {
                     switch (roleId) {
                         case countryData.ownerRole: {
@@ -124,7 +132,7 @@ export function fixCountryData() {
                         break;
                     };
                     case countryData.peopleRole: {
-                        roleDB.set(`role_${roleId}`, JSON.stringify({ name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`], icon: `textures/blocks/stone`, color: `a`, members: countryData.members ?? [] }));
+                        roleDB.set(`role_${roleId}`, JSON.stringify({ name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`, `shopBuy`, `shopSell`], icon: `textures/blocks/stone`, color: `a`, members: countryData.members ?? [] }));
                         break;
                     };
                     default: {
@@ -283,6 +291,26 @@ export function fixCountryData() {
         };
         countryData.mergeRequestReceive = aliveMergeRequestReceiveIds;
 
+        // shop は中立国・同盟国・友好国にも既定で許可する。
+        // 国別の上書きがある場合は共通設定より優先されるため、そちらにも補完する。
+        for (const key of [`neutralityPermission`, `alliancePermission`, `friendlyPermission`]) {
+            countryData[key] = [...new Set([
+                ...(countryData[key] ?? []),
+                `shopBuy`,
+                `shopSell`,
+            ])];
+        }
+        for (const key of [`allianceCountryPermissions`, `friendlyCountryPermissions`]) {
+            countryData[key] = (countryData[key] ?? []).map((entry: any) => ({
+                ...entry,
+                permissions: [...new Set([
+                    ...(entry.permissions ?? []),
+                    `shopBuy`,
+                    `shopSell`,
+                ])],
+            }));
+        }
+
         // @ts-ignore TS(2345): Argument of type 'DynamicProperties' is not assign... Remove this comment to see the full error message
         StringifyAndSavePropertyData(id, countryData, countryDataBase);
     };
@@ -299,6 +327,206 @@ export function fixCountryData() {
         saveFederationToMembers(countryDataBase, federationData);
     }
 };
+
+function validStoredPlayerId(value: unknown): value is string {
+    return typeof value === "string" && value.length > 0 && value !== "undefined" && value !== "null";
+}
+
+function uniqueIds(values: unknown): string[] {
+    if (!Array.isArray(values)) return [];
+    return [...new Set(values.map(String).filter(validStoredPlayerId))];
+}
+
+function sameIds(left: unknown, right: unknown): boolean {
+    return JSON.stringify(left ?? []) === JSON.stringify(right ?? []);
+}
+
+/**
+ * country.members / player.country / role.members / player.roles を一度だけ整合させる。
+ *
+ * player.country は所属先が一つだけなので通常会員の正とし、country.owner は国王の正とする。
+ * 実行は自動ではなく `karo:repaircountryconsistency` から明示的に行う。
+ */
+export function* repairCountryConsistency() {
+    const countryDataBase = new DynamicProperties("country");
+    const roleDataBase = new DynamicProperties("role");
+    const playerDataBase = new DynamicProperties("player");
+    const countries = new Map<number, { key: string, data: any }>();
+    const players = new Map<string, { key: string, data: any }>();
+    const invalidPlayers: Array<{ key: string, data: any }> = [];
+    let processed = 0;
+
+    for (const key of countryDataBase.idList) {
+        const raw = countryDataBase.get(key);
+        if (!raw) continue;
+        try {
+            const data = JSON.parse(raw);
+            const id = Number(data?.id ?? `${key}`.replace(/^country_/, ""));
+            if (Number.isFinite(id) && id > 0) countries.set(id, { key, data });
+        } catch { }
+    }
+    for (const key of playerDataBase.idList) {
+        const raw = playerDataBase.get(key);
+        if (!raw) continue;
+        try {
+            const data = JSON.parse(raw);
+            const id = `${key}`.replace(/^player_/, "");
+            if (validStoredPlayerId(id)) players.set(id, { key, data });
+            else invalidPlayers.push({ key, data });
+        } catch { }
+        if (++processed % 200 === 0) yield;
+    }
+
+    const ownerCountry = new Map<string, number>();
+    let duplicateOwners = 0;
+    let ownersWithoutPlayer = 0;
+    for (const [countryId, entry] of countries) {
+        const owner = `${entry.data?.owner ?? ""}`;
+        if (!validStoredPlayerId(owner) || !players.has(owner)) {
+            ownersWithoutPlayer++;
+            continue;
+        }
+        if (ownerCountry.has(owner) && ownerCountry.get(owner) !== countryId) {
+            duplicateOwners++;
+            continue;
+        }
+        ownerCountry.set(owner, countryId);
+    }
+
+    const membersByCountry = new Map<number, Set<string>>();
+    for (const countryId of countries.keys()) membersByCountry.set(countryId, new Set());
+    for (const [countryId, entry] of countries) {
+        const owner = `${entry.data?.owner ?? ""}`;
+        if (validStoredPlayerId(owner)) membersByCountry.get(countryId)?.add(owner);
+    }
+    for (const [playerId, entry] of players) {
+        const ownedCountryId = ownerCountry.get(playerId);
+        const storedCountryId = Number(entry.data?.country);
+        const countryId = ownedCountryId
+            ?? (countries.has(storedCountryId) ? storedCountryId : undefined);
+        if (countryId !== undefined) membersByCountry.get(countryId)?.add(playerId);
+        if (++processed % 200 === 0) yield;
+    }
+
+    let changedCountries = 0;
+    for (const [countryId, entry] of countries) {
+        const expected = membersByCountry.get(countryId) ?? new Set<string>();
+        const current = uniqueIds(entry.data.members);
+        const next = current.filter((id) => expected.has(id));
+        for (const id of expected) if (!next.includes(id)) next.push(id);
+        if (!sameIds(entry.data.members, next)) {
+            entry.data.members = next;
+            countryDataBase.set(entry.key, entry.data);
+            changedCountries++;
+        }
+    }
+
+    const roleCountry = new Map<number, number>();
+    const countryRoleIds = new Map<number, number[]>();
+    for (const [countryId, entry] of countries) {
+        const roleIds = uniqueIds(entry.data.roles)
+            .map(Number)
+            .filter((id) => Number.isFinite(id));
+        countryRoleIds.set(countryId, roleIds);
+        for (const roleId of roleIds) roleCountry.set(roleId, countryId);
+    }
+
+    const desiredRolesByPlayer = new Map<string, number[]>();
+    const desiredMembersByRole = new Map<number, string[]>();
+    for (const [playerId, entry] of players) {
+        const countryId = ownerCountry.get(playerId) ?? Number(entry.data?.country);
+        const country = countries.get(countryId)?.data;
+        const allowedRoleIds = new Set(countryRoleIds.get(countryId) ?? []);
+        let roleIds = uniqueIds(entry.data?.roles)
+            .map(Number)
+            .filter((roleId) => allowedRoleIds.has(roleId));
+        const ownerRoleId = Number(country?.ownerRole);
+        if (country?.owner === playerId && Number.isFinite(ownerRoleId)) {
+            roleIds = roleIds.filter((roleId) => roleId !== ownerRoleId);
+            roleIds.push(ownerRoleId);
+        } else if (Number.isFinite(ownerRoleId)) {
+            roleIds = roleIds.filter((roleId) => roleId !== ownerRoleId);
+        }
+        roleIds = [...new Set(roleIds)];
+        desiredRolesByPlayer.set(playerId, roleIds);
+        for (const roleId of roleIds) {
+            const members = desiredMembersByRole.get(roleId) ?? [];
+            if (!members.includes(playerId)) members.push(playerId);
+            desiredMembersByRole.set(roleId, members);
+        }
+        if (++processed % 200 === 0) yield;
+    }
+    // owner role は player.roles の壊れ方に関係なく、現在の国王一人だけにする。
+    for (const [, entry] of countries) {
+        const owner = `${entry.data?.owner ?? ""}`;
+        const ownerRoleId = Number(entry.data?.ownerRole);
+        if (validStoredPlayerId(owner) && Number.isFinite(ownerRoleId)) {
+            desiredMembersByRole.set(ownerRoleId, [owner]);
+        }
+    }
+
+    let changedRoles = 0;
+    for (const [roleId] of roleCountry) {
+        const key = `role_${roleId}`;
+        const raw = roleDataBase.get(key);
+        if (!raw) continue;
+        try {
+            const roleData = JSON.parse(raw);
+            const desired = desiredMembersByRole.get(roleId) ?? [];
+            const current = uniqueIds(roleData.members);
+            const next = current.filter((id) => desired.includes(id));
+            for (const id of desired) if (!next.includes(id)) next.push(id);
+            if (!sameIds(roleData.members, next)) {
+                roleData.members = next;
+                roleDataBase.set(key, roleData);
+                changedRoles++;
+            }
+        } catch { }
+    }
+
+    let changedPlayers = 0;
+    for (const [playerId, entry] of players) {
+        const nextCountryId = ownerCountry.get(playerId)
+            ?? (countries.has(Number(entry.data?.country)) ? Number(entry.data.country) : undefined);
+        const nextRoles = desiredRolesByPlayer.get(playerId) ?? [];
+        const rawCurrentCountry = entry.data?.country;
+        const currentCountryId = countries.has(Number(rawCurrentCountry))
+            ? Number(rawCurrentCountry)
+            : undefined;
+        const hasStoredCountry = rawCurrentCountry !== undefined
+            && rawCurrentCountry !== null
+            && rawCurrentCountry !== "";
+        const countryChanged = currentCountryId !== nextCountryId
+            || (nextCountryId === undefined && hasStoredCountry);
+        if (countryChanged || !sameIds(entry.data?.roles, nextRoles)) {
+            entry.data.country = nextCountryId;
+            entry.data.roles = nextRoles;
+            playerDataBase.set(entry.key, entry.data);
+            changedPlayers++;
+        }
+        if (++processed % 200 === 0) yield;
+    }
+    for (const entry of invalidPlayers) {
+        if (entry.data?.country === undefined && (!Array.isArray(entry.data?.roles) || entry.data.roles.length === 0)) continue;
+        entry.data.country = undefined;
+        entry.data.roles = [];
+        playerDataBase.set(entry.key, entry.data);
+        changedPlayers++;
+    }
+
+    const result = {
+        countries: countries.size,
+        players: players.size,
+        changedCountries,
+        changedRoles,
+        changedPlayers,
+        invalidPlayers: invalidPlayers.length,
+        duplicateOwners,
+        ownersWithoutPlayer,
+    };
+    console.warn(`[country-consistency] ${JSON.stringify(result)}`);
+    return;
+}
 
 export function resetRoleData() {
     const countryDataBase = new DynamicProperties("country");
@@ -335,7 +563,7 @@ export function resetRoleData() {
                     break;
                 };
                 case countryData.peopleRole: {
-                    roleDB.set(`role_${roleId}`, JSON.stringify({ id: roleId, name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`], icon: `textures/blocks/stone`, color: `a`, members: countryData.members ?? [] }));
+                    roleDB.set(`role_${roleId}`, JSON.stringify({ id: roleId, name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`, `shopBuy`, `shopSell`], icon: `textures/blocks/stone`, color: `a`, members: countryData.members ?? [] }));
                     break;
                 };
                 default: {

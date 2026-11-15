@@ -1,9 +1,9 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import config from "@/config/server.js";
-import { ActionFormData } from "@minecraft/server-ui";
-import { settingCountryDefaultForm } from "@/features/forms/default/sc/setting_country.js";
+import { callSettingCountryForm } from "@/features/forms/form-registry.js";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { editCountryNameDefaultForm } from "@/features/forms/default/sc/info/name.js";
 import { editCountryLoreDefaultForm } from "@/features/forms/default/sc/info/lore.js";
@@ -14,6 +14,7 @@ import { externalAffairsMainDefaultForm } from "@/features/forms/default/sc/info
 import { publicSpawnDefaultForm, publicSpawnManageForm } from "@/features/forms/default/sc/info/public_spawn.js";
 import { publicSettingDefaultForm } from "@/features/forms/default/sc/info/public_setting.js";
 import { webSettingDefaultForm } from "@/features/forms/default/sc/info/web_setting.js";
+import { permissionButton } from "@/features/forms/default/sc/permission_button.js";
 /** @typedef {import("@/domain/country/country-manager.js").CountryData} CountryData */
 /** @typedef {import("@/types/legacy/player").PlayerData} PlayerData */
 
@@ -41,19 +42,19 @@ export function settingCountryInfoDefaultForm(player: any, countryData = undefin
     const form = new ActionFormData();
     form.title({ translate: `form.setting.info.title` });
     form.body(showBody);
-    form.button({ translate: `form.setting.info.button.name` });
-    form.button({ translate: `form.setting.info.button.lore` });
-    form.button({ translate: `form.setting.info.button.peace` });
-    form.button({ translate: `form.setting.info.button.invite` });
-    form.button({ translate: `form.setting.info.button.tax` });
+    form.button(permissionButton(player, `form.setting.info.button.name`, `editCountryName`));
+    form.button(permissionButton(player, `form.setting.info.button.lore`, `editCountryLore`));
+    form.button(permissionButton(player, `form.setting.info.button.peace`, `peaceChange`));
+    form.button(permissionButton(player, `form.setting.info.button.invite`, `inviteChange`));
+    form.button(permissionButton(player, `form.setting.info.button.tax`, `taxAdmin`));
     form.button({ translate: `form.setting.info.button.external.affairs` });
-    form.button({ translate: `form.setting.info.button.publicspawn` });
-    form.button({ translate: `form.setting.info.button.publicsetting` });
-    form.button({ translate: `form.setting.info.button.web` });
+    form.button(permissionButton(player, `form.setting.info.button.publicspawn`, `publicHomeAdmin`));
+    form.button(permissionButton(player, `form.setting.info.button.publicsetting`, `admin`));
+    form.button(permissionButton(player, `form.setting.info.button.web`, `admin`));
 
     form.show(player).then(rs => {
         if (rs.canceled) {
-            settingCountryDefaultForm(player);
+            callSettingCountryForm(player);
             return;
         };
         switch (rs.selection) {

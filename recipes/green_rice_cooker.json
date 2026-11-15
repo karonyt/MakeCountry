@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:green_rice_cooker_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:green_dye"
+      },
+      "#": {
+        "item": "mc:rice_cooker"
+      }
+    },
+    "result": {
+      "item": "mc:green_rice_cooker",
+      "count": 1
+    }
+  }
+}

@@ -1,4 +1,41 @@
-import { EntityDamageCause, Player, world } from "@minecraft/server";
+import { EntityDamageCause, EquipmentSlot, Player, world, type Entity, type RawMessage } from "@minecraft/server";
+
+/** Event damage sources may already have despawned when the callback runs. */
+function entityText(entity: Entity | undefined): RawMessage | undefined {
+    if (!entity?.isValid) return undefined;
+    try {
+        if (entity instanceof Player) return { text: entity.name };
+        const nameTag = entity.nameTag;
+        return nameTag ? { text: entity.nameTag } : { translate: entity.localizationKey };
+    } catch (error) {
+        if (!entity.isValid || (error instanceof Error && error.name === "InvalidEntityError")) return undefined;
+        throw error;
+    }
+}
+function getNamedMainhandItem(player: Player): string | undefined {
+    if (!player.isValid) return undefined;
+    try {
+        return player.getComponent('equippable')?.getEquipment(EquipmentSlot.Mainhand)?.nameTag?.trim() || undefined;
+    } catch (error) {
+        if (!player.isValid || (error instanceof Error && error.name === "InvalidEntityError")) return undefined;
+        throw error;
+    }
+}
+function wantsKillLog(player: Player): boolean {
+    if (!player.isValid) return false;
+    try { return player.getDynamicProperty('isMuteKillLog') !== 'true'; }
+    catch (error) {
+        if (!player.isValid || (error instanceof Error && error.name === "InvalidEntityError")) return false;
+        throw error;
+    }
+}
+function sendKillMessage(player: Player, message: RawMessage[]): void {
+    if (!player.isValid) return;
+    try { player.sendMessage(message); }
+    catch (error) {
+        if (player.isValid && !(error instanceof Error && error.name === "InvalidEntityError")) throw error;
+    }
+}
 
 world.afterEvents.worldLoad.subscribe(() => {
     world.getDimension('overworld').runCommand('gamerule showdeathmessages false')
@@ -7,75 +44,77 @@ world.afterEvents.worldLoad.subscribe(() => {
 world.afterEvents.entityDie.subscribe((ev) => {
     const { damageSource, deadEntity } = ev;
     const cause = damageSource.cause;
-    const players = world.getPlayers().filter(p => p.getDynamicProperty('isMuteKillLog') != 'true')
-    if (deadEntity instanceof Player) {
-        const playerName = deadEntity.name;
+    const players = world.getPlayers().filter(wantsKillLog)
+    if (deadEntity instanceof Player && deadEntity.isValid) {
+        const victim = entityText(deadEntity);
+        if (victim?.text === undefined) return;
+        const playerName = victim.text;
+        const attackerText = entityText(damageSource.damagingEntity);
         switch (cause) {
             case EntityDamageCause.anvil: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.anvil', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.anvil', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.projectile: {
-                if (damageSource.damagingProjectile) {
-                    let log = 'death.attack.arrow';
-                    switch (damageSource.damagingProjectile.typeId) {
-                        case 'minecraft:arrow': {
-                            log = 'death.attack.arrow';
-                            break;
-                        }
-                        case 'minecraft:thrown_trident': {
-                            log = 'death.attack.trident';
-                            break;
-                        }
-                    };
-                    for (const p of players) {
-                        // @ts-ignore TS(2367): This condition will always return 'true' since the... Remove this comment to see the full error message
-                        p.sendMessage([{ translate: log, with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingProjectile.getComponent('projectile')?.owner ? damageSource.damagingProjectile.getComponent('projectile')?.owner != 'minecraft:player' ? damageSource.damagingProjectile.getComponent('projectile')?.owner.name : (damageSource.damagingProjectile.getComponent('projectile')?.owner.nameTag || damageSource.damagingProjectile.getComponent('projectile')?.owner.localizationKey) : damageSource.damagingProjectile.localizationKey }] } }]);
-                    };
-                } else {
-                    for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.arrow', with: [playerName] }]);
-                    };
-                };
+                let log = 'death.attack.arrow';
+                let sourceText = attackerText;
+                const projectile = damageSource.damagingProjectile;
+                if (projectile?.isValid) {
+                    try {
+                        if (projectile.typeId === 'minecraft:thrown_trident') log = 'death.attack.trident';
+                        const owner = projectile.getComponent('projectile')?.owner;
+                        sourceText = entityText(owner) ?? attackerText ?? entityText(projectile);
+                    } catch (error) {
+                        if (projectile.isValid && !(error instanceof Error && error.name === "InvalidEntityError")) throw error;
+                    }
+                }
+                for (const p of players) {
+                    sendKillMessage(p, [sourceText
+                        ? { translate: log, with: { rawtext: [{ text: playerName }, sourceText] } }
+                        : { translate: 'death.attack.generic', with: [playerName] }]);
+                }
                 break;
             };
             case EntityDamageCause.entityAttack: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
+                    const attacker = damageSource.damagingEntity;
+                    const namedItem = attacker instanceof Player ? getNamedMainhandItem(attacker) : undefined;
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.mob', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        if (attacker instanceof Player && namedItem) {
+                            sendKillMessage(p, [{ translate: 'death.attack.player.item', with: { rawtext: [{ text: playerName }, attackerText, { text: namedItem }] } }]);
+                        } else {
+                            sendKillMessage(p, [{ translate: attacker instanceof Player ? 'death.attack.player' : 'death.attack.mob', with: { rawtext: [{ text: playerName }, attackerText] } }]);
+                        }
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                     };
                 };
                 break;
             };
             case EntityDamageCause.maceSmash: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.maceSmash.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.maceSmash.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                     };
                 };
                 break;
             };
             case EntityDamageCause.magic: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.magic.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.magic.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.magic', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.magic', with: [playerName] }]);
                     };
                 };
                 break;
@@ -83,73 +122,72 @@ world.afterEvents.entityDie.subscribe((ev) => {
             // @ts-ignore TS(2339): Property 'dehydration' does not exist on type 'typ... Remove this comment to see the full error message
             case EntityDamageCause.dehydration: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.dehydration', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.dehydration', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.drowning: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.drown', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.drown', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.fall: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.fall', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.fall', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.fireworks: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.fireworks', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.fireworks', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.fallingBlock: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.fallingBlock', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.fallingBlock', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.flyIntoWall: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.flyIntoWall', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.flyIntoWall', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.selfDestruct: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.lava: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.lava', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.lava', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.lightning: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.lightningBolt', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.lightningBolt', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.magma: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.magma', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.magma', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.fireTick: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.onFire.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.onFire.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.onFire', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.onFire', with: [playerName] }]);
                     };
                 };
                 break;
@@ -157,37 +195,36 @@ world.afterEvents.entityDie.subscribe((ev) => {
 
             case EntityDamageCause.fire: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.inFire', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.inFire', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.wither: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.wither', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.wither', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.freezing: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.freeze', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.freeze', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.starve: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.starve', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.starve', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.sonicBoom: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.sonicBoom.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.sonicBoom.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.sonicBoom', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.sonicBoom', with: [playerName] }]);
                     };
                 };
                 break;
@@ -195,118 +232,116 @@ world.afterEvents.entityDie.subscribe((ev) => {
 
             case EntityDamageCause.void: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.outOfWorld', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.outOfWorld', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.stalagmite: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.stalagmite', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.stalagmite', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.stalactite: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.stalactite', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.stalactite', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.suffocation: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.inWall', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.inWall', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.soulCampfire: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.onFire', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.onFire', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.campfire: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.onFire', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.onFire', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.contact: {
                 //スイートベリーとかフグとか
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.sweetBerry', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.sweetBerry', with: [playerName] }]);
                 };
                 break;
             }
             case EntityDamageCause.entityExplosion: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.explosion.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.explosion.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.explosion', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.explosion', with: [playerName] }]);
                     };
                 };
                 break;
             };
             case EntityDamageCause.thorns: {
-                if (damageSource.damagingEntity) {
+                if (attackerText) {
                     for (const p of players) {
-                        // @ts-ignore TS(2339): Property 'name' does not exist on type 'Entity'.
-                        p.sendMessage([{ translate: 'death.attack.thorns.player', with: { rawtext: [{ text: playerName }, { translate: damageSource.damagingEntity.typeId == 'minecraft:player' ? damageSource.damagingEntity.name : damageSource.damagingEntity.localizationKey }] } }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.thorns.player', with: { rawtext: [{ text: playerName }, attackerText] } }]);
                     };
                 } else {
                     for (const p of players) {
-                        p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                        sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                     };
                 };
                 break;
             };
             case EntityDamageCause.blockExplosion: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.explosion.by.bed', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.explosion.by.bed', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.override: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.piston: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.none: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.temperature: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.charging: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             case EntityDamageCause.ramAttack: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
                 break;
             };
             default: {
                 for (const p of players) {
-                    p.sendMessage([{ translate: 'death.attack.generic', with: [playerName] }]);
+                    sendKillMessage(p, [{ translate: 'death.attack.generic', with: [playerName] }]);
                 };
             }
         };

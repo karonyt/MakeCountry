@@ -1,0 +1,23 @@
+{
+  "format_version": "1.20.30",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:croissant",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "croissant"
+      },
+      "minecraft:use_duration": 2,
+      "minecraft:food": {
+        "nutrition": 7,
+        "saturation_modifier": 0.7
+      },
+      "minecraft:use_animation": "eat"
+    }
+  }
+}

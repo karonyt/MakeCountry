@@ -1,97 +1,103 @@
 import { BlockPermutation, EnchantmentType, EnchantmentTypes, GameMode, ItemStack, system, world } from "@minecraft/server";
+import { applyConsumableEffects, applyCookingQualityEffects } from "@/config/consumable-effects.js";
+import { applyFoodFinishingEffects } from '@/domain/cooking/food-finishing.js';
+import { getArtisanQuality } from "@/domain/professions/artisan-quality.js";
+import { MINERAL_ORES } from '@/content/minerals/ore-data.js';
+import { getMineralDrop } from '@/domain/items/mineral-drops.js';
+import '@/domain/items/forged-repair.js';
 
 world.afterEvents.itemCompleteUse.subscribe((ev) => {
-    const { source } = ev;
-    switch (ev.itemStack.typeId) {
-        case `mc:beer`: {
-            source.addEffect(`nausea`, 200, { amplifier: 20 });
-            source.addEffect(`regeneration`, 100, { amplifier: 0 });
-            break;
-        };
-        case `mc:white_wine`: {
-            source.addEffect(`nausea`, 400, { amplifier: 20 });
-            source.addEffect(`jump_boost`, 100, { amplifier: 3 });
-            source.addEffect(`weakness`, 200, { amplifier: 3 });
-            break;
-        };
-        case `mc:red_wine`: {
-            source.addEffect(`nausea`, 400, { amplifier: 20 });
-            source.addEffect(`slowness`, 100, { amplifier: 1 });
-            source.addEffect(`weakness`, 200, { amplifier: 3 });
-            break;
-        };
-        case `mc:whiskey`: {
-            source.addEffect(`nausea`, 200, { amplifier: 20 });
-            source.addEffect(`regeneration`, 100, { amplifier: 0 });
-            break;
-        };
-        case `mc:vodka`: {
-            source.addEffect(`nausea`, 250, { amplifier: 20 });
-            source.addEffect(`regeneration`, 100, { amplifier: 1 });
-            break;
-        };
-        case `mc:sake`: {
-            source.addEffect(`nausea`, 300, { amplifier: 20 });
-            source.addEffect(`regeneration`, 100, { amplifier: 2 });
-            break;
-        };
-        case `mc:abisinthe`: {
-            source.addEffect(`nausea`, 300, { amplifier: 20 });
-            source.addEffect(`regeneration`, 100, { amplifier: 2 });
-            break;
-        };
-        case `mc:aoziru`: {
-            source.addEffect(`resistance`, 800, { amplifier: 0 });
-            source.addEffect(`regeneration`, 100, { amplifier: 1 });
-            break;
-        };
-        default: {
-            break;
-        };
-    };
+    applyConsumableEffects(ev.source, ev.itemStack.typeId);
+    applyCookingQualityEffects(ev.source, ev.itemStack);
+    applyFoodFinishingEffects(ev.source, ev.itemStack);
 });
 
 system.beforeEvents.startup.subscribe((ev) => {
     ev.itemComponentRegistry.registerCustomComponent('mc:ranktool', {
         onMineBlock: (ev) => {
             const player = ev.source;
-            const item = ev.itemStack;
-            const qualityNum = getToolQuality(item);
-            // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            const durability = item.getComponent('durability');
-            // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            const damage = durability.damage + (13 - qualityNum);
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
             const container = player.getComponent('inventory').container;
+            const eventItem = ev.itemStack;
+            if (!eventItem) return;
+            // The selected hotbar slot can change between the mine event and this
+            // callback.  Never write the event's tool into a slot now holding a
+            // different item, or that item would be replaced (for example, a
+            // netherite pickaxe could become a tungsten pickaxe).
+            // @ts-ignore TS(2339): Property 'selectedSlotIndex' does not exist on typ... Remove this comment to see the full error message
+            const selectedSlot = player.selectedSlotIndex;
+            const item = container.getItem(selectedSlot);
+            if (!item || item.typeId !== eventItem.typeId) return;
+
+            const qualityNum = getToolQuality(item);
+            const durability = item.getComponent('durability');
+            if (!durability) return;
+            const damage = durability.damage + (13 - qualityNum);
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
-            if (damage > durability.maxDurability) {
-                // @ts-ignore TS(2339): Property 'selectedSlotIndex' does not exist on typ... Remove this comment to see the full error message
-                container.setItem(player.selectedSlotIndex);
+            if (damage >= durability.maxDurability) {
+                container.setItem(selectedSlot);
                 return;
             };
-            // @ts-ignore TS(2532): Object is possibly 'undefined'.
             durability.damage = damage;
-            // @ts-ignore TS(2339): Property 'selectedSlotIndex' does not exist on typ... Remove this comment to see the full error message
-            container.setItem(player.selectedSlotIndex, item);
+            container.setItem(selectedSlot, item);
         }
     });
 });
 
-const RANK_QUALITY_TABLE = {
-    "KARON": 12,
-    "MYTHICAL": 11,
-    "MASTERWORK": 10,
-    "LEGENDARY": 9,
-    "SSS": 8,
-    "SS": 7,
-    "S": 6,
-    "A": 5,
-    "B": 4,
-    "C": 3,
-    "D": 2,
-    "E": 1,
-    "F": 0,
+const RANKED_HOE_IDS = new Set([
+    'mc:vanadium_hoe',
+    'mc:aluminum_hoe',
+    'mc:titanium_hoe',
+    'mc:tungsten_hoe',
+    'mc:mithril_hoe',
+    'mc:orichalcum_hoe',
+]);
+
+const MATURE_CROP_DROPS: Record<string, string> = {
+    'minecraft:wheat': 'minecraft:wheat',
+    'minecraft:carrots': 'minecraft:carrot',
+    'minecraft:potatoes': 'minecraft:potato',
+    'minecraft:beetroot': 'minecraft:beetroot',
+    'mc:asparagus_crop': 'mc:asparagus',
+    'mc:basil_crop': 'mc:basil',
+    'mc:bell_pepper_crop': 'mc:bell_pepper',
+    'mc:burdock_crop': 'mc:burdock',
+    'mc:cabbage_crop': 'mc:cabbage',
+    'mc:chili_pepper_crop': 'mc:chili_pepper',
+    'mc:corn_crop': 'mc:sweet_corn',
+    'mc:cucumber_crop': 'mc:cucumber',
+    'mc:daikon_crop': 'mc:daikon',
+    'mc:eggplant_crop': 'mc:eggplant',
+    'mc:garlic_crop': 'mc:garlic',
+    'mc:ginger_crop': 'mc:ginger',
+    'mc:leek_crop': 'mc:leek',
+    'mc:lettuce_crop': 'mc:lettuce',
+    'mc:lotus_root_crop': 'mc:lotus_root',
+    'mc:napa_cabbage_crop': 'mc:napa_cabbage',
+    'mc:olive_crop': 'mc:ovlive',
+    'mc:onion_crop': 'mc:onion',
+    'mc:orange_crop': 'mc:mikan',
+    'mc:peanut_crop': 'mc:peanut',
+    'mc:pineapple_crop': 'mc:pineapple',
+    'mc:rice_crop': 'mc:rice_plant',
+    'mc:sesame_crop': 'mc:sesame',
+    'mc:shiso_crop': 'mc:shiso',
+    'mc:soybeans_crop': 'mc:soybeans',
+    'mc:spinach_crop': 'mc:spinach',
+    'mc:strawberry_crop': 'mc:straw_berry',
+    'mc:tomato_crop': 'mc:tomato',
+    'mc:zucchini_crop': 'mc:zucchini',
 };
+
+function isMatureCrop(permutation: BlockPermutation) {
+    const blockId = permutation.type.id;
+    if (blockId.startsWith('mc:')) {
+        // @ts-ignore Custom block states are not included in the Script API type map.
+        return permutation.getState('mc:growth_stage') === 3;
+    }
+
+    return permutation.getState('growth') === 7;
+}
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
     const { brokenBlockPermutation, player, block } = ev;
@@ -103,9 +109,17 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
             player.dimension.spawnItem(coffee_beans, player.location);
         };
     };
-    // @ts-ignore TS(2532): Object is possibly 'undefined'.
-    const container = player.getComponent('inventory').container;
-    const mainItem = container.getItem(player.selectedSlotIndex);
+    // Use the pre-break tool even if durability removed it or another handler
+    // changed the selected slot before this after-event handler ran.
+    const mainItem = ev.itemStackBeforeBreak;
+    const cropDropId = MATURE_CROP_DROPS[brokenBlockPermutation.type.id];
+    if (mainItem && RANKED_HOE_IDS.has(mainItem.typeId) && cropDropId && isMatureCrop(brokenBlockPermutation)) {
+        const bonusAmount = getToolQuality(mainItem);
+        if (bonusAmount > 0) {
+            const bonusCrop = new ItemStack(cropDropId, bonusAmount);
+            player.dimension.spawnItem(bonusCrop, block.location);
+        }
+    }
     let silktouch = false;
     if (mainItem) {
         const enchantable = mainItem.getComponent('enchantable');
@@ -114,7 +128,17 @@ world.afterEvents.playerBreakBlock.subscribe((ev) => {
             silktouch = enchantable.getEnchantment(EnchantmentTypes.get('minecraft:silk_touch')) ? true : false;
         };
     };
-    if (silktouch) return;
+    const mineralId = brokenBlockPermutation.type.id;
+    if (mineralId in MINERAL_ORES) {
+        // Use the actual tool at break time, including its quality. A broken
+        // last-use pickaxe is no longer guaranteed to occupy the selected slot.
+        const tool = ev.itemStackBeforeBreak;
+        const silk = !!tool?.getComponent('enchantable')?.getEnchantment('silk_touch');
+        const drop = getMineralDrop(mineralId, tool?.typeId, tool ? getToolQuality(tool) : 0, silk);
+        if (drop) player.dimension.spawnItem(new ItemStack(drop.id, drop.count), block.location);
+        return;
+    }
+    if (!mainItem || silktouch) return;
     switch (brokenBlockPermutation.type.id) {
         case 'mc:rock_salt_ore': {
             // @ts-ignore TS(2532): Object is possibly 'undefined'.
@@ -400,24 +424,5 @@ function getWeight(min: any, max: any) {
  * @returns 
  */
 export function getToolQuality(item: any) {
-    if (item?.getRawLore().length == 0) return 0;
-
-    const lore = item.getRawLore() ?? [];
-
-    for (const line of lore) {
-        // rawtext 配列を想定
-        if (!line.rawtext) continue;
-
-        for (const part of line.rawtext) {
-            // translate + with 対応
-            if (part.with && part.with.length > 0) {
-                const rank = part.with[0]
-                if (rank in RANK_QUALITY_TABLE) {
-                    // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-                    return RANK_QUALITY_TABLE[rank];
-                }
-            }
-        }
-    }
-    return 0;
+    return getArtisanQuality(item);
 }

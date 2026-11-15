@@ -5,15 +5,15 @@
             "identifier": "mc:green_tea_recipe"
         },
         "tags": [
-            "stew"
+            "mixer"
         ],
         "pattern": [
-            "#*"
+            "**#",
+            "***"
         ],
         "key": {
             "#": {
-                "item": "minecraft:potion",
-                "data": 0
+                "item": "mc:water_cup"
             },
             "*": {
                 "item": "minecraft:wheat_seeds"

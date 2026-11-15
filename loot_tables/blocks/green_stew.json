@@ -1,0 +1,15 @@
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "mc:green_stew",
+          "quantity": 1,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

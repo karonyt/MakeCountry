@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { sendMergeRequestFromListDefaultForm } from "@/features/forms/default/sc/info/ext/s_mrg_req_list/req_from_list.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";

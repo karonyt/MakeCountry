@@ -1,0 +1,26 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:red_shaved_ice_machine_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "D#"
+    ],
+    "key": {
+      "D": {
+        "item": "minecraft:red_dye"
+      },
+      "#": {
+        "item": "mc:shaved_ice_machine"
+      }
+    },
+    "result": {
+      "item": "mc:red_shaved_ice_machine",
+      "count": 1
+    }
+  }
+}

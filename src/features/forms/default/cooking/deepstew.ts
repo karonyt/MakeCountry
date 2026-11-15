@@ -1,20 +1,28 @@
+import { resolveCookingCategoryPreference } from "@/shared/ui/artisan-filter-preferences.js";
+import { addCraftableFilterButton, craftableOnly, toggleCraftableOnly, filterCraftableRecipeIds, CRAFTABLE_FILTER_SLOT } from "@/shared/ui/craftable-filter.js";
+import { openCookingRecipeCategory } from "@/shared/ui/artisan-recipe-filter.js";
+import { cancelArtisanCraft, runArtisanCraft } from "@/domain/jobs/pending-artisan-rewards.js";
+import { recipeListName, recipeTitleParts } from "@/domain/recipes/recipe-display.js";
+import { captureCookingEquipment, requireCookingEquipment } from '@/domain/cooking/cookware.js';
+import { CraftingModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { ItemStack, Player, world } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
+import { addLastCraftedRecipeButton, getLastCraftedRecipeId, rememberLastCraftedRecipe } from "@/shared/ui/last-crafted-recipe.js";
 import { DeepStewRecipes } from "@/content/cooking/deepstew-recipe.js";
 import { itemIdToPath } from "@/config/textures.js";
 import jobs_config from "@/config/jobs.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { getRandomInteger, langChangeItemName } from "@/shared/utils/minecraft.js";
-import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { getGameplayRandomValue } from "@/shared/utils/gameplay-random.js";
 import { createResultStacks, resolveRecipeResult } from "@/domain/recipes/recipe-result.js";
-import { capCookingRankByChefLevel } from "@/domain/cooking/quality-cap.js";
+import { buildCookingEffectRawtext } from "@/domain/recipes/recipe-effect-lore.js";
+import { capCookingRankByRecipe } from "@/domain/cooking/quality-cap.js";
 import {
     adjacentRecipeCategory,
+    recipeCategoryLabel,
     filterRecipeIds,
     getAvailableRecipeCategories,
-    resolveRecipeCategory,
 } from "@/domain/cooking/recipe-category.js";
 import {
     cleanRecipeSearchQuery,
@@ -22,18 +30,32 @@ import {
     isRecipeSearchActive,
     sortRecipeIdsByLevel,
 } from "@/domain/recipes/recipe-list.js";
-import { ModalFormData } from "@minecraft/server-ui";
-import config from "@/config/server.js";
+
+import {
+    addComplexCookingMinigameUi,
+    beginComplexCookingAction,
+    canCompleteComplexCooking,
+    endComplexCookingAction,
+    ensureComplexCookingRoute,
+    getComplexCookingAdjustment,
+    getComplexCookingCompletionLore,
+    getComplexCookingCompletionMessage,
+    getComplexCookingResultInfo,
+    initializeComplexCookingMinigame,
+} from "@/features/forms/default/cooking/complex-station-minigame.js";
+import { buildCookingMasteryLore } from "@/features/forms/default/cooking/cooking-mastery-ui.js";
+import {
+    hasAnyUnreservedCookingIngredient,
+    hasUnreservedCookingIngredient,
+} from "@/features/forms/default/cooking/complex-station-ingredients.js";
 
 /* ===============================
    Init
 ================================ */
 let buff: any;
-let playerDB: any;
 
 world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
-    playerDB = new DynamicProperties("player");
 });
 
 /* ===============================
@@ -149,13 +171,13 @@ function isBurnDanger(pot: any, recipe: any) {
 
 function calcMaxActions(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
-    return recipe.baseActions + Math.min(Math.floor(lv / 4), 40 + (recipe.requiredLevel * 4));
+    return Math.max(10, recipe.baseActions + Math.min(Math.floor(lv / 4), 40 + (recipe.requiredLevel * 4)));
 }
 
 function heatVariance(player: any, recipe: any) {
     const lv = new JobLevel(player, "chef").getLevel();
     const diff = lv - recipe.requiredLevel;
-    return getRandomInteger(
+    return getGameplayRandomValue(
         -Math.max(1, 10 - Math.floor(diff / 4)),
         Math.max(1, 10 - Math.floor(diff / 4))
     );
@@ -245,7 +267,7 @@ const DeepPotActions = [
         unlockLv: 1,
         cost: 1,
         run(pot: any, recipe: any, ctx: any, player: any) {
-            pot.heat += getRandomInteger(35, 60) + ctx.heatVariance();
+            pot.heat += getGameplayRandomValue(35, 60) + ctx.heatVariance();
             pot.progress += pot.heat >= recipe.needHeat[0] ? 10 : 3;
             pot.depth += 5;
             if (pot.heat > recipe.needHeat[1]) {
@@ -268,7 +290,7 @@ const DeepPotActions = [
         cost: 1,
         run(pot: any, recipe: any, ctx: any, player: any) {
             pot.phase = "cooking";
-            pot.progress += getRandomInteger(8, 15);
+            pot.progress += getGameplayRandomValue(9, 15);
             pot.consistency += 6;
             pot.burned -= 4;
             player.stopSound('cooking.fire');
@@ -291,7 +313,7 @@ const DeepPotActions = [
             }
 
             for (const s of Object.keys(recipe.seasonings ?? {})) {
-                if (!hasAll(player, { [s]: 1 })) continue;
+                if (!hasUnreservedCookingIngredient(player, s, pot.scaledIngredients)) continue;
 
                 const inv = player.getComponent("inventory").container;
                 let usedItem;
@@ -357,7 +379,7 @@ const DeepPotActions = [
         cost: 1,
         run(pot: any, recipe: any, ctx: any, player: any) {
             pot.phase = "cooking";
-            pot.heat -= getRandomInteger(25, 45);
+            pot.heat -= getGameplayRandomValue(25, 45);
             pot.progress += 4;
             pot.burned -= 12;
             player.stopSound('cooking.fire');
@@ -375,7 +397,7 @@ const DeepPotActions = [
         cost: 1,
         run(pot: any, recipe: any, ctx: any, player: any) {
             pot.phase = "cooking";
-            pot.progress += getRandomInteger(12, 22);
+            pot.progress += getGameplayRandomValue(12, 22);
             pot.consistency += 12;
             pot.burned -= 10;
             pot.heat -= 8;
@@ -458,7 +480,7 @@ const DeepPotActions = [
         cost: 2,
         run(pot: any, recipe: any, ctx: any, player: any) {
             pot.phase = "cooking";
-            pot.heat += getRandomInteger(70, 110) + ctx.heatVariance();
+            pot.heat += getGameplayRandomValue(70, 110) + ctx.heatVariance();
             pot.progress += 28;
             pot.consistency += 15;
             pot.burned += 18;
@@ -511,7 +533,7 @@ const DeepPotActions = [
         cost: 2,
         run(pot: any, recipe: any, ctx: any, player: any) {
             pot.phase = "cooking";
-            pot.progress += getRandomInteger(20, 30);
+            pot.progress += getGameplayRandomValue(20, 30);
             pot.consistency += 20;
             pot.depth += 15;
             pot.layers = Math.max(1, pot.layers - 1);
@@ -600,22 +622,27 @@ const DeepPotActions = [
 /* ===============================
    UI
 ================================ */
-export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "all", searchQuery = "") {
-    const form = new ChestFormData("large")
+export function openDeepStewRecipeSelect(player: any, page = 0, categoryId: string | undefined = undefined, searchQuery = "") {
+    if (deepPotSessions.has(player.id)) {
+        openDeepPot(player);
+        return;
+    }
+
+    const form = new ChestFormData("large").enableLoreLineBreaks()
         .setTitle({ rawtext: [{ translate: "cooking.title.deep_pot" }] });
 
     const lv = new JobLevel(player, "chef").getLevel();
     const recipes = DeepStewRecipes as Record<string, any>;
     const cleanSearchQuery = cleanRecipeSearchQuery(searchQuery);
     const searchActive = isRecipeSearchActive(cleanSearchQuery);
-    const selectedCategory = resolveRecipeCategory(recipes, categoryId);
+    const selectedCategory = resolveCookingCategoryPreference(player, "cooking:deepstew", recipes, categoryId);
     const availableCategories = getAvailableRecipeCategories(recipes, selectedCategory.id);
-    const recipeIds = filterUnlockedRecipesForSearch(
+    const recipeIds = filterCraftableRecipeIds(filterUnlockedRecipesForSearch(
         filterRecipeIds(sortRecipeIdsByLevel(Object.keys(recipes), recipes), recipes, selectedCategory.id),
         recipes,
         cleanSearchQuery,
         lv
-    );
+    ), recipes, player, lv);
 
     // ==== 枠装飾 ====
     fill(form,
@@ -628,6 +655,7 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
     );
 
     // ==== ページ計算 ====
+    addCraftableFilterButton(form, player, recipeIds.length);
     const totalPages = Math.max(1, Math.ceil(recipeIds.length / RECIPES_PER_PAGE));
     const safePage = Math.min(Math.max(0, page), totalPages - 1);
     const start = safePage * RECIPES_PER_PAGE;
@@ -663,7 +691,7 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
                 ? itemIdToPath[r.name]
                 : itemIdToPath["minecraft:barrier"],
             name: lv >= r.requiredLevel
-                ? langChangeItemName(r.name)
+                ? recipeListName(r)
                 : "cooking.locked",
             lore: lv >= r.requiredLevel
                 ? [{
@@ -678,9 +706,10 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
                         { text: ":" },
                         ...seasonings,
                         { text: "\n§d" },
-                        { translate: "cooking.deep_pot.specialty" }
+                        { translate: "cooking.deep_pot.specialty" },
+                        ...buildCookingEffectRawtext(r.result),
                     ]
-                }]
+                }, ...buildCookingMasteryLore(lv, r.requiredLevel)]
                 : [{
                     rawtext: [
                         { translate: "cooking.unlock_level" },
@@ -717,14 +746,14 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(47, {
             iconPath: getIconPath(previousCategory.icon),
-            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, { translate: previousCategory.label }],
+            name: [{ translate: "cooking.category.prev" }, { text: "\n§7" }, recipeCategoryLabel(previousCategory)],
             editedName: true
         });
 
         // @ts-ignore TS(18048): Form creation follows the existing ChestFormData chain pattern.
         form.setButton(51, {
             iconPath: getIconPath(nextCategory.icon),
-            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, { translate: nextCategory.label }],
+            name: [{ translate: "cooking.category.next" }, { text: "\n§7" }, recipeCategoryLabel(nextCategory)],
             editedName: true
         });
     }
@@ -746,10 +775,18 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
         });
     }
 
-    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, { translate: selectedCategory.label }] }];
+    const pageLore: any[] = [{ rawtext: [{ text: "§b" }, recipeCategoryLabel(selectedCategory)] }];
     if (searchActive) pageLore.push({ rawtext: [{ text: `§e検索: ${cleanSearchQuery}` }] });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
+    form!.setButton(52, {
+        iconPath: itemIdToPath["minecraft:hopper"],
+        name: "§bジャンルで絞り込み",
+        lore: pageLore,
+        editedName: true
+    });
+
+    // @ts-ignore TS(2532): Object is possibly undefined.
     form.setButton(49, {
         iconPath: itemIdToPath["minecraft:paper"],
         name: [{ translate: "cooking.page.current", with: [`${safePage + 1}`, `${totalPages}`] }],
@@ -757,9 +794,25 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
         editedName: true
     });
 
+    if (!craftableOnly(player) || recipeIds.includes(getLastCraftedRecipeId(player.id, "cooking:deepstew") ?? "")) addLastCraftedRecipeButton(form, player.id, "cooking:deepstew", recipes);
+
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
         if (r.canceled) return;
+
+        if (r.selection === CRAFTABLE_FILTER_SLOT) {
+            toggleCraftableOnly(player);
+            openDeepStewRecipeSelect(player, 0, selectedCategory.id, cleanSearchQuery);
+            return;
+        }
+
+        if (r.selection === 46) {
+            const lastRecipeId = getLastCraftedRecipeId(player.id, "cooking:deepstew");
+            if (lastRecipeId && (!craftableOnly(player) || recipeIds.includes(lastRecipeId)) && recipes[lastRecipeId] && lv >= recipes[lastRecipeId].requiredLevel) {
+                openQuantitySelect(player, lastRecipeId);
+            }
+            return;
+        }
 
         if (r.selection === 45) {
             openDeepStewRecipeSelect(player, safePage - 1, selectedCategory.id, cleanSearchQuery);
@@ -777,6 +830,11 @@ export function openDeepStewRecipeSelect(player: any, page = 0, categoryId = "al
             openDeepStewRecipeSelect(player, 0, adjacentRecipeCategory(recipes, selectedCategory.id, 1).id, cleanSearchQuery);
             return;
         }
+        if (r.selection === 52) {
+            openCookingRecipeCategory(player, recipes, selectedCategory.id, next => openDeepStewRecipeSelect(player, 0, next, cleanSearchQuery));
+            return;
+        }
+
         if (r.selection === 48) {
             openDeepStewRecipeSearch(player, selectedCategory.id, cleanSearchQuery);
             return;
@@ -870,8 +928,10 @@ function startCooking(player: any, recipeId: any, quantity: any) {
 
     const materialQuality = calcAverageMaterialQuality(player, scaledIngredients);
 
-    deepPotSessions.set(player.id, {
+    cancelArtisanCraft(deepPotSessions.get(player.id));
+    deepPotSessions.set(player.id, initializeComplexCookingMinigame({
         recipeId,
+        cookware: captureCookingEquipment(player, "deep_stew"),
         quantity,
         scaledIngredients,
         heat: 0,
@@ -894,18 +954,25 @@ function startCooking(player: any, recipeId: any, quantity: any) {
         seasoningCount: 0,
 
         ctx: { heatVariance: () => heatVariance(player, recipe) }
-    });
+    }));
 
     openDeepPot(player);
 }
 
 function openDeepPot(player: any) {
     const pot = deepPotSessions.get(player.id);
+    if (!ensureComplexCookingRoute(player, "deep_stew", pot, DeepPotActions, openDeepPot)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = DeepStewRecipes[pot.recipeId];
     const lv = new JobLevel(player, "chef").getLevel();
+    const predictedRank = capCookingRankByRecipe(
+        player,
+        calcRank({ ...pot, score: pot.score + getComplexCookingAdjustment(player, "deep_stew", pot) }, recipe),
+        recipe.requiredLevel,
+        DEEP_STEW_RANK_MULTIPLIER,
+    ).rank;
 
-    const form = new ChestFormData("large").setTitle({ rawtext: [{ translate: langChangeItemName(recipe.name) }] });
+    const form = new ChestFormData("large").enableLoreLineBreaks().setTitle({ rawtext: recipeTitleParts(recipe) });
 
     fill(form, [...Array(9).keys()],
         "minecraft:cyan_stained_glass_pane"
@@ -913,6 +980,7 @@ function openDeepPot(player: any) {
     fill(form, [...Array(9).keys()].map(i => i + 45),
         "minecraft:cyan_stained_glass_pane"
     );
+    addComplexCookingMinigameUi(form, player, "deep_stew", pot);
 
     const burnDanger = isBurnDanger(pot, recipe);
     if (burnDanger) {
@@ -940,7 +1008,8 @@ function openDeepPot(player: any) {
             { rawtext: [{ text: '§2' }, { translate: "cooking.status.umami" }, { text: `: ${Math.max(0, pot.umami)}\n` }] },
             { rawtext: [{ text: '§b' }, { translate: "cooking.status.actions" }, { text: `: ${pot.actions}/${pot.maxActions}\n` }] },
             { rawtext: [{ text: '§f' }, { translate: "cooking.status.amount" }, { text: `: ${pot.quantity}\n` }] },
-            { rawtext: [{ text: '§5' }, { translate: "cooking.lore.quality", with: [`${capCookingRankByChefLevel(player, calcRank(pot, recipe), DEEP_STEW_RANK_MULTIPLIER).rank}`] }] }
+            { rawtext: [{ text: '§5' }, { translate: "cooking.lore.quality", with: [predictedRank] }] },
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
         ],
         editedName: true
     });
@@ -968,14 +1037,19 @@ function openDeepPot(player: any) {
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.setButton(49, {
-        iconPath: itemIdToPath["minecraft:lime_dye"],
-        name: "cooking.button.complete",
+        iconPath: itemIdToPath[canCompleteComplexCooking(pot) ? "minecraft:lime_dye" : "minecraft:barrier"],
+        name: canCompleteComplexCooking(pot) ? "cooking.button.complete" : "cooking.minigame.finish.locked",
+        lore: [
+            ...buildCookingMasteryLore(lv, recipe.requiredLevel),
+            ...getComplexCookingCompletionLore(pot),
+        ],
         editedName: true
     });
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     form.show(player).then(r => {
-        handleAction(player, r.selection || 0);
+        if (r.canceled || r.selection === undefined) return;
+        handleAction(player, r.selection);
     });
 }
 
@@ -984,11 +1058,18 @@ function openDeepPot(player: any) {
 ================================ */
 function handleAction(player: any, slot: any) {
     const pot = deepPotSessions.get(player.id);
+    if (!pot) return;
+    if (pot.artisanFinish) { finish(player); return; }
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = DeepStewRecipes[pot.recipeId];
 
-    if (slot === 49 && pot.phase != 'raw') {
+    if (slot === 49 && pot.phase != 'raw' && canCompleteComplexCooking(pot)) {
         finish(player);
+        return;
+    }
+    if (slot === 49) {
+        player.onScreenDisplay.setActionBar(getComplexCookingCompletionMessage(pot));
+        openDeepPot(player);
         return;
     }
 
@@ -1008,7 +1089,17 @@ function handleAction(player: any, slot: any) {
         finish(player);
         return;
     }
+    if (
+        action.key === "add_seasoning"
+        && pot.usedSeasonings.length < recipe.maxSeasonings
+        && !hasAnyUnreservedCookingIngredient(player, Object.keys(recipe.seasonings ?? {}), pot.scaledIngredients)
+    ) {
+        player.onScreenDisplay.setActionBar({ rawtext: [{ translate: "cooking.error.optional_requires_surplus" }] });
+        openDeepPot(player);
+        return;
+    }
 
+    const hadTrouble = beginComplexCookingAction("deep_stew", pot, action.key);
     action.run(pot, recipe, pot.ctx, player);
     pot.actions += action.cost;
     pot.heat = Math.floor(pot.heat * 100) / 100;
@@ -1019,6 +1110,7 @@ function handleAction(player: any, slot: any) {
     pot.clarity = Math.max(0, Math.floor(pot.clarity * 100) / 100);
     pot.depth = Math.max(0, Math.floor(pot.depth * 100) / 100);
     pot.umami = Math.max(0, Math.floor(pot.umami * 100) / 100);
+    endComplexCookingAction(player, "deep_stew", pot, DeepPotActions, hadTrouble);
 
     openDeepPot(player);
 }
@@ -1126,49 +1218,38 @@ function calcRank(pot: any, recipe: any) {
  */
 function finish(player: any) {
     const pot = deepPotSessions.get(player.id);
+    if (!pot || pot.artisanCraftStarted) return;
+    if (!requireCookingEquipment(player, pot?.cookware)) return;
     // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const recipe = DeepStewRecipes[pot.recipeId];
 
     if (!checkIngredients(player, pot.scaledIngredients)) {
+        cancelArtisanCraft(pot);
         deepPotSessions.delete(player.id);
         return;
     }
 
-    consume(player, pot.scaledIngredients);
+    const { minigameResult, rank, mul, itemId, totalCount } = pot.artisanFinish ??= (() => {
+        const minigameResult = getComplexCookingResultInfo(player, "deep_stew", pot);
+        const finalResult = calcRank({
+            ...pot,
+            score: pot.score + getComplexCookingAdjustment(player, "deep_stew", pot),
+        }, recipe);
+        const { rank, mul } = capCookingRankByRecipe(
+            player,
+            finalResult,
+            recipe.requiredLevel,
+            DEEP_STEW_RANK_MULTIPLIER,
+        );
 
-    const { rank, mul } = capCookingRankByChefLevel(player, calcRank(pot, recipe), DEEP_STEW_RANK_MULTIPLIER);
-
-    const resolved = resolveRecipeResult(recipe.result);
-    const isFailure = rank === "F" && pot.phase === "burned";
-    const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
-    const totalCount = isFailure ? pot.quantity : pot.quantity * resolved.count;
-    const inv = player.getComponent("inventory").container;
-
-    for (const item of createResultStacks(itemId, totalCount)) {
-        item.setLore([
-            { rawtext: [{ text: '§r§3==============' }] },
-            { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
-            { rawtext: [{ text: '§r§d' }, { translate: "cooking.deep_pot.specialty" }] },
-            { rawtext: [{ text: '§r§3==============' }] },
-        ]);
-
-        const leftover = inv.addItem(item);
-        if (leftover) {
-            player.dimension.spawnItem(leftover, player.location);
-        }
-    }
-
-    deepPotSessions.delete(player.id);
-
-    player.stopSound('cooking.deep_idle');
-    player.stopSound('cooking.fire');
-    player.stopSound('cooking.deep_stir');
-    player.stopSound('cooking.deep_boil');
-    player.stopSound('cooking.cool');
-    player.playSound('cooking.complete', player.location);
-
-    if (jobs_config.validity && player.hasTag('mcjobs_chef')) {
-        /* ===== Chef Job ===== */
+        const resolved = resolveRecipeResult(recipe.result);
+        const isFailure = rank === "F" && pot.phase === "burned";
+        const itemId = isFailure ? "minecraft:charcoal" : resolved.id;
+        const totalCount = isFailure ? pot.quantity : pot.quantity * resolved.count;
+        return { minigameResult, rank, mul, itemId, totalCount };
+    })();
+    if (!runArtisanCraft(player, pot, () => {
+        if (!jobs_config.validity || !player.hasTag('mcjobs_chef')) return undefined;
         const job = new JobLevel(player, "chef");
         const level = job.getLevel();
 
@@ -1187,32 +1268,38 @@ function finish(player: any) {
                 buff.getMultiplier("chef") *
                 6
             ) / 100;
+        const xpReward = recipe.baseXp * mul * 1.5 * Math.min(pot.quantity, 25);
+        return { job: "chef", money: reward, xp: xpReward, rank, display: "cooking" };
+    }, () => {
+        consume(player, pot.scaledIngredients);
+        rememberLastCraftedRecipe(player.id, "cooking:deepstew", pot.recipeId);
 
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-        const finalReward = applyDailyLimit(
-            playerData,
-            "chef",
-            reward,
-            jobs_config.dailyLimit.chef
-        );
+        const inv = player.getComponent("inventory").container;
 
-        if (finalReward > 0) {
-            job.addXp(recipe.baseXp * mul * 1.5);
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
+        for (const item of createResultStacks(itemId, totalCount)) {
+            item.setLore([
+                { rawtext: [{ text: '§r§3==============' }] },
+                { rawtext: [{ text: '§r§e' }, { translate: "cooking.lore.quality", with: [`${rank}`] }] },
+                { rawtext: [{ text: '§r§6' }, { translate: "cooking.minigame.result.level_technique", with: [`${minigameResult.levelTechnique}`] }] },
+                { rawtext: [{ text: '§r§d' }, { translate: "cooking.minigame.result.route_bonus", with: [`${minigameResult.routeBonus}`] }] },
+                { rawtext: [{ text: '§r§d' }, { translate: "cooking.deep_pot.specialty" }] },
+                { rawtext: [{ text: '§r§3==============' }] },
+            ]);
+
+            const leftover = inv.addItem(item);
+            if (leftover) {
+                player.dimension.spawnItem(leftover, player.location);
+            }
         }
 
-        player.onScreenDisplay.setActionBar(
-            {
-                rawtext: [
-                    { translate: "cooking.reward.prefix" },
-                    { text: ` ${rank} ` },
-                    { translate: "cooking.reward.money" },
-                    { text: `+${finalReward}${config.MoneyName}` },
-                    { translate: "cooking.reward.xp" },
-                    { text: `${job.getXp()}/${job.getXpRequired(level)}` }
-                ]
-            }
-        );
-    }
+        deepPotSessions.delete(player.id);
+    })) return;
+
+    player.stopSound('cooking.deep_idle');
+    player.stopSound('cooking.fire');
+    player.stopSound('cooking.deep_stir');
+    player.stopSound('cooking.deep_boil');
+    player.stopSound('cooking.cool');
+    player.playSound('cooking.complete', player.location);
+
 }

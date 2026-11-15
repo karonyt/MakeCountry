@@ -1,4 +1,42 @@
+import { MineralChemistryRecipes } from './mineral-recipes.js';
+import { PackagingChemistryRecipes } from './packaging-recipes.js';
+
+const NeonLightRecipes = Object.fromEntries([
+    ["red", "minecraft:red_dye"],
+    ["orange", "minecraft:orange_dye"],
+    ["warm_white", "minecraft:white_dye"],
+    ["yellow", "minecraft:yellow_dye"],
+    ["lime", "minecraft:lime_dye"],
+    ["cyan", "minecraft:cyan_dye"],
+    ["blue", "minecraft:blue_dye"],
+    ["magenta", "minecraft:magenta_dye"]
+].map(([color, dye]) => [
+    `neon_light_${color}`,
+    {
+        name: `mc:neon_light_${color}`,
+        result: { id: `mc:neon_light_${color}`, count: 4 },
+        reactionType: "polymerization",
+        requiredLevel: 20,
+        baseActions: 18,
+        ingredients: {
+            "mc:polyethylene_pellet": 4,
+            "minecraft:glowstone_dust": 4,
+            "minecraft:glass": 1,
+            [dye]: 1
+        },
+        catalysts: {
+            "minecraft:redstone": 1
+        },
+        maxCatalysts: 1,
+        optimalTemperature: [80, 120],
+        baseMoney: 100,
+        baseXp: 60
+    }
+]));
+
 export const ChemistryRecipes = {
+    ...PackagingChemistryRecipes,    ...MineralChemistryRecipes,
+    ...NeonLightRecipes,
 
     /* ===============================
        基礎無機（Lv1〜）

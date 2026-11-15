@@ -1,0 +1,25 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:gift_box_large",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "gift_box_large"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "item.mc:gift_box_large"
+      },
+      "minecraft:max_stack_size": 1,
+      "minecraft:block_placer": {
+        "block": "mc:gift_box_large_block"
+      }
+    }
+  }
+}

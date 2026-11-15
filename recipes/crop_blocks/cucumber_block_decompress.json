@@ -1,0 +1,29 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:cucumber_block_decompress_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:cucumber_block"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:cucumber_block"
+      }
+    ],
+    "result": {
+      "item": "mc:cucumber",
+      "count": 9
+    }
+  }
+}
+

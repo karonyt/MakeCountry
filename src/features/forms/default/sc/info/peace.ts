@@ -1,10 +1,11 @@
+import { CountryActionForm as ActionForm, CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ModalFormData } from "@minecraft/server-ui";
 import { settingCountryInfoDefaultForm } from "@/features/forms/default/sc/info/info.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import config from "@/config/server.js";
-import { ActionForm } from "@/shared/ui/form-class.js";
+
+import { peaceExitRefusal } from "@/domain/country/territory-rules-gate.js";
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData */
 
 /**
@@ -76,6 +77,12 @@ function warningEditCountryPeaceDefaultForm(player: any, countryData: any) {
         };
         const countryManager = new CountryManager(countryData.id);
         countryData = countryManager.countryData;
+        // 建国規約 第3条: 平和主義をやめられるのは、建国から 7 日たっていて飛び地が 3 か所以下のとき
+        const refusal = peaceExitRefusal(countryData);
+        if (refusal) {
+            player.sendMessage(refusal);
+            return;
+        }
         countryData.peace = false;
         countryData.peaceChangeCooltime = config.peaceChangeCooltime;
         player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `changed.peace` }, { text: `\n§r${beforeValue} ->§r false` }] });

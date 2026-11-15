@@ -1,0 +1,40 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "mc:stainless_cutting_board"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "unlock": [
+      {
+        "item": "mc:stainless_steel"
+      }
+    ],
+    "ingredients": [
+      {
+        "item": "mc:stainless_steel"
+      },
+      {
+        "item": "mc:stainless_steel"
+      },
+      {
+        "item": "mc:stainless_steel"
+      },
+      {
+        "item": "mc:stainless_steel"
+      },
+      {
+        "item": "mc:brass_ingot"
+      },
+      {
+        "item": "minecraft:stick"
+      }
+    ],
+    "result": {
+      "item": "mc:stainless_cutting_board",
+      "count": 1
+    }
+  }
+}

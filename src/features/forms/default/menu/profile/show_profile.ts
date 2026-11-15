@@ -1,7 +1,7 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
-import { playerMainMenuDefaultForm } from "@/features/forms/default/menu/player_main_menu.js";
+import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
 import { ensureMarriageData, getPlayerNameById, showMarriageMainForm } from "@/domain/player/marriage.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 
@@ -37,7 +37,7 @@ export function showProfileDefaultForm(player: any) {
     form.button({ translate: "mc.button.close" });
     form.show(player).then((rs: any) => {
         if (rs.canceled) {
-            playerMainMenuDefaultForm(player);
+            callPlayerMainMenuForm(player);
             return;
         }
         switch (rs.selection) {
@@ -46,7 +46,7 @@ export function showProfileDefaultForm(player: any) {
                 break;
             }
             case 1: {
-                playerMainMenuDefaultForm(player);
+                callPlayerMainMenuForm(player);
                 break;
             }
             case 2: {

@@ -9,6 +9,33 @@ import jobs_config from "@/config/jobs.js";
 import { updateRecipe } from "@/domain/recipes/recipe-service.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { getFederationMemberIds } from "@/domain/country/relationships/federation.js";
+import { applyCountryOwnerChange } from "@/domain/country/relationships/owner.js";
+import { deniesIncident16, noticeIncident16 } from "@/domain/protection/incident16.js";
+import { runWithGateTerritoryCheck } from "@/domain/country/gate-territory.js";
+import { deniesNewTerritory } from "@/domain/country/territory-rules-gate.js";
+
+function getCountryMemberIds(playerDB: any, countryId: any, listedMembers: any[] = []): string[] {
+    const memberIds = new Set(listedMembers.map(String));
+    const countryIdString = String(countryId);
+
+    for (const key of playerDB.idList) {
+        const playerKey = String(key);
+        if (!playerKey.startsWith("player_")) continue;
+
+        const rawPlayer = playerDB.get(playerKey);
+        if (!rawPlayer) continue;
+        try {
+            const playerData = JSON.parse(rawPlayer);
+            if (String(playerData?.country) === countryIdString) {
+                memberIds.add(playerKey.slice("player_".length));
+            }
+        } catch (error) {
+            console.warn(`[country-members] failed to inspect ${playerKey}`, error);
+        }
+    }
+
+    return [...memberIds];
+}
 
 /**
  * @type {DynamicProperties}
@@ -30,6 +57,25 @@ world.afterEvents.worldLoad.subscribe(() => {
 export function MakeCountry(owner: any, reason: any, name = `country`, invite = true, peace = config.defaultPeace) {
     const { x, z } = owner.location;
     const dimensionId = owner.dimension.id;
+    const target: [number, number] = [Math.floor(x / 16), Math.floor(z / 16)];
+    runWithGateTerritoryCheck(owner, [target], dimensionId, () => {
+        if (!owner.isValid || owner.dimension.id !== dimensionId) return;
+        const current = owner.location;
+        if (Math.floor(current.x / 16) !== target[0] || Math.floor(current.z / 16) !== target[1]) {
+            owner.sendMessage("§eチャンクを移動したため、建国を中止しました。もう一度実行してください。");
+            return;
+        }
+        makeCountryAfterGateCheck(owner, reason, name, invite, peace);
+    });
+}
+
+function makeCountryAfterGateCheck(owner: any, reason: any, name: string, invite: boolean, peace: boolean) {
+    const { x, z } = owner.location;
+    const dimensionId = owner.dimension.id;
+    if (deniesIncident16(owner, x, z, dimensionId, true)) {
+        noticeIncident16(owner);
+        return;
+    }
     const ownerData = GetAndParsePropertyData(`player_${owner.id}`);
     if (ownerData.country) {
         owner.sendMessage({ translate: `already.country.join` });
@@ -49,6 +95,8 @@ export function MakeCountry(owner: any, reason: any, name = `country`, invite = 
         owner.sendMessage({ translate: `this.chunk.cannot.territory` });
         return;
     };
+    // 建国規約 第3条 第3項: 他国の領土から 5 チャンク以上離す
+    if (deniesNewTerritory(owner, [[Math.floor(x / 16), Math.floor(z / 16)]], dimensionId)) return;
     if (ownerData.money < config.MakeCountryCost) {
         owner.sendMessage({ translate: `not.enough.makecountry.money`, with: [`${config.MoneyName} ${config.MakeCountryCost - ownerData.money}`] });
         return;
@@ -68,7 +116,7 @@ export function MakeCountry(owner: any, reason: any, name = `country`, invite = 
         { name: `Admin`, permissions: [`admin`], iconTextureId: `iron_block`, color: `f` },
         {
             // @ts-ignore TS(2322): Type 'string' is not assignable to type 'never'.
-            name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`, 'itemUse', 'projectileUse', 'entityAttack', 'playerAttack',], iconTextureId: `stone`, color: `a`
+            name: `People`, permissions: [`place`, `break`, `blockUse`, `entityUse`, `gateUse`, `noTarget`, `invite`, `publicHomeUse`, `setHome`, `openContainer`, `itemUse`, `projectileUse`, `entityAttack`, `playerAttack`, `shopBuy`, `shopSell`], iconTextureId: `stone`, color: `a`
         }
     ]);
     ownerData.roles.push(ownerRole);
@@ -100,6 +148,8 @@ export function MakeCountry(owner: any, reason: any, name = `country`, invite = 
         //国庫、リソースポイント公開
         hideMoney: config.hideCountryMoney,
         peace: peace,
+        // 建国した時刻 (建国直後の保護に使う)
+        foundedAt: Date.now(),
         //色
         color: `e`,
         //同盟国
@@ -127,15 +177,25 @@ export function MakeCountry(owner: any, reason: any, name = `country`, invite = 
         //友好国
         friendly: [],
         //中立国の権限
-        neutralityPermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`],
+        neutralityPermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`, `shopBuy`, `shopSell`],
+        //中立国ごとの権限（未設定の国は neutralityPermission を使用）
+        neutralityCountryPermissions: [],
+        //国土全体に対する個人別の権限（外交関係より優先）
+        playerPermissions: [],
         //同盟国の権限
-        alliancePermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`],
+        alliancePermission: [`blockUse`, `entityUse`, `noTarget`, `setHome`, `publicHomeUse`, `shopBuy`, `shopSell`],
+        //同盟国ごとの権限（未設定の国は alliancePermission を使用）
+        allianceCountryPermissions: [],
         //連邦国の権限
         federationPermission: [`blockUse`, `entityUse`, `openContainer`, `itemUse`, `noTarget`, `setHome`, `publicHomeUse`],
         //敵対国の権限
         hostilityPermission: [],
+        //敵対国ごとの権限（未設定の国は hostilityPermission を使用）
+        hostilityCountryPermissions: [],
         //友好国の権限
-        friendlyPermission: [`noTarget`, `setHome`, `publicHomeUse`],
+        friendlyPermission: [`noTarget`, `setHome`, `publicHomeUse`, `shopBuy`, `shopSell`],
+        //友好国ごとの権限（未設定の国は friendlyPermission を使用）
+        friendlyCountryPermissions: [],
         //加盟している国際組織
         internationalOrganizations: [],
         //戦争中
@@ -174,7 +234,7 @@ export function MakeCountry(owner: any, reason: any, name = `country`, invite = 
     StringifyAndSavePropertyData(`role_${ownerRole}`, ownerRoleData);
     StringifyAndSavePropertyData(`player_${owner.id}`, ownerData);
     StringifyAndSavePropertyData(chunkData.id, chunkData);
-    const eventData = { countryName: name, invite, peace, type: reason, id, player: owner };
+    const eventData = { countryName: name, invite, peace, type: reason, countryId: id, player: owner };
     country.afterEvents.create.emit(eventData);
     system.runTimeout(() => {
         if (config.countryNameDisplayOnPlayerNameTag) {
@@ -203,6 +263,8 @@ export function GenerateChunkData(x: any, z: any, dimensionId: any, ownerId = un
             type: "public",
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             permissions: [],
         }
     };
@@ -267,6 +329,14 @@ export function DeleteCountry(countryId: any) {
         return;
     }
 
+    const membersToRelease = getCountryMemberIds(
+        playerDB,
+        cid,
+        Array.isArray(del_country.members) ? del_country.members : [],
+    );
+    del_country.members = [];
+    countryDB.set(`country_${cid}`, JSON.stringify(del_country));
+
     // ===== オーナー返金 =====
     try {
         if (del_country.owner) {
@@ -285,13 +355,19 @@ export function DeleteCountry(countryId: any) {
     }
 
     // ===== メンバー解除 =====
-    for (const pid of del_country.members ?? []) {
+    const deletedRoleIds = new Set((del_country.roles ?? []).map(String));
+    for (const pid of membersToRelease) {
         try {
             const rawPlayer = playerDB.get(`player_${pid}`);
             if (rawPlayer) {
                 const pdata = JSON.parse(rawPlayer);
-                pdata.country = null;
-                pdata.roles = [];
+                if (String(pdata.country) === cid) {
+                    pdata.country = null;
+                    pdata.roles = [];
+                } else {
+                    pdata.roles = (Array.isArray(pdata.roles) ? pdata.roles : [])
+                        .filter((roleId: any) => !deletedRoleIds.has(String(roleId)));
+                }
                 playerDB.set(`player_${pid}`, JSON.stringify(pdata));
             }
 
@@ -703,19 +779,43 @@ export function playerCountryJoin(player: any, countryId: any) {
     try {
         const countryData = GetAndParsePropertyData(`country_${countryId}`);
         const playerData = GetAndParsePropertyData(`player_${player.id}`);
+        if (!countryData || !playerData) {
+            throw new Error(`country or player data not found: country=${countryId}, player=${player.id}`);
+        }
         if (playerData.money < 0) {
             player.sendMessage({ translate: `error.cannnot.in.money.minus` })
             return;
         };
-        countryData.members.push(playerData.id);
-        playerData.roles.push(countryData.peopleRole);
+        const storedCountryId = playerData.country;
+        if (storedCountryId !== undefined && storedCountryId !== null && storedCountryId !== ""
+            && Number(storedCountryId) !== Number(countryId)) {
+            player.sendMessage({ translate: `already.country.join` });
+            return;
+        }
+        const playerId = `${playerData.id ?? player.id}`;
+        countryData.members = [...new Set(
+            (Array.isArray(countryData.members) ? countryData.members : []).map(String)
+        )];
+        if (!countryData.members.includes(playerId)) countryData.members.push(playerId);
+
+        const peopleRoleId = Number(countryData.peopleRole);
+        playerData.roles = [...new Set(
+            (Array.isArray(playerData.roles) ? playerData.roles : [])
+                .map(Number)
+                .filter((roleId: number) => Number.isFinite(roleId))
+        )];
+        if (!playerData.roles.includes(peopleRoleId)) playerData.roles.push(peopleRoleId);
         playerData.country = countryId;
         playerData.invite = [];
         const memberRoleData = GetAndParsePropertyData(`role_${countryData.peopleRole}`);
-        memberRoleData.members.push(`${player.id}`);
+        if (!memberRoleData) throw new Error(`people role not found: ${countryData.peopleRole}`);
+        memberRoleData.members = [...new Set(
+            (Array.isArray(memberRoleData.members) ? memberRoleData.members : []).map(String)
+        )];
+        if (!memberRoleData.members.includes(playerId)) memberRoleData.members.push(playerId);
+        StringifyAndSavePropertyData(`country_${countryId}`, countryData);
         StringifyAndSavePropertyData(`role_${memberRoleData.id}`, memberRoleData);
         StringifyAndSavePropertyData(`player_${playerData.id}`, playerData);
-        StringifyAndSavePropertyData(`country_${countryId}`, countryData);
         player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `joined.country` }] });
         system.runTimeout(() => {
             if (config.countryNameDisplayOnPlayerNameTag) {
@@ -736,9 +836,21 @@ export function playerCountryLeave(player: any) {
         const playerData = GetAndParsePropertyData(`player_${player.id}`);
         const countryId = playerData.country;
         const countryData = GetAndParsePropertyData(`country_${countryId}`);
+        // コマンド側の確認を迂回して直接呼ばれても、国王だけは脱退させない。
+        if (countryData?.owner === playerData.id) {
+            player.sendMessage({ translate: `command.leavecountry.error.your.owner` });
+            return false;
+        };
         if (countryData?.members) {
             countryData.members = countryData.members.filter((m: any) => m != playerData.id);
             StringifyAndSavePropertyData(`country_${countryId}`, countryData);
+        };
+        // player.roles だけ消すと role.members に幽霊権限が残る。
+        for (const roleId of playerData.roles ?? []) {
+            const role = GetAndParsePropertyData(`role_${roleId}`);
+            if (!role || !Array.isArray(role.members)) continue;
+            role.members = role.members.filter((m: any) => m != playerData.id);
+            StringifyAndSavePropertyData(`role_${roleId}`, role);
         };
         playerData.roles = [];
         playerData.country = undefined;
@@ -759,8 +871,10 @@ export function playerCountryLeave(player: any) {
                 };
             }
         }, 2);
+        return true;
     } catch (error) {
         console.warn(error);
+        return false;
     };
 };
 
@@ -811,14 +925,16 @@ export function playerChangeOwner(player: any, member: any, countryData: any) {
         player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `ownerchange.error` }] });
         return;
     };
-    countryData.owner = member.id;
+    if (!applyCountryOwnerChange(countryData.id, member.id)) {
+        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `ownerchange.error` }] });
+        return;
+    }
     const playerEntity = world.getEntity(member.id);
     if (playerEntity) {
         // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'Ent... Remove this comment to see the full error message
         playerEntity.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `changed.owner.message.newowner` }] });
     };
     player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `changed.owner.message.sender`, with: [member.name] }] });
-    StringifyAndSavePropertyData(`country_${countryData.id}`, countryData);
     return;
 };
 
@@ -829,11 +945,9 @@ export function playerChangeOwner(player: any, member: any, countryData: any) {
  */
 export function changeOwnerScriptEvent(member: any) {
     const memberData = GetAndParsePropertyData(`player_${member.id}`);
-    const countryData = GetAndParsePropertyData(`country_${memberData.country}`)
-    countryData.owner = member.id;
+    if (!applyCountryOwnerChange(memberData?.country, member.id)) return false;
     member.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `changed.owner.message.newowner` }] });
-    StringifyAndSavePropertyData(`country_${countryData.id}`, countryData);
-    return;
+    return true;
 };
 
 /**
@@ -1131,6 +1245,8 @@ export function createPlotGroup(player: any, country: any, name: any, type = "pu
         type: type,
         price: 0,
         countries: [],
+        alliancePermissions: [],
+        friendlyPermissions: [],
     };
     plotGroup.push(id);
     countryData.plotgroup = plotGroup;
@@ -1166,6 +1282,8 @@ export function createPlot(player: any, name: any, chunkId: any, type = "public"
             type: type,
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             roles: [],
             enable: true,
         };
@@ -1204,6 +1322,8 @@ export function createPlotToGroup(player: any, group: any, chunkId: any) {
             type: "public",
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             enable: false,
         };
     };
@@ -1222,13 +1342,14 @@ export function createPlotToGroup(player: any, group: any, chunkId: any) {
  * @param {Player=} player
  */
 export function MergeCountry(fromId: any, toId: any, player: any) {
-    if (fromId === toId) return;
+    if (String(fromId) === String(toId)) return;
 
     const fromKey = `country_${fromId}`;
     const toKey = `country_${toId}`;
 
     const countryDB = new DynamicProperties("country");
     const playerDB = new DynamicProperties("player");
+    const roleDB = new DynamicProperties("role");
     const chunkDB = new DynamicProperties("chunk");
 
     const fromRaw = countryDB.get(fromKey);
@@ -1268,13 +1389,50 @@ export function MergeCountry(fromId: any, toId: any, player: any) {
         return;
     }
 
+    const memberRoleKey = `role_${to.peopleRole}`;
+    const rawMemberRole = roleDB.get(memberRoleKey);
+    let memberRoleData: any;
+    if (rawMemberRole) {
+        try {
+            memberRoleData = JSON.parse(rawMemberRole);
+        } catch (error) {
+            console.error(`[MergeCountry] failed to read destination member role ${memberRoleKey}`, error);
+            unlock();
+            return;
+        }
+    } else {
+        memberRoleData = {
+            id: to.peopleRole,
+            members: [],
+            permissions: []
+        };
+    }
+
     // ===== 資源移管 =====
-    to.money = (to.money ?? 0) + (from.money ?? 0) + (from.resourcePoint ?? 0);
-    to.resourcePoint = 0;
+    // リソースポイントはリソースポイントのまま足す。吸収する側の分を 0 にすると、その国の分が消える
+    // (2026-09-27 大和国が四国を合併して 483,800 が消えた #1220)
+    to.money = (to.money ?? 0) + (from.money ?? 0);
+    to.resourcePoint = (to.resourcePoint ?? 0) + (from.resourcePoint ?? 0);
     to.lv = Math.max((to.lv ?? 0), (from.lv ?? 0))
 
     // ===== メンバー移管 =====
-    for (const pid of from.members ?? []) {
+    const fromMemberIds = getCountryMemberIds(
+        playerDB,
+        from.id,
+        Array.isArray(from.members) ? from.members : [],
+    );
+    to.members = [...new Set([
+        ...(Array.isArray(to.members) ? to.members : []).map(String),
+        ...fromMemberIds,
+    ])];
+    memberRoleData.members = [...new Set([
+        ...(Array.isArray(memberRoleData.members) ? memberRoleData.members : []).map(String),
+        ...fromMemberIds,
+    ])];
+    countryDB.set(toKey, JSON.stringify(to));
+    roleDB.set(memberRoleKey, JSON.stringify(memberRoleData));
+
+    for (const pid of fromMemberIds) {
         try {
             const rawP = playerDB.get(`player_${pid}`);
             if (!rawP) continue;
@@ -1298,9 +1456,10 @@ export function MergeCountry(fromId: any, toId: any, player: any) {
                     };
                 }
             };
-        } catch { }
+        } catch (error) {
+            console.error(`[MergeCountry] failed to transfer member ${pid}`, error);
+        }
     }
-    to.members = Array.from(new Set([...to.members, ...from.members]));
 
     // ===== 領土移管 =====
     to.territories = Array.from(
@@ -1563,6 +1722,8 @@ export function addPlotToGroup(player: any, group: any, chunkId: any) {
             type: "public",
             price: 0,
             countries: [],
+            alliancePermissions: [],
+            friendlyPermissions: [],
             enable: false,
         };
     };

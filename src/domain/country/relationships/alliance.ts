@@ -4,6 +4,7 @@
 
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
+import { notifyRelationshipRequest } from "@/domain/country/relationships/request-notifications.js";
 /**@typedef {import("@/domain/country/country-manager.js").CountryData} CountryData*/
 
 /**
@@ -37,14 +38,13 @@ export function acceptAllianceRequestFunction(countryId: any, countryData: any, 
     targetCountryData.allianceRequestReceive = targetCountryData.allianceRequestReceive.filter((r: any) => r != id);
     countryData.alliance.push(countryId);
     targetCountryData.alliance.push(id);
+    countryData.neutralityCountryPermissions = countryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.neutralityCountryPermissions = targetCountryData.neutralityCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
-    if (player) {
-        // @ts-ignore TS(2339): Property 'sendMessage' does not exist on type 'nev... Remove this comment to see the full error message
-        player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.alliance.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("accepted", "alliance", targetCountryData, countryData, player);
 
     return true;
 };
@@ -115,6 +115,8 @@ export function removeAllianceFunction(countryId: any, countryData: any, id: any
     const targetCountryData = JSON.parse(rawTargetCountryData);
     countryData.alliance = countryData.alliance.filter((r: any) => r != countryId);
     targetCountryData.alliance = targetCountryData.alliance.filter((r: any) => r != id);
+    countryData.allianceCountryPermissions = countryData.allianceCountryPermissions?.filter((entry: any) => entry.id != countryId) ?? [];
+    targetCountryData.allianceCountryPermissions = targetCountryData.allianceCountryPermissions?.filter((entry: any) => entry.id != id) ?? [];
 
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
@@ -159,8 +161,6 @@ export function sendAllianceRequestFunction(countryId: any, countryData: any, id
     countryDataBase.set(`country_${id}`, countryData);
     countryDataBase.set(`country_${countryId}`, targetCountryData);
 
-    if (player) {
-        //player.sendMessage({ rawtext: [{ text: `§a[MakeCountry]§r\n` }, { translate: `accept.friendly.request`, with: [`${targetCountryData.name}`] }] })
-    };
+    notifyRelationshipRequest("sent", "alliance", countryData, targetCountryData, player);
     return true;
 };

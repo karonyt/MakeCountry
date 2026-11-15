@@ -1,7 +1,7 @@
+import { CountryListForm as ActionFormData } from "@/shared/ui/country-list-form.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { AllianceListDefaultForm } from "@/features/forms/default/sc/info/ext/al/list/alliance_list.js";
 import { addAllianceCountryFromListDefaultForm } from "@/features/forms/default/sc/info/ext/al/list/add/add.js";

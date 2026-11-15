@@ -1,8 +1,9 @@
+import { JobsActionFormData as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Block, EnchantmentType, EnchantmentTypes, Player, system, world } from "@minecraft/server";
-import { CheckPermissionFromLocation, GetAndParsePropertyData, getRandomInteger, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+import { CheckPermissionFromLocation, getRandomInteger, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import jobs_config from "@/config/jobs.js";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { ActionFormData } from "@minecraft/server-ui";
+
 import playerFishingAfterEvent from "@/domain/fishing/vanilla-events.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
@@ -10,13 +11,13 @@ import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import config from "@/config/server.js";
+import { ensureDailyEarning } from "@/domain/jobs/job-reward-display.js";
+import { enqueueNormalJobReward } from "@/domain/jobs/pending-normal-job-rewards.js";
 
 let buff: any;
-let playerDB: any;
 
 world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
-    playerDB = new DynamicProperties('player');
 });
 
 function getTodayByUTCOffset(offsetHours: any) {
@@ -30,16 +31,7 @@ export function applyDailyLimit(playerData: any, jobName: any, reward: any, dail
 
     const today = getTodayByUTCOffset(config.timeDifference);
 
-    playerData.dailyEarnings ??= {};
-    playerData.dailyEarnings[jobName] ??= { date: today, amount: 0 };
-
-    const data = playerData.dailyEarnings[jobName];
-
-    // 日付が変わってたらリセット
-    if (data.date !== today) {
-        data.date = today;
-        data.amount = 0;
-    }
+    const data = ensureDailyEarning(playerData, jobName, today);
 
     const remaining = dailyLimit - data.amount;
     if (remaining <= 0) return 0;
@@ -47,511 +39,275 @@ export function applyDailyLimit(playerData: any, jobName: any, reward: any, dail
     const finalReward = Math.min(reward, remaining);
     data.amount = Math.floor((data.amount + finalReward) * 100) / 100;
 
+    // Stage the limit together with money; the payout commits this record once.
     playerData.dailyEarnings[jobName] = data;
-    playerDB.set(`player_${playerData.id}`, playerData);
 
     return finalReward;
 }
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
     if (!jobs_config.validity) return;
-    const { brokenBlockPermutation, player } = ev;
+    const { brokenBlockPermutation, player, itemStackBeforeBreak } = ev;
+    const brokenBlockTypeId = brokenBlockPermutation.type.id;
+    const isStrippedLog = brokenBlockTypeId.startsWith('minecraft:stripped_') && brokenBlockTypeId.endsWith('_log');
 
     //木こり
-    const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-    if (brokenBlockPermutation.hasTag(`log`) && player.hasTag(`mcjobs_woodcutter`)) {
-        const jobs = new JobLevel(player, "woodcutter");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "woodcutter",
-            random,
-            jobs_config.dailyLimit.woodcutter
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+    if ((brokenBlockPermutation.hasTag(`log`) || isStrippedLog || brokenBlockTypeId == 'minecraft:poplar_log' || brokenBlockTypeId == 'minecraft:pale_oak_log') && player.hasTag(`mcjobs_woodcutter`)) {
+        enqueueNormalJobReward(player, "woodcutter", (player) => {
+            const jobs = new JobLevel(player, "woodcutter");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
+            return { money: random, xp: jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:mangrove_log` && player.hasTag(`mcjobs_woodcutter`)) {
-        const jobs = new JobLevel(player, "woodcutter");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "woodcutter",
-            random,
-            jobs_config.dailyLimit.woodcutter
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "woodcutter", (player) => {
+            const jobs = new JobLevel(player, "woodcutter");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
+            return { money: random, xp: jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:cherry_log` && player.hasTag(`mcjobs_woodcutter`)) {
-        const jobs = new JobLevel(player, "woodcutter");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "woodcutter",
-            random,
-            jobs_config.dailyLimit.woodcutter
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "woodcutter", (player) => {
+            const jobs = new JobLevel(player, "woodcutter");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
+            return { money: random, xp: jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:mangrove_roots` && player.hasTag(`mcjobs_woodcutter`)) {
-        const jobs = new JobLevel(player, "woodcutter");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "woodcutter",
-            random,
-            jobs_config.dailyLimit.woodcutter
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "woodcutter", (player) => {
+            const jobs = new JobLevel(player, "woodcutter");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
+            return { money: random, xp: jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:pale_oak_log` && player.hasTag(`mcjobs_woodcutter`)) {
-        const jobs = new JobLevel(player, "woodcutter");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "woodcutter",
-            random,
-            jobs_config.dailyLimit.woodcutter
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "woodcutter", (player) => {
+            const jobs = new JobLevel(player, "woodcutter");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.woodCutReward.min, jobs_config.woodCutReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('woodcutter')) / 100;
+            return { money: random, xp: jobs_config.woodCutReward.xp * buff.getMultiplier('woodcutter') };
+        });
         return;
     };
 
     //土掘り士
     if (brokenBlockPermutation.type.id === `minecraft:dirt` && player.hasTag(`mcjobs_dirtdigger`)) {
-        const jobs = new JobLevel(player, "dirtdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
-        const finalReward = applyDailyLimit(
-            playerData,
-            "dirtdigger",
-            random,
-            jobs_config.dailyLimit.dirtdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "dirtdigger", (player) => {
+            const jobs = new JobLevel(player, "dirtdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
+            return { money: random, xp: jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:grass` && player.hasTag(`mcjobs_dirtdigger`)) {
-        const jobs = new JobLevel(player, "dirtdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "dirtdigger",
-            random,
-            jobs_config.dailyLimit.dirtdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "dirtdigger", (player) => {
+            const jobs = new JobLevel(player, "dirtdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
+            return { money: random, xp: jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:grass_block` && player.hasTag(`mcjobs_dirtdigger`)) {
-        const jobs = new JobLevel(player, "dirtdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "dirtdigger",
-            random,
-            jobs_config.dailyLimit.dirtdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "dirtdigger", (player) => {
+            const jobs = new JobLevel(player, "dirtdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.dirtdiggerReward.min, jobs_config.dirtdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('dirtdigger')) / 100;
+            return { money: random, xp: jobs_config.dirtdiggerReward.xp * buff.getMultiplier('dirtdigger') };
+        });
         return;
     };
 
     //砂掘り士
     if (brokenBlockPermutation.type.id.endsWith(`sand`) && player.hasTag(`mcjobs_sanddigger`)) {
-        const jobs = new JobLevel(player, "sanddigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.sanddiggerReward.min, jobs_config.sanddiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('sanddigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "sanddigger",
-            random,
-            jobs_config.dailyLimit.sanddigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.sanddiggerReward.xp * buff.getMultiplier('sanddigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "sanddigger", (player) => {
+            const jobs = new JobLevel(player, "sanddigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.sanddiggerReward.min, jobs_config.sanddiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('sanddigger')) / 100;
+            return { money: random, xp: jobs_config.sanddiggerReward.xp * buff.getMultiplier('sanddigger') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:gravel` && player.hasTag(`mcjobs_sanddigger`)) {
-        const jobs = new JobLevel(player, "sanddigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.sanddiggerReward.min, jobs_config.sanddiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('sanddigger')) / 100;
-        const finalReward = applyDailyLimit(
-            playerData,
-            "sanddigger",
-            random,
-            jobs_config.dailyLimit.sanddigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.sanddiggerReward.xp * buff.getMultiplier('sanddigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "sanddigger", (player) => {
+            const jobs = new JobLevel(player, "sanddigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.sanddiggerReward.min, jobs_config.sanddiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('sanddigger')) / 100;
+            return { money: random, xp: jobs_config.sanddiggerReward.xp * buff.getMultiplier('sanddigger') };
+        });
         return;
     };
 
     //庭師
     if (brokenBlockPermutation.type.id.includes('leaves') && player.hasTag(`mcjobs_gardener`)) {
-        const jobs = new JobLevel(player, "gardener");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.gardeningReward.min, jobs_config.gardeningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('gardener')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "gardener",
-            random,
-            jobs_config.dailyLimit.gardener
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.gardeningReward.xp * buff.getMultiplier('gardener'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "gardener", (player) => {
+            const jobs = new JobLevel(player, "gardener");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.gardeningReward.min, jobs_config.gardeningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('gardener')) / 100;
+            return { money: random, xp: jobs_config.gardeningReward.xp * buff.getMultiplier('gardener') };
+        });
         return;
     };
 
     //ネザー掘り士
     if (brokenBlockPermutation.type.id === `minecraft:netherrack` && player.hasTag(`mcjobs_netherdigger`)) {
-        const jobs = new JobLevel(player, "netherdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "netherdigger",
-            random,
-            jobs_config.dailyLimit.netherdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "netherdigger", (player) => {
+            const jobs = new JobLevel(player, "netherdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
+            return { money: random, xp: jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger') };
+        });
         return;
     };
-    if (brokenBlockPermutation.type.id === `minecraft:basalt` && player.hasTag(`mcjobs_netherdigger`)) {
-        const jobs = new JobLevel(player, "netherdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "netherdigger",
-            random,
-            jobs_config.dailyLimit.netherdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+    if (
+        (brokenBlockPermutation.type.id === `minecraft:basalt` || brokenBlockPermutation.type.id === `minecraft:blackstone`)
+        && player.hasTag(`mcjobs_netherdigger`)
+    ) {
+        enqueueNormalJobReward(player, "netherdigger", (player) => {
+            const jobs = new JobLevel(player, "netherdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
+            return { money: random, xp: jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:soul_soil` && player.hasTag(`mcjobs_netherdigger`)) {
-        const jobs = new JobLevel(player, "netherdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "netherdigger",
-            random,
-            jobs_config.dailyLimit.netherdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "netherdigger", (player) => {
+            const jobs = new JobLevel(player, "netherdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
+            return { money: random, xp: jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:nether_wart` && player.hasTag(`mcjobs_netherdigger`) && brokenBlockPermutation.getState("age") === 3) {
-        const jobs = new JobLevel(player, "netherdigger");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "netherdigger",
-            random,
-            jobs_config.dailyLimit.netherdigger
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "netherdigger", (player) => {
+            const jobs = new JobLevel(player, "netherdigger");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.netherdiggerReward.min, jobs_config.netherdiggerReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('netherdigger')) / 100;
+            return { money: random, xp: jobs_config.netherdiggerReward.xp * buff.getMultiplier('netherdigger') };
+        });
         return;
     };
 
     //鉱夫
-    // @ts-ignore TS(2532): Object is possibly 'undefined'.
-    if (player.hasTag(`mcjobs_miner`) && player.getComponent(`inventory`).container.getItem(player.selectedSlotIndex)?.getComponent(`enchantable`)?.getEnchantment(`silk_touch`)) {
+    // The selected slot may already be empty (tool broke) or changed by another
+    // handler. Only the event snapshot describes the tool that broke this block.
+    if (player.hasTag(`mcjobs_miner`) && itemStackBeforeBreak?.getComponent(`enchantable`)?.getEnchantment(`silk_touch`)) {
         return;
     };
     if (brokenBlockPermutation.type.id == `minecraft:stone` && player.hasTag(`mcjobs_miner`)) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.normalStoneMiningReward.min, jobs_config.normalStoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.normalStoneMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.normalStoneMiningReward.min, jobs_config.normalStoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.normalStoneMiningReward.xp * buff.getMultiplier('miner') };
+        });
+        return;
+    };
+    if (brokenBlockPermutation.type.id === `minecraft:end_stone` && player.hasTag(`mcjobs_miner`)) {
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.endStoneMiningReward.min, jobs_config.endStoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.endStoneMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id.endsWith(`_ore`) && player.hasTag(`mcjobs_miner`)) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.oreMiningReward.min, jobs_config.oreMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.oreMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.oreMiningReward.min, jobs_config.oreMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.oreMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:ancient_debris` && player.hasTag(`mcjobs_miner`)) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.oreMiningReward.min, jobs_config.oreMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.oreMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.oreMiningReward.min, jobs_config.oreMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.oreMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:deepslate` && player.hasTag(`mcjobs_miner`)) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:tuff` && player.hasTag(`mcjobs_miner`)) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
     if (brokenBlockPermutation.hasTag(`stone`) && player.hasTag(`mcjobs_miner`) && brokenBlockPermutation.type.id != `minecraft:cobblestone`) {
-        const jobs = new JobLevel(player, "miner");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "miner",
-            random,
-            jobs_config.dailyLimit.miner
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "miner", (player) => {
+            const jobs = new JobLevel(player, "miner");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.stoneMiningReward.min, jobs_config.stoneMiningReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('miner')) / 100;
+            return { money: random, xp: jobs_config.stoneMiningReward.xp * buff.getMultiplier('miner') };
+        });
         return;
     };
 
     //農家
     if (brokenBlockPermutation.getTags().includes(`minecraft:crop`) && player.hasTag(`mcjobs_farmer`) && brokenBlockPermutation.getState(`growth`) == 7) {
-        const jobs = new JobLevel(player, "farmer");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
+        enqueueNormalJobReward(player, "farmer", (player) => {
+            const jobs = new JobLevel(player, "farmer");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
+            return { money: random, xp: jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer') };
+        });
+        return;
+    };
+    if (brokenBlockPermutation.type.id === `minecraft:melon_block` && player.hasTag(`mcjobs_farmer`)) {
+        // シルクタッチで回収・再設置したスイカから繰り返し報酬を得ることを防ぐ。
+        if (itemStackBeforeBreak?.getComponent(`enchantable`)?.getEnchantment(`silk_touch`)) return;
 
-        const finalReward = applyDailyLimit(
-            playerData,
-            "farmer",
-            random,
-            jobs_config.dailyLimit.farmer
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "farmer", (player) => {
+            const jobs = new JobLevel(player, "farmer");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
+            return { money: random, xp: jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer') };
+        });
         return;
     };
     if (brokenBlockPermutation.type.id === `minecraft:cocoa` && player.hasTag(`mcjobs_farmer`) && brokenBlockPermutation.getState(`age`) === 2) {
-        const jobs = new JobLevel(player, "farmer");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.cocoaHarvestReward.min, jobs_config.cocoaHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "farmer",
-            random,
-            jobs_config.dailyLimit.farmer
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.cocoaHarvestReward.xp * buff.getMultiplier('farmer'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "farmer", (player) => {
+            const jobs = new JobLevel(player, "farmer");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.cocoaHarvestReward.min, jobs_config.cocoaHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
+            return { money: random, xp: jobs_config.cocoaHarvestReward.xp * buff.getMultiplier('farmer') };
+        });
         return;
     };
     // @ts-ignore TS(2345): Argument of type '"mc:growth_stage"' is not assign... Remove this comment to see the full error message
     if (player.hasTag(`mcjobs_farmer`) && brokenBlockPermutation.getState(`mc:growth_stage`) === 3) {
-        const jobs = new JobLevel(player, "farmer");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "farmer",
-            random,
-            jobs_config.dailyLimit.farmer
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "farmer", (player) => {
+            const jobs = new JobLevel(player, "farmer");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('farmer')) / 100;
+            return { money: random, xp: jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer') };
+        });
         return;
     };
 });
@@ -560,7 +316,6 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
     const { player, block } = ev;
 
     if (!jobs_config.validity) return;
-    const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
 
     // @ts-ignore TS(2532): Object is possibly 'undefined'.
     const container = player.getComponent("inventory").container;
@@ -571,23 +326,12 @@ world.afterEvents.playerPlaceBlock.subscribe((ev) => {
 
     //建築士
     if (player.hasTag(`mcjobs_builder`)) {
-        const jobs = new JobLevel(player, "builder");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.buildReward.min, jobs_config.buildReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('builder')) / 100;
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "builder",
-            random,
-            jobs_config.dailyLimit.builder
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.buildReward.xp * buff.getMultiplier('builder'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) ev.player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+        enqueueNormalJobReward(player, "builder", (player) => {
+            const jobs = new JobLevel(player, "builder");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.buildReward.min, jobs_config.buildReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('builder')) / 100;
+            return { money: random, xp: jobs_config.buildReward.xp * buff.getMultiplier('builder') };
+        });
         return;
     };
 });
@@ -614,26 +358,14 @@ export function GrowthPlantReward(player: any, block: any) {
             }
             if (CheckPermissionFromLocation(player, block.x, block.z, block.dimension.id, `place`)) return;
             //block.setPermutation(block.permutation.withState(`growth`, 0));
-            const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-            const jobs = new JobLevel(player, "farmer");
-            const jobsLevel = jobs.getLevel();
-            const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel)) / 100;
-            const reward = Math.ceil((random / 10 * growth) * 100) / 100;
 
-            const finalReward = applyDailyLimit(
-                playerData,
-                "farmer",
-                reward,
-                jobs_config.dailyLimit.farmer
-            );
-
-            if (finalReward <= 0) return;
-
-            jobs.addXp(jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer'));
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-
-            if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`);
+            enqueueNormalJobReward(player, "farmer", (player) => {
+                const jobs = new JobLevel(player, "farmer");
+                const jobsLevel = jobs.getLevel();
+                const random = Math.floor(getRandomInteger(jobs_config.cropHarvestReward.min, jobs_config.cropHarvestReward.max) * 100 * jobs.getReward(jobsLevel)) / 100;
+                const reward = Math.ceil((random / 10 * growth) * 100) / 100;
+                return { money: reward, xp: jobs_config.cropHarvestReward.xp * buff.getMultiplier('farmer') };
+            });
             return;
         }
     });
@@ -647,46 +379,20 @@ world.afterEvents.entityDie.subscribe((ev) => {
         const player = ev.damageSource.damagingEntity;
         //狩人
         if (!player.hasTag(`mcjobs_hunter`)) return;
-        const playerData = JSON.parse(playerDB.get(`player_${player.id}`));
-        try {
-            const id = ev.deadEntity.typeId.split(`:`)[1];
+
+        const id = ev.deadEntity.typeId.split(`:`)[1];
+        const configured = jobs_config[`${id}KillReward` as keyof typeof jobs_config];
+        // A missing mob configuration selects the fallback before payment.
+        // Save failures must never be interpreted as a second reward attempt.
+        const reward = configured && typeof configured === "object" && "min" in configured
+            && "max" in configured && "xp" in configured
+            ? configured : jobs_config.otherMobkillReward;
+        enqueueNormalJobReward(player, "hunter", (player) => {
             const jobs = new JobLevel(player, "hunter");
             const jobsLevel = jobs.getLevel();
-            // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-            const random = Math.floor(getRandomInteger(jobs_config[`${id}KillReward`].min, jobs_config[`${id}KillReward`].max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('hunter')) / 100
-
-            const finalReward = applyDailyLimit(
-                playerData,
-                "hunter",
-                random,
-                jobs_config.dailyLimit.hunter
-            );
-
-            if (finalReward <= 0) return;
-
-            // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-            jobs.addXp(jobs_config[`${id}KillReward`].xp * buff.getMultiplier('hunter'));
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-            if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`)
-        } catch (error) {
-            const jobs = new JobLevel(player, "hunter");
-            const jobsLevel = jobs.getLevel();
-            const random = Math.floor(getRandomInteger(jobs_config.otherMobkillReward.min, jobs_config.otherMobkillReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('hunter')) / 100
-            const finalReward = applyDailyLimit(
-                playerData,
-                "hunter",
-                random,
-                jobs_config.dailyLimit.hunter
-            );
-
-            if (finalReward <= 0) return;
-
-            jobs.addXp(jobs_config.otherMobkillReward.xp * buff.getMultiplier('hunter'));
-            playerData.money += finalReward;
-            playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-            if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`)
-        };
+            const random = Math.floor(getRandomInteger(reward.min, reward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('hunter')) / 100;
+            return { money: random, xp: reward.xp * buff.getMultiplier('hunter') };
+        });
     } catch (error) {
         return;
     };
@@ -702,24 +408,12 @@ playerFishingAfterEvent.subscribe((event: any) => {
          */
         const player = event.player;
         if (!player.hasTag(`mcjobs_fisherman`)) return;
-        const playerData = GetAndParsePropertyData(`player_${player.id}`);
-        const jobs = new JobLevel(player, "fisherman");
-        const jobsLevel = jobs.getLevel();
-        const random = Math.floor(getRandomInteger(jobs_config.fishingReward.min, jobs_config.fishingReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('fisherman')) / 100
-
-        const finalReward = applyDailyLimit(
-            playerData,
-            "fisherman",
-            random,
-            jobs_config.dailyLimit.fisherman
-        );
-
-        if (finalReward <= 0) return;
-
-        jobs.addXp(jobs_config.fishingReward.xp * buff.getMultiplier('fisherman'));
-        playerData.money += finalReward;
-        playerDB.set(`player_${player.id}`, JSON.stringify(playerData));
-        if (jobs_config.showRewardMessage) player.onScreenDisplay.setActionBar(`§6[Money] +${finalReward} §e[XP] ${jobs.getXp()}/${jobs.getXpRequired(jobsLevel)}`)
+        enqueueNormalJobReward(player, "fisherman", (player) => {
+            const jobs = new JobLevel(player, "fisherman");
+            const jobsLevel = jobs.getLevel();
+            const random = Math.floor(getRandomInteger(jobs_config.fishingReward.min, jobs_config.fishingReward.max) * 100 * jobs.getReward(jobsLevel) * buff.getMultiplier('fisherman')) / 100
+            return { money: random, xp: jobs_config.fishingReward.xp * buff.getMultiplier('fisherman') };
+        });
     });
 });
 
@@ -741,13 +435,15 @@ export function jobsForm(player: any) {
         jobsList = jobs_config.jobsList.filter(job => job.lv <= (lv ?? 0));
     };
     const today = getTodayByUTCOffset(config.timeDifference);
+    let dailyEarningsReset = false;
     for (const job of jobsList) {
         let isEmploy = player.hasTag(`mcjobs_${job.id}`);
         let employMessage = `not.yet.employed`;
         const jobs = new JobLevel(player, job.id);
         const level = jobs.getLevel();
-        playerData.dailyEarnings ??= {};
-        const dailyEarning = playerData.dailyEarnings[job.id] ??= { date: today, amount: 0 };
+        const storedDailyEarning = playerData.dailyEarnings?.[job.id];
+        if (storedDailyEarning && storedDailyEarning.date !== today) dailyEarningsReset = true;
+        const dailyEarning = ensureDailyEarning(playerData, job.id, today);
         // @ts-ignore TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
         let pushElement = [{ translate: job.id }, { text: `§f Lv: ${level} XP: [${jobs.getXp()}/${jobs.getXpRequired(level)}]§f Limit: [${dailyEarning.amount}/${jobs_config.dailyLimit[job.id]}]\n` }]
         if (isEmploy) {
@@ -759,6 +455,7 @@ export function jobsForm(player: any) {
         body.push(...pushElement)
         form.button({ rawtext: [{ text: `§l` }, { translate: job.name }, { text: `\n` }, { translate: employMessage }] });
     };
+    if (dailyEarningsReset) playerDataBase.set(`player_${player.id}`, playerData);
     form.body({ rawtext: body });
     form.show(player).then((rs) => {
         if (rs.canceled) {

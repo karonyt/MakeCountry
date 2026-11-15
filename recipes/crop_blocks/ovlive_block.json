@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:ovlive_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:ovlive"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:ovlive"
+      }
+    ],
+    "result": {
+      "item": "mc:ovlive_block",
+      "count": 1
+    }
+  }
+}
+

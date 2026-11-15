@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:nickel_alloy",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "nickel_alloy",
+      "minecraft:display_name": {
+        "value": "item.mc:nickel_alloy"
+      }
+    }
+  }
+}

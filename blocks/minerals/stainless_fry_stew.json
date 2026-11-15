@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:stainless_fry_stew",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:stainless_fry_stew.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#b7cbd5",
+      "minecraft:geometry": "geometry.fry_stew",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "stainless_fry_stew",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/stainless_fry_stew.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:fry_stew": {}
+    }
+  }
+}

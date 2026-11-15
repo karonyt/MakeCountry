@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:silver_catalyst",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "silver_catalyst",
+      "minecraft:display_name": {
+        "value": "item.mc:silver_catalyst"
+      }
+    }
+  }
+}

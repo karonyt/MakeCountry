@@ -1,5 +1,5 @@
 {
-  "format_version": "1.21.10",
+  "format_version": "1.26.20",
   "minecraft:block": {
     "description": {
       "identifier": "mc:furniture_birch_refrigerator",
@@ -15,8 +15,6 @@
       }
     },
     "components": {
-      "tag:furniture": {},
-      "tag:furniture_refrigerator": {},
       "minecraft:destructible_by_mining": {
         "seconds_to_destroy": 0.6
       },
@@ -30,6 +28,27 @@
           "texture": "furniture_birch_refrigerator",
           "render_method": "opaque"
         }
+      },
+      "minecraft:tags": [
+        "furniture",
+        "furniture_refrigerator"
+      ],
+      "minecraft:block_entity": {
+        "container": {
+          "slot_count": 54,
+          "title": "tile.mc:furniture_birch_refrigerator.name"
+        }
+      },
+      "minecraft:movable": {
+        "movement_type": "immovable"
+      },
+      "mc:storage_restrictions": {},
+      "minecraft:tick": {
+        "interval_range": [
+          1,
+          1
+        ],
+        "looping": true
       }
     },
     "permutations": [

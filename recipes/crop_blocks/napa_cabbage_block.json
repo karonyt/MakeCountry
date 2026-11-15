@@ -1,0 +1,31 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:napa_cabbage_block_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "###",
+      "###"
+    ],
+    "key": {
+      "#": {
+        "item": "mc:napa_cabbage"
+      }
+    },
+    "unlock": [
+      {
+        "item": "mc:napa_cabbage"
+      }
+    ],
+    "result": {
+      "item": "mc:napa_cabbage_block",
+      "count": 1
+    }
+  }
+}
+

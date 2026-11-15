@@ -1,6 +1,6 @@
+import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { allowJoinCountriesListDefaultForm } from "@/features/forms/default/menu/join/allow_list/allow_list.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 /**@typedef {import("@/types/legacy/country").CountryData} CountryData*/

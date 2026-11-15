@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mc:brass_fryingpan",
+      "menu_category": {
+        "category": "construction"
+      }
+    },
+    "components": {
+      "minecraft:display_name": "tile.mc:brass_fryingpan.name",
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6
+      },
+      "tag:minecraft:is_pickaxe_item_destructible": {},
+      "minecraft:map_color": "#cdab4f",
+      "minecraft:geometry": "geometry.fryingpan",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "brass_fryingpan",
+          "render_method": "opaque"
+        }
+      },
+      "minecraft:loot": "loot_tables/blocks/minerals/brass_fryingpan.json",
+      "minecraft:collision_box": true,
+      "minecraft:selection_box": true,
+      "tag:fryingpan": {}
+    }
+  }
+}

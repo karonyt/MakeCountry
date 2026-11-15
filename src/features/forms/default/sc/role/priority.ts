@@ -1,5 +1,5 @@
+import { CountryActionForm as ActionFormData, CountryModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 import { RoleManager } from "@/domain/country/role-manager.js";
@@ -43,7 +43,7 @@ export function RolePriorityDefaultForm(player: any) {
     form.body({ translate: `form.role.priority.body` });
     for (let i = 0; i < roles.length; i++) {
         const role = roles[i];
-        form.button(`§f#${i + 1} §r${role.name ?? 'Unknown Name Role'}`, role.icon);
+        form.button(`§0#${i + 1} §r${role.name ?? 'Unknown Name Role'}`, role.icon);
     };
     form.show(player).then(rs => {
         if (rs.canceled) {

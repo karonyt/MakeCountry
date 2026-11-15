@@ -1,8 +1,8 @@
+import { CountryActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { ReceivedFriendlyRequestDefaultForm } from "@/features/forms/default/sc/info/ext/r_fr_req/received_friendly_request.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { CheckPermission } from "@/shared/utils/minecraft.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 

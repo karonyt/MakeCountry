@@ -1,0 +1,22 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:packaging_film",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": {
+        "textures": {
+          "default": "packaging_film"
+        }
+      },
+      "minecraft:display_name": {
+        "value": "item.mc:packaging_film"
+      },
+      "minecraft:max_stack_size": 64
+    }
+  }
+}

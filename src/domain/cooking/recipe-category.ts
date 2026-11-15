@@ -1,5 +1,9 @@
+import { isDungeonRecipe } from "../recipes/artisan-filter.js";
+
 export type RecipeCategoryId =
     | "all"
+    | "dungeon"
+    | "normal"
     | "low_level"
     | "materials"
     | "fish"
@@ -18,6 +22,7 @@ export type RecipeCategory = {
     id: RecipeCategoryId;
     label: string;
     icon: string;
+    literal?: boolean;
 };
 
 type RecipeResult = string | { id: string; count?: number } | { id: string; count?: number }[];
@@ -30,6 +35,8 @@ type RecipeLike = {
 
 export const RECIPE_CATEGORIES: RecipeCategory[] = [
     { id: "all", label: "cooking.category.all", icon: "minecraft:book" },
+    { id: "dungeon", label: "ダンジョン関連", literal: true, icon: "minecraft:diamond_sword" },
+    { id: "normal", label: "通常（ダンジョン以外）", literal: true, icon: "minecraft:grass_block" },
     { id: "low_level", label: "cooking.category.low_level", icon: "minecraft:experience_bottle" },
     { id: "materials", label: "cooking.category.materials", icon: "minecraft:crafting_table" },
     { id: "fish", label: "cooking.category.fish", icon: "minecraft:cod" },
@@ -87,6 +94,10 @@ export function recipeMatchesCategory(recipeId: string, recipe: RecipeLike, cate
     switch (categoryId) {
         case "all":
             return true;
+        case "dungeon":
+            return isDungeonRecipe(recipeId, recipe);
+        case "normal":
+            return !isDungeonRecipe(recipeId, recipe);
         case "low_level":
             return (recipe.requiredLevel ?? 999) <= LOW_LEVEL_MAX;
         case "materials":
@@ -142,4 +153,8 @@ export function adjacentRecipeCategory(recipes: Record<string, RecipeLike>, cate
     const index = Math.max(0, categories.findIndex((category) => category.id === categoryId));
     const nextIndex = (index + delta + categories.length) % categories.length;
     return categories[nextIndex] ?? RECIPE_CATEGORIES[0];
+}
+
+export function recipeCategoryLabel(category: RecipeCategory) {
+    return category.literal ? { text: category.label } : { translate: category.label };
 }

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.120",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mc:raw_tin",
+      "menu_category": {
+        "category": "items"
+      }
+    },
+    "components": {
+      "minecraft:icon": "raw_tin",
+      "minecraft:display_name": {
+        "value": "item.mc:raw_tin"
+      }
+    }
+  }
+}

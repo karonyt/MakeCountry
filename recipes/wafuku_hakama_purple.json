@@ -1,0 +1,33 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "mc:wafuku_hakama_purple_recipe"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "###",
+      "#P#",
+      "# #"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:purple_wool"
+      },
+      "P": {
+        "item": "minecraft:paper"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:purple_wool"
+      }
+    ],
+    "result": {
+      "item": "mc:wafuku_hakama_purple",
+      "count": 1
+    }
+  }
+}

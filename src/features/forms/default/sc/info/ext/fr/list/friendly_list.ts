@@ -1,7 +1,7 @@
+import { CountryListForm as ActionFormData } from "@/shared/ui/country-list-form.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { ActionFormData } from "@minecraft/server-ui";
 import { FriendlyMainDefaultForm } from "@/features/forms/default/sc/info/ext/fr/friendly_main.js";
 import { AddFriendlyListDefaultForm } from "@/features/forms/default/sc/info/ext/fr/list/add/list.js";
 import { FriendlyCountryFromListDefaultForm } from "@/features/forms/default/sc/info/ext/fr/list/list/list.js";
