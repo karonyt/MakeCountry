@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { soloResourceTarget } from '../../karoearth/tools/lib/solo-resource-target.mjs';
 import { ores, materials, terrain, biomes, tools, smelting, chemical, cooking, cookware } from './lib/mineral-content.mjs';
 
 const bp = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const rp = process.env.KARO_RESOURCE_PACK_ROOT ? path.join(soloResourceTarget().cloneRoot, 'MakeCountryResourcePack') : path.resolve(bp, '../../development_resource_packs/MakeCountryResourcePack');
+// リソースパックの場所 (既定: このパックと同じ親フォルダの MakeCountryResourcePack)
+const rp = process.env.MAKECOUNTRY_RP ? path.resolve(process.env.MAKECOUNTRY_RP) : path.resolve(bp, '..', 'MakeCountryResourcePack');
 function write(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const text = typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`;
