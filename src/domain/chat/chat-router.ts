@@ -9,6 +9,7 @@ import { isPlayerMuted } from "@/domain/chat/mute.js";
 import { getGroupChatRecipients } from "@/domain/player/group-chat.js";
 import { getPlayerDataById } from "@/domain/player/marriage.js";
 import { getFederationMemberIds, isFederationActive, normalizeFederationData } from "@/domain/country/relationships/federation.js";
+import { notifyDiscordChat } from "@/features/discord-mcbe/index.js";
 
 import { initializeChatTranslation, sendChatBatch, type ChatRecipient, type ChatOutput } from "./translation/index.js";
 
@@ -100,6 +101,11 @@ class ChatHandler {
                         send(p, (body) => [{ text: `[§${this.playerCountryData?.color ?? `a`}` }, { translate: land }, { text: `${federationNameInChat}${penname}§r] §7${badge}${senderName}§f: ${colorFor(p)}${body}` }]);
                     }
                 }
+                // 全体チャットだけを discord-mcbe 経由で Discord に流す。未所属の国名は翻訳キーなので、設定の文字列に置き換える
+                notifyDiscordChat(this.sender, this.message, {
+                    namePrefix: `[§${this.playerCountryData?.color ?? `a`}${landId ? land : config.discordNoCountryName}${federationNameInChat}${penname}§r] §7${badge}`,
+                    messagePrefix: chatColor !== `§f` ? chatColor : undefined,
+                });
                 break;
             }
             case `country`: {
