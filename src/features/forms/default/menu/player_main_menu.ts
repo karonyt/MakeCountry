@@ -1,16 +1,14 @@
+import { callHook, readValue } from "@/shared/hooks.js";
 import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, system } from "@minecraft/server";
 import { FormCancelationReason } from "@minecraft/server-ui";
-import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import config from "@/config/server.js";
 import { playerSettingDefaultForm } from "@/features/forms/default/menu/setting/setting.js";
-import { penNameMainDefaultForm } from "@/features/forms/default/menu/pen_name/main.js";
 import { joinTypeSelectDefaultForm } from "@/features/forms/default/menu/join/join_type_select.js";
 import { sendMoneyDefaultForm } from "@/features/forms/default/menu/send_money/send_money.js";
 import { showProfileDefaultForm } from "@/features/forms/default/menu/profile/show_profile.js";
 import { TimeManager } from "@/domain/time/time.js";
-import { showFishEncyclopedia } from "@/features/fishing/fish-encyclopedia.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 
 /**
@@ -20,8 +18,8 @@ import { showFishEncyclopedia } from "@/features/fishing/fish-encyclopedia.js";
 export function playerMainMenuDefaultForm(player: any) {
     const form = new ActionFormData();
     form.title({ translate: `form.mainmenu.title` });
-    const rewardBuff = new RewardBuff();
-    const jobsBuffs = rewardBuff.getAllBuffs();
+    
+    const jobsBuffs = readValue<Record<string, any[]>>("jobs.buffs", "", {});
     const keys = Object.keys(jobsBuffs);
     let body = `§b-JobsBuffList-§r\n`;
     for (const key of keys) {
@@ -81,7 +79,7 @@ export function playerMainMenuDefaultForm(player: any) {
                 break;
             };
             case 3: {
-                showFishEncyclopedia(player);
+                if (!callHook("fishing.openEncyclopedia", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.fishing" }] } });
                 break;
             };
             case 4: {
@@ -90,7 +88,7 @@ export function playerMainMenuDefaultForm(player: any) {
             };
             case 5: {
                 if (config.pennameEnable) {
-                    penNameMainDefaultForm(player);
+                    if (!callHook("life.openPenName", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.life" }] } });
                     return;
                 };
                 break;

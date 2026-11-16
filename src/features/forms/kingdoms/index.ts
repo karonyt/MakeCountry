@@ -1,17 +1,15 @@
+import { callHook, readValue } from "@/shared/hooks.js";
 import { Player, system } from "@minecraft/server";
 import { FormCancelationReason } from "@minecraft/server-ui";
 import config from "@/config/server.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
 import { getChestIconPath } from "@/shared/minecraft/item-presentation.js";
-import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { TimeManager } from "@/domain/time/time.js";
 import { showProfileDefaultForm } from "@/features/forms/default/menu/profile/show_profile.js";
 import { sendMoneyDefaultForm } from "@/features/forms/default/menu/send_money/send_money.js";
 import { joinTypeSelectKingdomsForm } from "@/features/forms/kingdoms/join.js";
-import { showFishEncyclopedia } from "@/features/fishing/fish-encyclopedia.js";
 import { playerSettingDefaultForm } from "@/features/forms/default/menu/setting/setting.js";
-import { penNameMainDefaultForm } from "@/features/forms/default/menu/pen_name/main.js";
 import { treasuryMainDefaultForm } from "@/features/forms/default/sc/treasury/treasury_main.js";
 import { inviteMainDefaultForm } from "@/features/forms/default/sc/invite/main.js";
 import { settingCountryMembersDefaultForm } from "@/features/forms/default/sc/members/setting_members.js";
@@ -47,8 +45,8 @@ function translatedItem(iconPath: string, translate: string, color = "§6", lore
 }
 
 function buildMainMenuLore() {
-    const rewardBuff = new RewardBuff();
-    const buffs = rewardBuff.getAllBuffs();
+    
+    const buffs = readValue<Record<string, any[]>>("jobs.buffs", "", {});
     const activeBuffs = Object.values(buffs).reduce((count: number, entries: any) => count + entries.length, 0);
     const date = new TimeManager(1000).getCalendar();
     return [
@@ -98,9 +96,9 @@ export function playerMainMenuKingdomsForm(player: Player) {
             case 22: return showProfileDefaultForm(player);
             case 24: return sendMoneyDefaultForm(player);
             case 31: return joinTypeSelectKingdomsForm(player);
-            case 39: return showFishEncyclopedia(player);
+            case 39: { if (!callHook("fishing.openEncyclopedia", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.fishing" }] } }); return; }
             case 41:
-                if (config.pennameEnable) return penNameMainDefaultForm(player);
+                if (config.pennameEnable) { if (!callHook("life.openPenName", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.life" }] } }); return; }
                 return;
         }
     });

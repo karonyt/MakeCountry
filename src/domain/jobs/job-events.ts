@@ -1,6 +1,7 @@
 import { JobsActionFormData as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Block, EnchantmentType, EnchantmentTypes, Player, system, world } from "@minecraft/server";
-import { CheckPermissionFromLocation, getRandomInteger, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+import { getRandomInteger, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
+import { isLocationDenied } from "@/domain/country/location-permission.js";
 import jobs_config from "@/config/jobs.js";
 import { FormCancelationReason } from "@minecraft/server-ui";
 
@@ -8,7 +9,9 @@ import playerFishingAfterEvent from "@/domain/fishing/vanilla-events.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
-import { CountryManager } from "@/domain/country/country-manager.js";
+import { getPlayerCountryLevel } from "@/domain/country/player-country-level.js";
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { rpc } from "@/shared/bridge/bridge.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import config from "@/config/server.js";
 import { ensureDailyEarning } from "@/domain/jobs/job-reward-display.js";
@@ -20,30 +23,8 @@ world.afterEvents.worldLoad.subscribe(() => {
     buff = new RewardBuff();
 });
 
-function getTodayByUTCOffset(offsetHours: any) {
-    const now = Date.now();
-    const offsetMs = offsetHours * 60 * 60 * 1000;
-    return new Date(now + offsetMs).toISOString().slice(0, 10);
-}
-
-export function applyDailyLimit(playerData: any, jobName: any, reward: any, dailyLimit: any) {
-    reward = Math.floor(reward * 100) / 100
-
-    const today = getTodayByUTCOffset(config.timeDifference);
-
-    const data = ensureDailyEarning(playerData, jobName, today);
-
-    const remaining = dailyLimit - data.amount;
-    if (remaining <= 0) return 0;
-
-    const finalReward = Math.min(reward, remaining);
-    data.amount = Math.floor((data.amount + finalReward) * 100) / 100;
-
-    // Stage the limit together with money; the payout commits this record once.
-    playerData.dailyEarnings[jobName] = data;
-
-    return finalReward;
-}
+export { applyDailyLimit } from "@/domain/jobs/daily-limit.js";
+import { getTodayByUTCOffset } from "@/domain/jobs/daily-limit.js";
 
 world.afterEvents.playerBreakBlock.subscribe((ev) => {
     if (!jobs_config.validity) return;
@@ -356,7 +337,7 @@ export function GrowthPlantReward(player: any, block: any) {
             if (item && item?.typeId.includes("minecraft:bucket")) {
                 return;
             }
-            if (CheckPermissionFromLocation(player, block.x, block.z, block.dimension.id, `place`)) return;
+            if (isLocationDenied(player, block.x, block.z, block.dimension.id, `place`)) return;
             //block.setPermutation(block.permutation.withState(`growth`, 0));
 
             enqueueNormalJobReward(player, "farmer", (player) => {
@@ -422,17 +403,26 @@ playerFishingAfterEvent.subscribe((event: any) => {
  * @param {Player} player 
  */
 export function jobsForm(player: any) {
+    if (IS_SPLIT_BUILD) {
+        // 分割版: 「今日の稼ぎ」は Lite のプレイヤーデータにあるので問い合わせる
+        rpc<any>("lite", "jobs.playerInfo", { playerId: player.id })
+            .then(info => { if (player.isValid) showJobsForm(player, info?.playerData ?? {}, false); })
+            .catch(() => player.sendMessage({ translate: "makecountry.module.lite_missing", with: { rawtext: [{ translate: "makecountry.module.jobs" }] } }));
+        return;
+    }
+    const playerDataBase = new DynamicProperties('player');
+    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`) ?? "{}");
+    showJobsForm(player, playerData, true);
+}
+
+function showJobsForm(player: any, playerData: any, persist: boolean) {
     const form = new ActionFormData();
     form.title({ translate: `jobs.title` });
     const body = [];
     let jobsList = jobs_config.jobsList
-    const playerDataBase = new DynamicProperties('player');
-    // @ts-ignore TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
-    const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`))
     if (national_tier_level.enabled) {
-        const countryId = playerData?.country;
-        const lv = countryId ? (countryId > 0 ? new CountryManager(countryId).countryData?.lv : 0) : 0;
-        jobsList = jobs_config.jobsList.filter(job => job.lv <= (lv ?? 0));
+        const lv = getPlayerCountryLevel(player) ?? 0;
+        jobsList = jobs_config.jobsList.filter(job => job.lv <= lv);
     };
     const today = getTodayByUTCOffset(config.timeDifference);
     let dailyEarningsReset = false;
@@ -455,7 +445,7 @@ export function jobsForm(player: any) {
         body.push(...pushElement)
         form.button({ rawtext: [{ text: `§l` }, { translate: job.name }, { text: `\n` }, { translate: employMessage }] });
     };
-    if (dailyEarningsReset) playerDataBase.set(`player_${player.id}`, playerData);
+    if (dailyEarningsReset && persist) new DynamicProperties('player').set(`player_${player.id}`, playerData);
     form.body({ rawtext: body });
     form.show(player).then((rs) => {
         if (rs.canceled) {

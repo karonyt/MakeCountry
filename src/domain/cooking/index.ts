@@ -1,3 +1,4 @@
+import { readLiteFlag } from "@/shared/shared-player-props.js";
 import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
 import { Player, world, system } from "@minecraft/server";
 import { openRecipeSelect as OpenPan } from "@/features/forms/default/cooking/fryingpan.js";
@@ -64,7 +65,7 @@ world.afterEvents.playerLeave.subscribe(event => forgetCookingEquipment(event.pl
 world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     if (ev.cancel || cancelIncident16BlockEvent(ev)) return;
     const { block, player } = ev;
-    const isEnabled = player.getDynamicProperty('isUseOldCookingSystem') ?? false;
+    const isEnabled = readLiteFlag(player, 'isUseOldCookingSystem');
     /*if (isEnabled ? (isEnabled == 'true' ? true : false) : false) {
         return;
     }*/

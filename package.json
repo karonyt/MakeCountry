@@ -6,7 +6,8 @@
     "generate": "node tools/generate-item-characteristics.mjs && node tools/generate-recipe-search-translations.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsdown",
-    "start": "npm run clean && npm run typecheck && npm run build"
+    "start": "npm run clean && npm run typecheck && npm run build",
+    "build:packs": "node tools/build-packs.mjs"
   },
   "keywords": [],
   "author": "",

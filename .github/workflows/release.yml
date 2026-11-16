@@ -1,8 +1,8 @@
 name: Build and release mcaddon
 
 # 使い方
-#   A) GitHub の Releases で新しいリリース (タグ例: v2.5.1) を作成する
-#   B) Actions > "Build and release mcaddon" > Run workflow でバージョン (例: 2.5.1) を入力する
+#   A) GitHub の Releases で新しいリリース (タグ例: v2.5.3) を作成する
+#   B) Actions > "Build and release mcaddon" > Run workflow でバージョン (例: 2.5.3) を入力する
 #      (タグ v<バージョン> のリリースが自動で作成される)
 # どちらの場合もビルドした MakeCountry-v<バージョン>.mcaddon と各 .mcpack がリリースに添付される。
 
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "リリースするバージョン (例: 2.5.1)"
+        description: "リリースするバージョン (例: 2.5.3)"
         required: true
       prerelease:
         description: "プレリリースにする"
@@ -36,7 +36,7 @@ jobs:
           fi
           VERSION="${TAG#v}"
           if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::バージョンは 2.5.1 のような X.Y.Z 形式で指定してください (受け取った値: $TAG)"
+            echo "::error::バージョンは 2.5.3 のような X.Y.Z 形式で指定してください (受け取った値: $TAG)"
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -98,19 +98,36 @@ jobs:
           npm run build
           test -f scripts/index.js
 
+      - name: Build MakeCountryLite and feature packs
+        working-directory: bp
+        env:
+          MC_VERSION: ${{ steps.version.outputs.version }}
+        run: node tools/build-packs.mjs
+
       - name: Package
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          mkdir -p dist
-          (cd bp && zip -qr ../dist/MakeCountryBehavior.mcpack . \
+          mkdir -p out
+          # フル版
+          (cd bp && zip -qr ../out/MakeCountryBehavior.mcpack . \
             -x ".git/*" ".github/*" ".vscode/*" "docs/*" "node_modules/*" "src/*" "tools/*" "localization/*" \
+               "packs/*" "dist/*" \
                "package.json" "package-lock.json" "tsconfig.json" "tsdown.config.js" ".npmrc" \
                ".gitignore" "README.md" "*.zip" "*.mcpack" "*.mcaddon")
-          (cd rp && zip -qr ../dist/MakeCountryResource.mcpack . \
+          (cd rp && zip -qr ../out/MakeCountryResource.mcpack . \
             -x ".git/*" ".github/*" ".gitignore" "README.md" "*.zip" "*.mcpack" "*.mcaddon")
-          (cd dist && zip -q "MakeCountry-${TAG}.mcaddon" MakeCountryBehavior.mcpack MakeCountryResource.mcpack)
-          ls -la dist
+          (cd out && zip -q "MakeCountry-${TAG}.mcaddon" MakeCountryBehavior.mcpack MakeCountryResource.mcpack)
+
+          # MakeCountryLite と機能パック
+          declare -A NAMES=([lite]=MakeCountryLite [jobs]=MakeCountry-Jobs [cooking]=MakeCountry-Cooking \
+            [industry]=MakeCountry-Industry [fishing]=MakeCountry-Fishing [deco]=MakeCountry-Deco [life]=MakeCountry-Life)
+          for id in lite jobs cooking industry fishing deco life; do
+            (cd "bp/dist/$id" && zip -qr "../../../out/${NAMES[$id]}-${TAG}.mcpack" .)
+          done
+          (cd out && zip -q "MakeCountryLite-${TAG}.mcaddon" "MakeCountryLite-${TAG}.mcpack" MakeCountryResource.mcpack)
+          (cd out && zip -q "MakeCountryLite-AllPacks-${TAG}.mcaddon" MakeCountryLite-${TAG}.mcpack MakeCountry-*-${TAG}.mcpack MakeCountryResource.mcpack)
+          ls -la out
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
@@ -120,6 +137,10 @@ jobs:
           prerelease: ${{ github.event_name == 'release' && github.event.release.prerelease || inputs.prerelease }}
           target_commitish: ${{ github.sha }}
           files: |
-            dist/MakeCountry-${{ steps.version.outputs.tag }}.mcaddon
-            dist/MakeCountryBehavior.mcpack
-            dist/MakeCountryResource.mcpack
+            out/MakeCountry-${{ steps.version.outputs.tag }}.mcaddon
+            out/MakeCountryBehavior.mcpack
+            out/MakeCountryResource.mcpack
+            out/MakeCountryLite-${{ steps.version.outputs.tag }}.mcaddon
+            out/MakeCountryLite-AllPacks-${{ steps.version.outputs.tag }}.mcaddon
+            out/MakeCountryLite-${{ steps.version.outputs.tag }}.mcpack
+            out/MakeCountry-*-${{ steps.version.outputs.tag }}.mcpack

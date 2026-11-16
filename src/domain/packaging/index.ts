@@ -1,5 +1,5 @@
+import { isLocationDenied, runAfterPermissionCheck } from '@/domain/country/location-permission.js';
 import { ItemStack, system, world, type Block, type Container, type Player } from '@minecraft/server';
-import { CheckPermissionFromLocation } from '@/shared/utils/minecraft.js';
 import { addItemsExactly } from '@/shared/minecraft/inventory-delivery.js';
 import { deniesIncident16 } from '@/domain/protection/incident16.js';
 import { isUnsafeToPlay } from '@/shared/integration/standalone.js';
@@ -26,7 +26,7 @@ function accessible(player: Player, block: Block, permission = 'openContainer') 
     if (!block.isValid || player.dimension.id !== block.dimension.id
         || Math.hypot(player.location.x - block.x, player.location.y - block.y, player.location.z - block.z) > 8
         || isGateBlockProtected(block.dimension, block.location)
-        || CheckPermissionFromLocation(player, block.x, block.z, block.dimension.id, permission)) throw Error('packaging.changed');
+        || isLocationDenied(player, block.x, block.z, block.dimension.id, permission)) throw Error('packaging.changed');
 }
 function report(player: Player, error: unknown) {
     const key = error instanceof Error && error.message.startsWith('packaging.') ? error.message : 'packaging.failed';
@@ -74,8 +74,9 @@ registerStorageRestrictions();
 world.beforeEvents.playerBreakBlock.subscribe(event => {
     if (!packageDefinition(event.block.typeId)) return;
     const denied = event.cancel; event.cancel = true;
-    if (!denied) system.run(() => {
-        try { blockTarget(event.player, event.block).pickup!(); }
-        catch (error) { report(event.player, error); }
+    const { player, block } = event;
+    if (!denied) runAfterPermissionCheck(player, ['break', 'openContainer'].map(permission => ({ x: block.x, z: block.z, dimension: block.dimension.id, permission })), () => {
+        try { blockTarget(player, block).pickup!(); }
+        catch (error) { report(player, error); }
     });
 });

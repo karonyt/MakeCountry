@@ -1,8 +1,8 @@
+import { callHook, readValue } from "@/shared/hooks.js";
 import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { Player } from "@minecraft/server";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { callPlayerMainMenuForm } from "@/features/forms/form-registry.js";
-import { ensureMarriageData, getPlayerNameById, showMarriageMainForm } from "@/domain/player/marriage.js";
 /**@typedef {import("@/types/legacy/player").PlayerData} PlayerData*/
 
 /**
@@ -16,7 +16,6 @@ export function showProfileDefaultForm(player: any) {
      */
     // @ts-ignore
     const playerData = JSON.parse(playerDataBase.get(`player_${player.id}`));
-    ensureMarriageData(playerData);
 
     const showProfile = [
         { translate: "msg.name" }, { text: `${playerData?.name}\n` },
@@ -24,7 +23,7 @@ export function showProfileDefaultForm(player: any) {
         { translate: "msg.havemoney" }, { text: `${playerData?.money}\n` },
         { translate: "msg.days" }, { text: `${playerData?.days}\n` },
         { translate: "msg.country" }, playerData?.country ? { text: `${playerData.country}` } : { translate: "none" }, { text: "\n" },
-        { translate: "msg.marriage" }, playerData?.marriage?.spouseId ? { text: getPlayerNameById(playerData.marriage.spouseId) } : { translate: "none" }, { text: "\n" },
+        { translate: "msg.marriage" }, readValue<string | undefined>("life.spouseName", player.id, undefined) ? { text: readValue("life.spouseName", player.id, "") } : { translate: "none" }, { text: "\n" },
         { translate: "msg.invite" }, typeof playerData?.invite?.length === "number" ? { text: `${playerData.invite.length}` } : { translate: "none" }, { text: "\n" },
         { translate: "msg.havechunks" }, { text: `${playerData?.chunks.length}` }
     ];
@@ -42,7 +41,7 @@ export function showProfileDefaultForm(player: any) {
         }
         switch (rs.selection) {
             case 0: {
-                showMarriageMainForm(player);
+                if (!callHook("life.openMarriage", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.life" }] } });
                 break;
             }
             case 1: {
