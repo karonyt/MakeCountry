@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'tsdown';
 import { gameUiLocalization } from './game-ui-localization.mjs';
 import { classifyAssets, splitCatalog } from './pack-assets.mjs';
+import { configModules } from './config-modules.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const defs = JSON.parse(fs.readFileSync(path.join(root, 'packs/packs.json'), 'utf8'));
@@ -94,7 +95,8 @@ for (const packId of targets) {
       __MC_SPLIT__: 'true',
       __MC_PACK__: JSON.stringify(packId),
     },
-    plugins: [remoteModules(packId), gameUiLocalization('makecountry')],
+    // 設定ファイルは scripts/config/*.js として別に残す (ユーザーが編集できるように)
+    plugins: [remoteModules(packId), configModules(root), gameUiLocalization('makecountry')],
   });
 
   let copied = 0;
