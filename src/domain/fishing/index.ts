@@ -1,8 +1,7 @@
 import { ItemStack, world } from "@minecraft/server";
 import { getFishManager } from "@/domain/fishing/fishing.js";
 import playerFishingAfterEvent from "@/domain/fishing/fishingEvent.js";
-import { CountryManager } from "@/domain/country/country-manager.js";
-import { PlayerManager } from "@/domain/player/player-manager.js";
+import { getPlayerCountryLevel } from "@/domain/country/player-country-level.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import config from "@/config/server.js";
 import { reportJobAchievement } from "@/shared/integration/standalone.js";
@@ -18,10 +17,9 @@ playerFishingAfterEvent.subscribe((ev: any) => {
     const isSpecialFishing = player.getDynamicProperty('isSpecialFishing');
     if (isSpecialFishing !== true && isSpecialFishing !== 'true') return;
 
-    const playerManager = new PlayerManager(player.id);
-    const countryData = playerManager.country;
+    const countryLv = getPlayerCountryLevel(player);
 
-    if (!countryData || (countryData.lv < national_tier_level.releaseSpeciallFishing && national_tier_level.enabled)) return
+    if (countryLv === undefined || (countryLv < national_tier_level.releaseSpeciallFishing && national_tier_level.enabled)) return
 
     const rigSlot = findDeepwaterRig(player, dimension, itemEntity.location);
     const fish = fishManager.fishing(itemEntity.location, dimension, player, rigSlot !== undefined);

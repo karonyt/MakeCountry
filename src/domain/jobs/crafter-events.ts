@@ -1,7 +1,9 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { payPendingRewardRemotely } from "@/domain/jobs/remote-job-pay.js";
 import { GameMode, ScriptEventSource, system, world } from "@minecraft/server";
 import { PendingJobRewards, type PendingJobReward } from "@/domain/jobs/pending-job-rewards.js";
 import jobs_config from "@/config/jobs.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { applyDailyLimit } from "@/domain/jobs/daily-limit.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { formatJobRewardValues, getDailyEarning } from "@/domain/jobs/job-reward-display.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
@@ -48,6 +50,15 @@ function flushCraftRewards() {
                 // Resolve a new Player wrapper after reconnect; loading work stays queued.
                 if (!player?.isValid || player.hasTag("status:loading") || player.hasTag("status:transferring")) continue;
                 if (!jobs_config.validity || !player.hasTag("mcjobs_crafter") || player.getGameMode() !== GameMode.Survival) { settle("skipped"); continue; }
+                if (IS_SPLIT_BUILD) {
+                    // 分割版: 票を 1 枚ずつ Lite に払ってもらう
+                    const entry = group[0];
+                    const job = new JobLevel(player, "crafter");
+                    const multiplier = buff.getMultiplier("crafter");
+                    const money = getRandomInteger(jobs_config.craftReward.min, jobs_config.craftReward.max) * entry.amount * job.getReward(job.getLevel()) * multiplier;
+                    payPendingRewardRemotely(pendingCrafts, entry, player, "crafter", { money, xp: jobs_config.craftReward.xp * entry.amount * multiplier });
+                    continue;
+                }
                 const raw = playerDB.get(`player_${player.id}`);
                 if (!raw) { craftDiagnostics.missingPlayer++; block("player_record_missing"); continue; }
                 let playerData: any;

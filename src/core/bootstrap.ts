@@ -18,3 +18,4 @@ import "@/features/smartphone/smartphone.js";
 import "@/domain/player/playtime.js";
 import "@/domain/chat/index.js";
 import "@/plugins/register.js";
+import "@/core/hooks.js";

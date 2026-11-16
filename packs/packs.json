@@ -1,0 +1,117 @@
+{
+  "$comment": "MakeCountryLite と機能パックの定義。UUID は一度配布したら変えないこと (ワールドのデータがパックの UUID に紐づく)。Lite はフル版と同じ UUID を使い、フル版のデータをそのまま引き継ぐ。",
+  "resourcePack": {
+    "uuid": "acb9fe9b-a3bd-40ea-a622-ace69dd6f5ee"
+  },
+  "packs": {
+    "lite": {
+      "name": "MakeCountryLite",
+      "description": "建国と経済の基本だけの MakeCountry\nMade by かろん",
+      "header": "95738e96-76ca-47f1-8c50-8929b4bf447d",
+      "module": "10c44dcf-7f48-4040-9c50-8923464d74bc",
+      "remote": []
+    },
+    "jobs": {
+      "name": "MakeCountry 職業パック",
+      "description": "MakeCountryLite に職業・職業レベル・報酬を追加\nMade by かろん",
+      "header": "e46c5660-8df5-4755-9ed9-000b5bd438ab",
+      "module": "baa61412-2c4a-4813-bcb0-bde8cd7e730c",
+      "remote": [
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    },
+    "cooking": {
+      "name": "MakeCountry 料理パック",
+      "description": "MakeCountryLite に料理・調理器具・食材・作物を追加\nMade by かろん",
+      "header": "205bc4a2-d790-4d7b-b10f-9a4ad915e3cb",
+      "module": "57e85890-f91a-4f2d-9427-c6a8a686c2a4",
+      "remote": [
+        "job-level",
+        "artisan-rewards",
+        "reward-buff",
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    },
+    "industry": {
+      "name": "MakeCountry 生産パック",
+      "description": "MakeCountryLite に鍛冶・化学・鉱物・バイオーム・梱包を追加\nMade by かろん",
+      "header": "8c37283c-52e8-4169-9fae-f04e74d16598",
+      "module": "fe870316-7e9f-47cf-8543-271b6eb3ebcb",
+      "remote": [
+        "job-level",
+        "artisan-rewards",
+        "reward-buff",
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    },
+    "fishing": {
+      "name": "MakeCountry 釣りパック",
+      "description": "MakeCountryLite に釣り・魚・魚図鑑を追加\nMade by かろん",
+      "header": "e63e2186-4835-4969-8738-68606a7f0d35",
+      "module": "bf92a78b-2d1e-4ead-b99b-cfe127716829",
+      "remote": [
+        "job-level",
+        "reward-buff",
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    },
+    "deco": {
+      "name": "MakeCountry 装飾パック",
+      "description": "MakeCountryLite に家具・和服・スーツ・刀・ネオンを追加\nMade by かろん",
+      "header": "c5f426e4-ae9e-4030-9f64-5eb28bc26924",
+      "module": "88b7d7f9-4cb1-4f54-9c74-9b6b19184520",
+      "remote": [
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    },
+    "life": {
+      "name": "MakeCountry 生活パック",
+      "description": "MakeCountryLite に結婚・懸賞金・二つ名・バックパックを追加\nMade by かろん",
+      "header": "a7866614-9996-428b-9d64-9eaf9eba098d",
+      "module": "517b849c-1fbc-4428-b398-22569a7272da",
+      "remote": [
+        "job-level",
+        "reward-buff",
+        "country-level",
+        "form-registry",
+        "location-permission"
+      ]
+    }
+  },
+  "remote": {
+    "job-level": {
+      "replaces": "src/domain/jobs/job-level.ts",
+      "with": "src/remote/job-level.ts"
+    },
+    "artisan-rewards": {
+      "replaces": "src/domain/jobs/pending-artisan-rewards.ts",
+      "with": "src/remote/artisan-rewards.ts"
+    },
+    "reward-buff": {
+      "replaces": "src/domain/rewards/reward-buff.ts",
+      "with": "src/remote/reward-buff.ts"
+    },
+    "country-level": {
+      "replaces": "src/domain/country/player-country-level.ts",
+      "with": "src/remote/player-country-level.ts"
+    },
+    "form-registry": {
+      "replaces": "src/features/forms/form-registry.ts",
+      "with": "src/remote/form-registry.ts"
+    },
+    "location-permission": {
+      "replaces": "src/domain/country/location-permission.ts",
+      "with": "src/remote/location-permission.ts"
+    }
+  }
+}

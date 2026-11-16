@@ -1,9 +1,11 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { remoteJobPay } from "@/domain/jobs/remote-job-pay.js";
 import { Player, ScriptEventSource, system, world } from "@minecraft/server";
 import jobs_config from "@/config/jobs.js";
 import config from "@/config/server.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { storageReadReady } from "@/shared/storage/write-hook.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { applyDailyLimit } from "@/domain/jobs/daily-limit.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { formatJobRewardValues, getDailyEarning } from "@/domain/jobs/job-reward-display.js";
 
@@ -81,7 +83,10 @@ function load(): boolean {
                     || (e.reason !== undefined && (typeof e.reason !== "string" || e.reason.length > 100))) throw Error("invalid_artisan_reward_receipt");
                 const entry: StoredReceipt = { ...e, dirty: false, owned: true };
                 if (entry.version === 2) acceptedOrder = Math.max(acceptedOrder, entry.order!);
-                if (entry.phase === "prepared" || entry.phase === "executing") {
+                if (IS_SPLIT_BUILD && entry.phase === "executing") {
+                    // 分割版: 支払いは Lite が ID ごとに一度だけ行うので、送り直して確かめられる
+                    entry.phase = "pending"; entry.dirty = true;
+                } else if (entry.phase === "prepared" || entry.phase === "executing") {
                     entry.reason = entry.phase === "prepared" ? "craft_completion_unconfirmed_after_restart" : "payment_unconfirmed_after_restart";
                     entry.phase = "blocked"; entry.dirty = true;
                 }
@@ -162,6 +167,7 @@ export function flushArtisanRewards() {
             if (entry.dirty) { blocked.add(entry.playerId); continue; }
             const player = online.get(entry.playerId);
             if (!player?.isValid || player.hasTag("status:loading") || player.hasTag("status:transferring")) continue;
+            if (IS_SPLIT_BUILD) { payArtisanRemotely(entry, player); blocked.add(entry.playerId); continue; }
             let begun = false;
             let committed = false;
             try {
@@ -262,3 +268,38 @@ system.afterEvents.scriptEventReceive.subscribe(event => {
     if (event.id !== "karo:artisanrewarddiag" || event.sourceType !== ScriptEventSource.Server || event.sourceEntity || event.sourceBlock || event.initiator) return;
     console.warn("[artisan-reward-diagnostics] " + JSON.stringify(artisanRewardStatus()));
 });
+
+/** 分割版: 票を Lite に払ってもらい、支払いを確認してから経験値を足して閉じる。 */
+function payArtisanRemotely(entry: StoredReceipt, player: Player) {
+    entry.phase = "executing"; entry.dirty = true;
+    try { persist(entry); } catch { changePhase(entry, "pending"); warnStorage(); return; }
+    remoteJobPay(entry.id, player.id, entry.job, entry.money)
+        .then(result => {
+            const job = new JobLevel(player, entry.job);
+            if (result.paid <= 0) { changePhase(entry, "settled", "daily_limit"); cleanup(entry); if (player.isValid) notify(player, entry, 0, 0, job.get(), result.playerData); return; }
+            if (!player.isValid) throw new Error("player_left_before_xp");
+            const progress = job.addXp(entry.xp);
+            changePhase(entry, "settled", "paid"); cleanup(entry);
+            notify(player, entry, result.paid, entry.xp, progress, result.playerData);
+        })
+        .catch(() => { if (entry.phase === "executing") changePhase(entry, "pending"); });
+}
+
+const REMOTE_SEEN = "mc:artisan_remote_seen#";
+/**
+ * 分割版: 料理・生産パックから届いた、完成済みの制作の報酬を受け付ける。
+ * 同じ ID は一度しか受け付けない (送り直しは「受け付け済み」として true を返す)。
+ */
+export function acceptRemoteArtisanReward(remoteId: unknown, playerId: unknown, plan: unknown): boolean {
+    if (typeof remoteId !== "string" || !/^[a-z0-9-]{1,90}$/.test(remoteId) || typeof playerId !== "string" || !playerId || playerId.length > 256) return false;
+    if (!validPlan(plan) || !load()) return false;
+    const id = `r-${remoteId}`;
+    if (records.has(id) || world.getDynamicProperty(REMOTE_SEEN + id) !== undefined) return true;
+    if (acceptedOrder >= Number.MAX_SAFE_INTEGER) return false;
+    const entry: StoredReceipt = { ...(plan as ArtisanRewardPlan), version: 2, order: ++acceptedOrder, id, playerId, phase: "pending", dirty: true, owned: false };
+    records.set(id, entry);
+    try { persist(entry); world.setDynamicProperty(REMOTE_SEEN + id, Date.now()); }
+    catch { records.delete(id); warnStorage(); return false; }
+    system.run(flushArtisanRewards);
+    return true;
+}
