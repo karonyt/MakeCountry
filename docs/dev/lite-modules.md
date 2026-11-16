@@ -91,13 +91,24 @@
 
 - [x] 設計・パック間通信 (`src/shared/bridge/bridge.ts`)・差し込み口 (`src/shared/hooks.ts`)
 - [x] 資産の振り分け (`tools/pack-assets.mjs`)
-- [ ] 入口の分割: `src/core/bootstrap.ts` (Lite の機能) と `src/modules/<ID>.ts` (各機能)。フル版は両方を読み込む
+- [x] 入口の分割: `src/core/bootstrap.ts` (Lite の機能) と `src/modules/<ID>.ts` (各機能)。フル版は両方を読み込む (フル版のビルド確認済み)
+- [x] 分割版の差し込み口・読み取り口の転送 (`src/packs/runtime.ts`)
 - [ ] Lite: お金・権限・プレイヤーデータの依頼を受ける処理、機能パックへの転送
 - [ ] 機能パック用の差し替え部品 (`src/remote/`): 職業レベル・制作報酬・お金
 - [ ] 複数パックのビルド (`tools/build-packs.mjs`) と manifest
 - [ ] 職業 / 料理 / 生産 / 釣り / 装飾 / 生活 の各パック
 - [ ] フル版からの引き継ぎ
 - [ ] リリース用ワークフロー・README
+
+## 残りの課題 (メモ)
+
+- 職業パックの支払い: 4 か所 (crafter-events / tamer-events / pending-normal-job-rewards / pending-artisan-rewards) で
+  Lite のプレイヤーデータのお金と「1 日の上限」を直接書き換えている。分割版では Lite に
+  `jobs.pay` (受け取り票 ID 付き・二重払い防止の台帳付き) を依頼し、成功後に職業パック側で経験値を足す。
+- 料理・生産の制作報酬: 分割版の runArtisanCraft は完成品をすぐ渡し、受け取り票を自分のパックに保存してから
+  職業パックへ送る。職業パックが受け取ったら票を消す。
+- 職業レベルと報酬ブーストはスコアボード (`mcjob_<職業>` / `mcjob_buff`、100 倍の整数) に書き出し、他のパックはそこを読む。
+- 生活パック: 結婚・懸賞金のデータを Lite のプレイヤーデータから自分の領域へ移し、お金の移動は Lite に依頼する。
 
 ## ソースとビルド
 
