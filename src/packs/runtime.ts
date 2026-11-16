@@ -70,11 +70,17 @@ export function setupModuleRuntime(pack: string, version: string): void {
         provideHook(name, (...args) => emitBridgeEvent("hook", { name, args: serializeHookArgs(args) }), () => isPackPresent("lite"));
     }
 
+    // フル版と一緒に入れられていたら知らせる (同じ機能が二重に動いてしまう)
+    onPackPresence((info, joined) => {
+        if (!joined || info.pack !== "full") return;
+        world.sendMessage({ translate: "makecountry.module.with_full", with: { rawtext: [{ translate: `makecountry.module.${pack}` }] } });
+    });
+
     // Lite が入っていないときはプレイヤーに知らせる
     world.afterEvents.playerSpawn.subscribe(({ player, initialSpawn }) => {
         if (!initialSpawn) return;
         system.runTimeout(() => {
-            if (!player.isValid || isPackPresent("lite")) return;
+            if (!player.isValid || isPackPresent("lite") || isPackPresent("full")) return;
             player.sendMessage({ translate: "makecountry.module.lite_missing", with: { rawtext: [{ translate: `makecountry.module.${pack}` }] } });
         }, 200);
     });
