@@ -1,3 +1,4 @@
+import { writeLitePlayerProperty } from "@/shared/shared-player-props.js";
 import { CommandPermissionLevel, Player, system } from "@minecraft/server";
 import { getPlayerDataById } from "@/domain/player/marriage.js";
 
@@ -11,7 +12,7 @@ function spouseChatExecuter(origin: any) {
         return;
     }
 
-    sender.setDynamicProperty("chatType", "spouse");
+    writeLitePlayerProperty(sender, "chatType", "spouse");
     sender.sendMessage({ translate: "spousechat.switched" });
 }
 

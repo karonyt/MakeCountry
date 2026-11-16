@@ -1,3 +1,5 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { creditMoney, debitMoney, viewDays, viewMoney } from "@/shared/economy-client.js";
 import { SocialActionFormData as ActionFormData, SocialModalFormData as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
 import { FormCancelationReason } from "@minecraft/server-ui";
@@ -133,8 +135,11 @@ function clearBounty(targetId: any) {
 function refundBountyToPlacer(bounty: any, notifyOnline = true) {
     const placerData = getPlayerData(bounty.placerId);
     if (!placerData) return false;
-    placerData.money += Math.floor(bounty.amount);
-    savePlayerData(bounty.placerId, placerData);
+    if (IS_SPLIT_BUILD) creditMoney(bounty.placerId, Math.floor(bounty.amount), "bounty.refund");
+    else {
+        placerData.money += Math.floor(bounty.amount);
+        savePlayerData(bounty.placerId, placerData);
+    }
 
     if (notifyOnline) {
         const placer = world.getPlayers({ name: bounty.placerName })[0];
@@ -193,11 +198,11 @@ export function placeBounty(setter: any, target: any, amount: any) {
         setter.sendMessage({ translate: "bounty.error.load_data" });
         return false;
     }
-    if ((targetData.days ?? 0) < (config.bountyTargetMinDays ?? 7)) {
+    if ((IS_SPLIT_BUILD ? (viewDays(target) ?? 0) : (targetData.days ?? 0)) < (config.bountyTargetMinDays ?? 7)) {
         setter.sendMessage({ translate: "bounty.error.new_player", with: [`${(config.bountyTargetMinDays ?? 7)}`] });
         return false;
     }
-    if (setterData.money < amount) {
+    if (!IS_SPLIT_BUILD && setterData.money < amount) {
         setter.sendMessage({ translate: "bounty.error.not_enough_money", with: [`${config.MoneyName} ${setterData.money}`] });
         return false;
     }
@@ -224,7 +229,7 @@ export function placeBounty(setter: any, target: any, amount: any) {
         return false;
     }
 
-    setterData.money -= amount;
+    const commit = () => {
     setterData.bountyLastSetAt = now;
     setterData.bountyDailySetDate = today;
     setterData.bountyDailySetCount = (setterData.bountyDailySetCount ?? 0) + 1;
@@ -249,6 +254,18 @@ export function placeBounty(setter: any, target: any, amount: any) {
             { translate: "bounty.notify.world", with: [setter.name, `${config.MoneyName} ${amount}`, target.name] }
         ]
     });
+    };
+    if (IS_SPLIT_BUILD) {
+        debitMoney(setter.id, amount, "bounty.place").then(ok => {
+            if (!ok) { if (setter.isValid) setter.sendMessage({ translate: "bounty.error.not_enough_money", with: [`${config.MoneyName} ${viewMoney(setter) ?? 0}`] }); return; }
+            // 支払いを待つ間に懸賞金が付いた・相手が抜けた場合は返金する
+            if (getBounty(target.id) || !setter.isValid || !target.isValid) { creditMoney(setter.id, amount, "bounty.place.refund"); return; }
+            commit();
+        });
+        return true;
+    }
+    setterData.money -= amount;
+    commit();
     return true;
 }
 
@@ -306,8 +323,11 @@ world.afterEvents.entityDie.subscribe((ev) => {
     const killerData = getPlayerData(killer.id);
     if (!killerData) return;
 
-    killerData.money += Math.floor(bounty.amount);
-    savePlayerData(killer.id, killerData);
+    if (IS_SPLIT_BUILD) creditMoney(killer.id, Math.floor(bounty.amount), "bounty.reward");
+    else {
+        killerData.money += Math.floor(bounty.amount);
+        savePlayerData(killer.id, killerData);
+    }
     clearBounty(deadEntity.id);
     setTargetRespawnCooldown(
         deadEntity.id,

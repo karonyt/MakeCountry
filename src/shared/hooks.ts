@@ -23,6 +23,8 @@ export const HOOKS = {
     "life.ensurePlayerData": "life",
     /** プレイヤー ID が変わった (再参加などで ID が付け替わった) */
     "life.migratePlayerId": "life",
+    /** プレイヤーの値を Lite に書く (二つ名・チャットの種類。分割版で機能パックから使う) */
+    "lite.setPlayerProperty": "lite",
     /** メニューに戻る (機能パックの画面から本体のメニューへ) */
     "lite.openMainMenu": "lite",
 } as const;

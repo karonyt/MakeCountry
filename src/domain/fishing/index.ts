@@ -1,3 +1,4 @@
+import { readLiteFlag } from "@/shared/shared-player-props.js";
 import { ItemStack, world } from "@minecraft/server";
 import { getFishManager } from "@/domain/fishing/fishing.js";
 import playerFishingAfterEvent from "@/domain/fishing/fishingEvent.js";
@@ -14,8 +15,7 @@ playerFishingAfterEvent.subscribe((ev: any) => {
     const fishManager = getFishManager();
     const { player, itemStack, itemEntity, dimension } = ev;
     if (!player || !itemStack || !itemEntity || !dimension) return;
-    const isSpecialFishing = player.getDynamicProperty('isSpecialFishing');
-    if (isSpecialFishing !== true && isSpecialFishing !== 'true') return;
+    if (!readLiteFlag(player, 'isSpecialFishing')) return;
 
     const countryLv = getPlayerCountryLevel(player);
 

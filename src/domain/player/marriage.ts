@@ -1,3 +1,6 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { creditMoney, debitMoney, viewMoney } from "@/shared/economy-client.js";
+import { isLocationDenied, runAfterPermissionCheck } from "@/domain/country/location-permission.js";
 import { teleportLocked } from "@/domain/player/teleport-lock.js";
 import { SocialActionForm as ActionFormData, SocialMessageFormData as MessageFormData, SocialModalForm as ModalFormData } from "@/shared/ui/purpose-forms.js";
 import { Player, world } from "@minecraft/server";
@@ -253,7 +256,11 @@ export function teleportToSpouse(sender: any) {
 /**
  * @param {Player} player
  */
-export function setMarriageHomeAtCurrentLocation(player: any) {
+export function setMarriageHomeAtCurrentLocation(player: any, permissionChecked = false) {
+    if (IS_SPLIT_BUILD && !permissionChecked) {
+        runAfterPermissionCheck(player, [{ x: player.location.x, z: player.location.z, dimension: player.dimension.id, permission: "setHome" }], () => { if (player.isValid) setMarriageHomeAtCurrentLocation(player, true); });
+        return true;
+    }
     const playerData = getPlayerData(player);
     const spouseId = playerData?.marriage?.spouseId;
     if (!playerData || !spouseId) {
@@ -262,7 +269,7 @@ export function setMarriageHomeAtCurrentLocation(player: any) {
     }
 
     // 普通の /sethome と同じく、ホームを置けない場所 (他国の領土など) では設定させない (#1017)
-    if (CheckPermissionFromLocation(player, player.location.x, player.location.z, player.dimension.id, "setHome")) return false;
+    if (isLocationDenied(player, player.location.x, player.location.z, player.dimension.id, "setHome")) return false;
 
     const homeData = {
         x: player.location.x,
@@ -287,7 +294,13 @@ export function setMarriageHomeAtCurrentLocation(player: any) {
 /**
  * @param {Player} player
  */
-export function teleportToMarriageHome(player: any) {
+export function teleportToMarriageHome(player: any, permissionChecked = false) {
+    if (IS_SPLIT_BUILD && !permissionChecked) {
+        const spouse = getPlayerData(player)?.marriage?.spouseId;
+        const home = spouse ? getMarriageHome(player.id, spouse) : undefined;
+        runAfterPermissionCheck(player, home ? [{ x: home.x, z: home.z, dimension: home.dimension, permission: "setHome" }] : [], () => { if (player.isValid) teleportToMarriageHome(player, true); });
+        return true;
+    }
     const playerData = getPlayerData(player);
     const spouseId = playerData?.marriage?.spouseId;
     if (!playerData || !spouseId) {
@@ -304,7 +317,7 @@ export function teleportToMarriageHome(player: any) {
         return false;
     }
     // 以前に他国の領土へ設定されたホームへは飛ばさない (/home と同じ確認)
-    if (CheckPermissionFromLocation(player, homeData.x, homeData.z, homeData.dimension, "setHome")) {
+    if (isLocationDenied(player, homeData.x, homeData.z, homeData.dimension, "setHome")) {
         player.sendMessage({ translate: "command.home.error.thischunk" });
         return false;
     }
@@ -331,6 +344,18 @@ function depositSharedWallet(player: any, amount: any) {
     if (!Number.isInteger(amount) || amount <= 0) {
         player.sendMessage({ translate: "marriage.wallet.error.positive_integer" });
         return false;
+    }
+    if (IS_SPLIT_BUILD) {
+        debitMoney(player.id, amount, "marriage.wallet.deposit").then(ok => {
+            if (!ok) { if (player.isValid) player.sendMessage({ translate: "marriage.wallet.error.not_enough_money", with: [`${config.MoneyName} ${viewMoney(player) ?? 0}`] }); return; }
+            const current = getPlayerDataById(player.id);
+            const currentSpouse = current?.marriage?.spouseId;
+            if (!currentSpouse) { creditMoney(player.id, amount, "marriage.wallet.deposit.refund"); return; }
+            const newBalance = getSharedWalletBalance(current) + amount;
+            setSharedWalletBalance(player.id, currentSpouse, newBalance);
+            if (player.isValid) player.sendMessage({ translate: "marriage.wallet.deposit.success", with: [`${config.MoneyName} ${amount}`, `${config.MoneyName} ${newBalance}`] });
+        });
+        return true;
     }
     if (playerData.money < amount) {
         player.sendMessage({ translate: "marriage.wallet.error.not_enough_money", with: [`${config.MoneyName} ${playerData.money}`] });
@@ -367,8 +392,11 @@ function withdrawSharedWallet(player: any, amount: any) {
         return false;
     }
 
-    playerData.money += amount;
-    savePlayerData(player.id, playerData);
+    if (IS_SPLIT_BUILD) creditMoney(player.id, amount, "marriage.wallet.withdraw");
+    else {
+        playerData.money += amount;
+        savePlayerData(player.id, playerData);
+    }
     setSharedWalletBalance(player.id, spouseId, balance - amount);
     player.sendMessage({ translate: "marriage.wallet.withdraw.success", with: [`${config.MoneyName} ${amount}`, `${config.MoneyName} ${balance - amount}`] });
     return true;
@@ -515,13 +543,15 @@ export function divorce(player: any) {
     const shareA = Math.floor(balance / 2);
     const shareB = balance - shareA;
 
-    playerData.money += shareA;
+    if (IS_SPLIT_BUILD) creditMoney(player.id, shareA, "marriage.divorce");
+    else playerData.money += shareA;
     playerData.marriage.spouseId = undefined;
     playerData.marriage.since = undefined;
     savePlayerData(player.id, playerData);
 
     if (spouseData?.marriage?.spouseId === player.id) {
-        spouseData.money = (spouseData.money ?? 0) + shareB;
+        if (IS_SPLIT_BUILD) creditMoney(spouseId, shareB, "marriage.divorce");
+        else spouseData.money = (spouseData.money ?? 0) + shareB;
         spouseData.marriage.spouseId = undefined;
         spouseData.marriage.since = undefined;
         savePlayerData(spouseId, spouseData);
@@ -579,7 +609,7 @@ export function migrateMarriageReferences(playerDataBase: any, oldId: any, newId
 function showMarriageWalletAmountForm(player: any, mode: "deposit" | "withdraw") {
     const playerData = getPlayerData(player);
     const balance = getSharedWalletBalance(playerData);
-    const ownMoney = playerData?.money ?? 0;
+    const ownMoney = IS_SPLIT_BUILD ? (viewMoney(player) ?? 0) : (playerData?.money ?? 0);
     const title = mode === "deposit" ? { translate: "marriage.wallet.amount.deposit.title" } : { translate: "marriage.wallet.amount.withdraw.title" };
 
     new ModalFormData()
