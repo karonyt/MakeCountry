@@ -1,3 +1,4 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
 import { world } from "@minecraft/server";
 
 export type PendingJobReward = {
@@ -71,7 +72,9 @@ export class PendingJobRewards {
                     if (!fresh.owned && fresh.sourceId === entry.sourceId) this.records.delete(fresh.id);
                 }
                 if (entry.phase === "executing") {
-                    entry.phase = "blocked"; entry.reason = "unconfirmed_after_restart"; entry.dirty = true;
+                    // 分割版: 支払いは Lite が ID ごとに一度だけ行うので、送り直して確かめられる
+                    if (IS_SPLIT_BUILD) { entry.phase = "pending"; entry.dirty = true; }
+                    else { entry.phase = "blocked"; entry.reason = "unconfirmed_after_restart"; entry.dirty = true; }
                 }
                 this.records.set(entry.id, entry);
             }

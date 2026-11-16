@@ -1,3 +1,4 @@
+import { readLiteFlag } from "@/shared/shared-player-props.js";
 import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
 import { Player, world, system } from "@minecraft/server";
 import { openRecipeSelect } from "@/features/forms/default/chemical/chemical.js";
@@ -10,8 +11,8 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     if (ev.cancel) return;
     if (tryUseChemicalFertilizer(ev)) return;
     const { block, player } = ev;
-    const isEnabled = player.getDynamicProperty('isUseOldCookingSystem') ?? false;
-    if (isEnabled ? (isEnabled == 'true' ? true : false) : false) {
+    const isEnabled = readLiteFlag(player, 'isUseOldCookingSystem');
+    if (isEnabled) {
         return;
     }
     if (block.typeId == 'mc:chemical_lab') {

@@ -1,3 +1,4 @@
+import { callHook } from "@/shared/hooks.js";
 import { Player, ScriptEventSource, system, world } from "@minecraft/server";
 import { GetAndParsePropertyData, StringifyAndSavePropertyData } from "@/shared/utils/minecraft.js";
 import { uiManager } from "@minecraft/server-ui";
@@ -5,8 +6,6 @@ import { tax } from "@/app/intervals.js";
 import { fixCountryData } from "@/maintenance/fix-data.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import config from "@/config/server.js";
-import { ensureMarriageData } from "@/domain/player/marriage.js";
-import { ensureBountyData } from "@/domain/player/bounty.js";
 import { ensureGroupChatData } from "@/domain/player/group-chat.js";
 
 system.afterEvents.scriptEventReceive.subscribe((ev) => {
@@ -89,8 +88,7 @@ system.afterEvents.scriptEventReceive.subscribe((ev) => {
             };
 
             const playerDataBase = new DynamicProperties('player');
-            ensureMarriageData(newPlayerData);
-            ensureBountyData(newPlayerData);
+            callHook("life.ensurePlayerData", newPlayerData);
             ensureGroupChatData(newPlayerData);
             playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
 

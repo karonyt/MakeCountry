@@ -20,7 +20,6 @@ import "@/features/commands/definitions/trade.js";
 import "@/features/commands/definitions/tpa.js";
 import "@/features/commands/definitions/sellchunk.js";
 import "@/features/commands/definitions/shop.js";
-import "@/features/commands/definitions/jobs.js";
 import "@/features/commands/definitions/kill.js";
 import "@/features/commands/definitions/chome.js";
 import "@/features/commands/definitions/fixcamera.js";
@@ -51,9 +50,7 @@ import "@/features/commands/definitions/itemid.js";
 import "@/features/commands/definitions/playtime.js";
 import "@/features/commands/definitions/checkuserid.js";
 import "@/features/commands/definitions/xptobottle.js";
-import "@/features/commands/definitions/jobrank.js";
 import "@/features/commands/definitions/checkbiome.js";
-import "@/features/commands/definitions/fishbook.js";
 
 import "@/features/commands/definitions/spawn.js";
 
@@ -66,15 +63,9 @@ import "@/features/commands/definitions/nationaltierlevel.js";
 import "@/features/commands/definitions/addcompefromitemstack.js";
 import "@/features/commands/definitions/addcompefromitemstackselector.js";
 import "@/features/commands/definitions/compensation.js";
-import "@/features/commands/definitions/joblevel.js";
 import "@/features/commands/definitions/get.js";
 
 import "@/features/commands/definitions/ping.js";
 
 import "@/features/commands/definitions/knw.js";
-import "@/features/commands/definitions/marriage.js";
-import "@/features/commands/definitions/spousetp.js";
-import "@/features/commands/definitions/spousechat.js";
-import "@/features/commands/definitions/mhome.js";
-import "@/features/commands/definitions/bounty.js";
 import "@/features/commands/definitions/chatmute.js";

@@ -1,6 +1,8 @@
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
+import { payPendingRewardRemotely } from "@/domain/jobs/remote-job-pay.js";
 import { Entity, GameMode, Player, system, world } from "@minecraft/server";
 import jobs_config from "@/config/jobs.js";
-import { applyDailyLimit } from "@/domain/jobs/job-events.js";
+import { applyDailyLimit } from "@/domain/jobs/daily-limit.js";
 import { JobLevel } from "@/domain/jobs/job-level.js";
 import { formatJobRewardValues, getDailyEarning } from "@/domain/jobs/job-reward-display.js";
 import { RewardBuff } from "@/domain/rewards/reward-buff.js";
@@ -103,6 +105,15 @@ function flushTameRewards() {
                 if (!(player instanceof Player) || !player.isValid) continue;
                 if (player.hasTag("status:loading") || player.hasTag("status:transferring")) continue;
                 if (!canEarn(player)) { settle(group, "skipped"); continue; }
+                if (IS_SPLIT_BUILD) {
+                    // 分割版: 票を 1 枚ずつ Lite に払ってもらう
+                    const entry = group[0];
+                    const job = new JobLevel(player, "tamer");
+                    const multiplier = buff.getMultiplier("tamer");
+                    const money = getRandomInteger(jobs_config.tameReward.min, jobs_config.tameReward.max) * entry.amount * job.getReward(job.getLevel()) * multiplier;
+                    payPendingRewardRemotely(pendingTames, entry, player, "tamer", { money, xp: jobs_config.tameReward.xp * entry.amount * multiplier });
+                    continue;
+                }
                 const raw = playerDB.get(`player_${playerId}`);
                 if (!raw) { for (const entry of group) pendingTames.block(entry, "missing_player_record"); continue; }
                 let playerData: any;

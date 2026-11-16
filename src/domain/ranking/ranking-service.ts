@@ -1,8 +1,8 @@
+import { boardMessage } from "@/domain/ranking/board-message.js";
+import { readValue } from "@/shared/hooks.js";
 import { system, TextPrimitive, world, type Dimension, type Entity, type Player, type RawMessage, type Vector3 } from "@minecraft/server";
 import { LocalizedTextGroup } from "../../../localization/primitive-text.js";
 import config from "@/config/server.js";
-import fishingConfig from "@/config/fishing.js";
-import { getFishManager } from "@/domain/fishing/fishing.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { storageReadReady } from "@/shared/storage/write-hook.js";
 import { GetAndParsePropertyData } from "@/shared/utils/minecraft.js";
@@ -19,7 +19,6 @@ type BoardContent = { message: RawMessage; signature: string; refreshAt: number 
 type BoardLabel = LocalizedTextGroup;
 type RankingPlayer = { id: string; name: string; money: string; moneyPrivate?: boolean };
 type RankingCountry = { name: string; territories?: unknown[]; members?: unknown[] };
-type Row = { name: string; value: RawMessage };
 
 let boards: Map<string, Board> | undefined;
 let renderTimer: number | undefined;
@@ -193,25 +192,16 @@ function refreshContents(tags: BoardTag[]): void {
                 break;
             default:
                 if (!storageReadReady("player")) continue;
-                message = fishBoard(tag.slice(FISH_PREFIX.length), playerDb);
+                {
+                    const board = readValue<RawMessage | undefined>("fishing.board", tag.slice(FISH_PREFIX.length), undefined);
+                    if (!board) continue;
+                    message = board;
+                }
         }
         contents.set(tag, { message, signature: JSON.stringify(message), refreshAt: now + REFRESH_MS });
     }
 }
 
-function boardMessage(title: RawMessage, rows: Row[], total?: RawMessage): RawMessage {
-    const rawtext: RawMessage[] = [title];
-    if (total) {
-        rawtext.push({ text: "\n" }, { translate: "game.ui.ranking.total", with: { rawtext: [total] } });
-    }
-    for (const [index, row] of rows.entries()) {
-        rawtext.push({ text: "\n" }, {
-            translate: "game.ui.ranking.row",
-            with: { rawtext: [{ text: String(index + 1) }, { text: row.name }, row.value] },
-        });
-    }
-    return { rawtext };
-}
 
 function moneyValue(amount: number): RawMessage {
     return { text: `${amount}${config.MoneyName}` };
@@ -261,16 +251,4 @@ function countryBoard(countries: RankingCountry[], field: "territories" | "membe
     );
 }
 
-function fishBoard(fishTypeId: string, playerDb: DynamicProperties): RawMessage {
-    const fish = fishingConfig.allFishes.find(entry => entry.typeId === fishTypeId);
-    const fishName: RawMessage = fish ? { translate: fish.name } : { text: fishTypeId.split(":").at(-1) ?? fishTypeId };
-    const rank = getFishManager().getServerFishRanking(fishTypeId);
-    const top = rank.top.map((entry: { playerId: string; playerName?: string; size: number }) => {
-        const player = GetAndParsePropertyData(`player_${entry.playerId}`, playerDb);
-        return { name: player?.name ?? entry.playerName ?? entry.playerId, value: { text: `${entry.size} cm` } };
-    });
-    return boardMessage({
-        translate: "game.ui.ranking.fish",
-        with: { rawtext: [fishName, { text: String(top.length) }] },
-    }, top);
-}
+

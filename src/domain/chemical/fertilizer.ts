@@ -1,7 +1,8 @@
+import { isLocationDenied, runAfterPermissionCheck, type LocationCheck } from "@/domain/country/location-permission.js";
+import { IS_SPLIT_BUILD } from "@/shared/build-flags.js";
 import { system, type PlayerInteractWithBlockBeforeEvent } from "@minecraft/server";
 import { getArtisanQuality } from "@/domain/professions/artisan-quality.js";
 import { getFertilizerSpec } from "@/domain/chemical/fertilizer-rules.js";
-import { CheckPermissionFromLocation } from '@/shared/utils/minecraft.js';
 import { deniesIncident16 } from '@/domain/protection/incident16.js';
 import { gateBlockProtectedByCenters, gateProtectionCenters } from "@/shared/integration/standalone.js";
 
@@ -34,8 +35,8 @@ function canFertilize(player: PlayerInteractWithBlockBeforeEvent['player'], bloc
     const { x, z } = block.location;
     const dimension = block.dimension.id;
     return !deniesIncident16(player, x, z, dimension)
-        && !CheckPermissionFromLocation(player, x, z, dimension, 'break')
-        && !CheckPermissionFromLocation(player, x, z, dimension, 'itemUse');
+        && !isLocationDenied(player, x, z, dimension, 'break')
+        && !isLocationDenied(player, x, z, dimension, 'itemUse');
 }
 
 /** All affected plots are checked individually, including after deferral. */
@@ -50,7 +51,7 @@ export function tryUseChemicalFertilizer(event: PlayerInteractWithBlockBeforeEve
 
     const growth = getGrowthState(event.block);
     if (!growth || growth.value >= growth.maximum) return false;
-    if (!canFertilize(event.player, event.block)) {
+    if (!IS_SPLIT_BUILD && !canFertilize(event.player, event.block)) {
         event.cancel = true;
         return true;
     }
@@ -61,7 +62,11 @@ export function tryUseChemicalFertilizer(event: PlayerInteractWithBlockBeforeEve
     const selectedSlot = player.selectedSlotIndex;
     const itemId = item.typeId;
 
-    system.run(() => {
+    const radius = getFertilizerSpec(itemId, getArtisanQuality(item))?.radius ?? 1;
+    const checks: LocationCheck[] = [];
+    for (let dx = -radius; dx <= radius; dx++) for (let dz = -radius; dz <= radius; dz++) for (const permission of ['break', 'itemUse'])
+        checks.push({ x: block.x + dx, z: block.z + dz, dimension: block.dimension.id, permission });
+    runAfterPermissionCheck(player, checks, () => {
         if (!player.isValid || !block.isValid || !canFertilize(player, block)) return;
         const current = player.getComponent("inventory")?.container?.getItem(selectedSlot);
         if (!current || current.typeId !== itemId) return;

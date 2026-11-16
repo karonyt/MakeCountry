@@ -1,3 +1,4 @@
+import { writeLitePlayerProperty } from "@/shared/shared-player-props.js";
 import { SocialActionForm as ActionFormData } from "@/shared/ui/purpose-forms.js";
 import { penNameMainDefaultForm } from "@/features/forms/default/menu/pen_name/main.js";
 import { Player } from "@minecraft/server";
@@ -21,7 +22,7 @@ export function penNameBeforeDefaultForm(player: any) {
             return;
         };
         // @ts-ignore TS(2538): Type 'undefined' cannot be used as an index type.
-        player.setDynamicProperty(`pennameBefore`, tags[rs.selection].replace(`mcPenNameBefore`, ``));
+        writeLitePlayerProperty(player, `pennameBefore`, tags[rs.selection].replace(`mcPenNameBefore`, ``));
         player.sendMessage({ translate: `updated` });
     });
 };
