@@ -7,7 +7,7 @@ import {
     Potions
 } from "@minecraft/server";
 import { ChestFormData } from "@/shared/ui/chest-form.js";
-import { getToolQuality } from "@/domain/items/item-service.js";
+import { getToolQuality } from "@/domain/items/tool-quality.js";
 import { itemIdToPath } from "@/config/textures.js";
 import { appendChestPresentationLore, getChestItemDataPresentation, getChestItemStackPresentation, readItemStackPotionData } from "@/shared/minecraft/item-presentation.js";
 import { enchantIdToLang, langChangeItemName } from "@/shared/utils/minecraft.js";

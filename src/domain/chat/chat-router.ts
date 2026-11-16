@@ -1,3 +1,4 @@
+import { readValue } from "@/shared/hooks.js";
 import { Player, world } from "@minecraft/server";
 import { allowedColor, supporterBadge, supporterOf } from "@/domain/player/supporter-badge.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
@@ -7,7 +8,6 @@ import { playerHandler } from "@/shared/events/make-country-events.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
 import { isPlayerMuted } from "@/domain/chat/mute.js";
 import { getGroupChatRecipients } from "@/domain/player/group-chat.js";
-import { getPlayerDataById } from "@/domain/player/marriage.js";
 import { getFederationMemberIds, isFederationActive, normalizeFederationData } from "@/domain/country/relationships/federation.js";
 
 import { initializeChatTranslation, sendChatBatch, type ChatRecipient, type ChatOutput } from "./translation/index.js";
@@ -194,14 +194,14 @@ class ChatHandler {
                 break;
             }
             case `spouse`: {
-                const senderData = getPlayerDataById(this.sender.id);
-                const spouseId = senderData?.marriage?.spouseId;
+                
+                const spouseId = readValue<string | undefined>("life.spouseId", this.sender.id, undefined);
                 if (!spouseId) {
                     this.sender.sendMessage({ translate: "marriage.error.not_married" });
                     this.sender.setDynamicProperty("chatType", "general");
                     return;
                 }
-                const spouseData = getPlayerDataById(spouseId);
+                const spouseData = GetAndParsePropertyData(`player_${spouseId}`);
                 const spouse = spouseData?.name ? world.getPlayers({ name: spouseData.name })[0] : undefined;
                 const recipients = [this.sender];
                 if (spouse) {

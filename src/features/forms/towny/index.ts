@@ -1,3 +1,4 @@
+import { callHook, readValue } from "@/shared/hooks.js";
 import { Player, system } from "@minecraft/server";
 import { FormCancelationReason } from "@minecraft/server-ui";
 import config from "@/config/server.js";
@@ -7,9 +8,7 @@ import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { countryListDefaultForm } from "@/features/forms/default/country_list/list.js";
 import { showProfileDefaultForm } from "@/features/forms/default/menu/profile/show_profile.js";
 import { sendMoneyDefaultForm } from "@/features/forms/default/menu/send_money/send_money.js";
-import { showFishEncyclopedia } from "@/features/fishing/fish-encyclopedia.js";
 import { playerSettingDefaultForm } from "@/features/forms/default/menu/setting/setting.js";
-import { penNameMainDefaultForm } from "@/features/forms/default/menu/pen_name/main.js";
 import { countryInvitesListDefaultForm } from "@/features/forms/default/menu/join/invite/invite_list.js";
 import { allowJoinCountriesListDefaultForm } from "@/features/forms/default/menu/join/allow_list/allow_list.js";
 import { treasuryMainDefaultForm } from "@/features/forms/default/sc/treasury/treasury_main.js";
@@ -55,7 +54,7 @@ export function playerMainMenuTownyForm(player: Player) {
                 return playerData?.country ? settingCountryTownyForm(player) : joinTypeSelectTownyForm(player);
             }
             case 12: return countryListDefaultForm(player);
-            case 14: return showFishEncyclopedia(player);
+            case 14: { if (!callHook("fishing.openEncyclopedia", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.fishing" }] } }); return; }
             case 16: return residentMenuTownyForm(player);
         }
     });
@@ -77,7 +76,7 @@ function residentMenuTownyForm(player: Player) {
         if (rs.selection === 10) return showProfileDefaultForm(player);
         if (rs.selection === 12) return sendMoneyDefaultForm(player);
         if (rs.selection === 14) return playerSettingDefaultForm(player);
-        if (rs.selection === 16 && config.pennameEnable) return penNameMainDefaultForm(player);
+        if (rs.selection === 16 && config.pennameEnable) { if (!callHook("life.openPenName", player)) player.sendMessage({ translate: "makecountry.module.missing", with: { rawtext: [{ translate: "makecountry.module.life" }] } }); return; }
         if (rs.selection === 26) return playerMainMenuTownyForm(player);
     });
 }

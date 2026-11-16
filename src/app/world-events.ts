@@ -1,3 +1,4 @@
+import { callHook } from "@/shared/hooks.js";
 import { cancelGateBlockEdit, cancelGateTerrainInteraction } from "@/shared/integration/standalone.js";
 import { cancelIncident16BlockEvent } from "@/domain/protection/incident16.js";
 import { type Block, EntityDamageCause, GameMode, Player, system, world } from "@minecraft/server";
@@ -7,16 +8,12 @@ import jobs_config from "@/config/jobs.js";
 import { chestShopConfig } from "@/config/chest-shop.js";
 import { getShopData, getSignTexts, isShopOwner } from "@/features/shops/chest-shop.js";
 import { nameSet } from "@/domain/player/name-tag.js";
-import { JobLevel } from "@/domain/jobs/job-level.js";
 import { DynamicProperties } from "@/shared/storage/dynamic-properties.js";
 import { chestLockDefaultForm } from "@/features/forms/default/chest_lock/main.js";
 import national_tier_level from "@/config/national-tier-level.js";
 import { updateRecipe } from "@/domain/recipes/recipe-service.js";
 import { CountryManager } from "@/domain/country/country-manager.js";
-import { GrowthPlantReward } from "@/domain/jobs/job-events.js";
 import { itemUseItems, projectileUseItems } from "@/config/use-items.js";
-import { ensureMarriageData, migrateMarriageReferences } from "@/domain/player/marriage.js";
-import { ensureBountyData } from "@/domain/player/bounty.js";
 import { isEntityAttackDenied } from "@/domain/protection/entity-attack.js";
 import { ensureGroupChatData, migrateGroupChatReferences } from "@/domain/player/group-chat.js";
 import { isUnsafeToPlay } from "@/shared/integration/standalone.js";
@@ -578,7 +575,7 @@ world.beforeEvents.playerInteractWithBlock.subscribe((ev) => {
     const cannot = cannotUseDetailedPermission(player, x, z, dimensionId, permission, detailedPermission);
     ev.cancel = cannot;
     if (!cannot) {
-        GrowthPlantReward(player, block);
+        callHook("jobs.growthPlant", player, block);
         return;
     }
 
@@ -653,8 +650,7 @@ function playerDataCheck(player: any) {
     const dataCheck = playerDataBase.get(`player_${player.id}`);
     if (dataCheck) {
         const playerData = JSON.parse(dataCheck);
-        ensureMarriageData(playerData);
-        ensureBountyData(playerData);
+        callHook("life.ensurePlayerData", playerData);
         ensureGroupChatData(playerData);
         playerData.name = player.name;
         playerData.lastLogined = Date.now();
@@ -719,13 +715,12 @@ function playerDataCheck(player: any) {
         const newPlayerData = exist[0].data;
         const oldId = newPlayerData.id;
 
-        ensureMarriageData(newPlayerData);
-        ensureBountyData(newPlayerData);
+        callHook("life.ensurePlayerData", newPlayerData);
         ensureGroupChatData(newPlayerData);
         newPlayerData.id = player.id;
         playerDataBase.set(`player_${player.id}`, JSON.stringify(newPlayerData));
         playerDataBase.delete(`player_${oldId}`);
-        migrateMarriageReferences(playerDataBase, oldId, player.id);
+        callHook("life.migratePlayerId", oldId, player.id);
         migrateGroupChatReferences(playerDataBase, oldId, player.id);
         //プレイ時間の移行
         const playTimeDB = new DynamicProperties('playtime');
