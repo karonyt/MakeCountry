@@ -41,6 +41,8 @@ export function gameUiLocalization(pack) {
     return {
         name:'game-ui-localization',
         transform(code,id) {
+            // Windows では id が \ 区切りで渡されるため、以降のパス判定用に / へ揃える
+            id=id.replaceAll('\\','/');
             if(!/\.[cm]?[jt]s$/.test(id) || /node_modules|\/localization\//.test(id)) return null;
             const source=ts.createSourceFile(id,code,ts.ScriptTarget.Latest,true,id.endsWith('.js')?ts.ScriptKind.JS:ts.ScriptKind.TS);
             let changed=false;

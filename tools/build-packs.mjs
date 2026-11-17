@@ -86,6 +86,11 @@ for (const packId of targets) {
     target: 'ES2024',
     tsconfig: path.join(root, 'tsconfig.json'),
     external: /^@minecraft\/(?!vanilla-data|math)/,
+    // discord-mcbe との連携に使う。ゲーム内では npm パッケージを読み込めないので、バンドルに含める
+    noExternal: ['mcbe-ipc'],
+    inlineOnly: ['mcbe-ipc'],
+    // platform が neutral だと package.json の main を見ないので、mcbe-ipc を解決できるように指定する
+    inputOptions: { resolve: { mainFields: ['module', 'main'] } },
     outExtensions: () => ({ js: '.js' }),
     sourcemap: false,
     dts: false,

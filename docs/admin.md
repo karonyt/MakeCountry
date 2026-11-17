@@ -11,6 +11,7 @@
 - **国家ティア**: 国の発展度の変更 (`/nationaltierlevel`)
 - **徴税時刻**: 次の徴税までの時間を確認 (`/taxtime`)
 - `scriptevent` から各種機能を実行でき、他のアドオン向けのイベント API もあります
+- **Discord 連携**: [discord-mcbe](https://github.com/tutinoko2048/discord-mcbe) を一緒に導入すると、全体チャットを Discord と相互にやり取りできます ([discord-mcbe との連携](discord-mcbe.md))
 
 ## 設定の変更
 

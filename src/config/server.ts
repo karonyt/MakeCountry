@@ -24,6 +24,10 @@ export default {
     initialPennameBefore: "一般的な",
     //二つ名の初期のやつ(後)
     initialPennameAfter: "鯖民",
+    //discord-mcbe(https://github.com/tutinoko2048/discord-mcbe)が導入されている場合、全体チャットをDiscordに送信し、Discordからのチャットを全体チャットのミュートに従って表示するか
+    discordMcbeIntegration: true,
+    //Discordに送信する際、国に所属していないプレイヤーの国名として表示する文字列
+    discordNoCountryName: "無所属",
 
     //最大Home数
     maxHomeCount: 3,
