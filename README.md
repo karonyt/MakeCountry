@@ -26,6 +26,7 @@ Java 版の建国プラグインをモデルにした、建国・外交・戦争
 | [遊び方 (プレイヤー向け)](docs/players.md) | 建国・土地・税金・外交・戦争・職業・料理・鍛冶・釣り・ショップ・チャットなど、各機能の使い方 |
 | [MakeCountryLite と機能パック](docs/lite.md) | 必要な機能だけを選んで入れられる軽量版と、機能ごとのパック |
 | [管理者向けの機能](docs/admin.md) | 管理者モード・土地や国データの管理・補償の配布など |
+| [discord-mcbe との連携](docs/discord-mcbe.md) | 全体チャットを Discord と相互にやり取りする |
 | [wiki](https://github.com/karonyt/MakeCountry/wiki) | 細かい仕様 |
 
 ## 主な機能
